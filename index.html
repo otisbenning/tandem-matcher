@@ -1652,6 +1652,19 @@
                     </div>
 
                     <div class="card">
+                        <h3>🤖 KI-Prompt Einstellungen</h3>
+                        <p style="margin-bottom: 1rem;">Passe den Prompt an, der bei der KI-Unterstützung verwendet wird:</p>
+                        
+                        <div class="form-group">
+                            <label>KI-Prompt-Vorlage:</label>
+                            <textarea id="ai-prompt-template" rows="8" style="width: 100%; font-family: monospace; font-size: 0.9rem;">Schreibe hierzu einen kurzen Text. Die Frage zu den Antworten lautet {Frage}. Schreibe, wie die Antworten zusammenpassen könnten bzw. gebe Beispiele aus. Hier die Antworten: Person 1 - {Antwort1}, Person 2 - {Antwort2}. Schreibe den Text nach diesem Beispiel: "Ihr habt beide angegeben, dass ihr gerne kocht - ob mit Freund*innen oder alleine. Also los! Probiert doch einmal gemeinsam neue Rezepte. Außerdem geht ihr beide gerne Spazieren. "Nach dem Essen sollst du Ruhn, oder 1.000 Schritte tun." Also habt ihr ja quasi schon einen Tagesplan ;) Weil ihr beide gerne auch kulturelle Dinge macht, wie in das Theater/Museum/oder auf andere Kulturveranstaltungen geht - schaut doch mal auf rausgegangen.de was es in Köln so die nächsten Tage gibt. Oder guckt bei uns im Eventportal: www.startwithafriend.de/events" - Nenne KEINE Namen oder andere Personenbezeichnungen.</textarea>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="saveAIPrompt()">💾 Prompt speichern</button>
+                        <button class="btn btn-outline" onclick="resetAIPrompt()">🔄 Zurücksetzen</button>
+                    </div>                    
+
+                    <div class="card">
                         <h3>Datenverwaltung</h3>
                         <div class="alert alert-warning">
                             <strong>Achtung:</strong> Diese Aktionen können nicht rückgängig gemacht werden!
@@ -4615,22 +4628,35 @@
                 return indexA - indexB;
             });
 
-            sortedCommonalities.forEach(c => {
+            filteredCommonalities.forEach(c => {
+                const isPLZField = c.question.toLowerCase().includes('postleitzahl') || c.question.toLowerCase().includes('plz');
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${c.question}</td>
                     <td contenteditable="true">${c.answer1}</td>
                     <td contenteditable="true">${c.answer2}</td>
                     <td contenteditable="true" 
-                        style="background: var(--swaf-lightest-teal); cursor: text;" 
-                        title="Klick hier für passende Formulierungsvorschläge"
-                        onfocus="handleCellFocus(this)">${c.commonality}</td>
-                    <td>
+                        style="background: var(--swaf-lightest-teal); cursor: text; ${isPLZField ? 'padding-right: 90px; position: relative;' : ''}" 
+                        title="${isPLZField ? '🔄 Distanz wird automatisch berechnet' : 'Klick hier für passende Formulierungsvorschläge'}"
+                        onfocus="handleCellFocus(this)"
+                        data-is-plz="${isPLZField}"
+                        data-answer1="${(c.answer1 || '').replace(/"/g, '&quot;')}"
+                        data-answer2="${(c.answer2 || '').replace(/"/g, '&quot;')}">
+                        ${isPLZField ? '🔄 Berechne Distanz...' : c.commonality}
+                    </td>
+                    <td style="position: relative;">
+                        ${!isPLZField ? `<button onclick="openAIAssistant('${c.question.replace(/'/g, "\\'")}', '${(c.answer1 || '').replace(/'/g, "\\'")}', '${(c.answer2 || '').replace(/'/g, "\\'")}');" class="btn btn-outline btn-small" style="margin-right: 0.5rem;" title="KI-Unterstützung">🤖 KI</button>` : ''}
                         <button onclick="deleteRow(this)" class="btn btn-outline btn-small">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
+
+            // Automatische PLZ-Distanzberechnung starten
+            setTimeout(() => {
+                autoCalculatePLZDistances();
+            }, 300);
 
             // Info-Hinweis wenn Felder gefiltert wurden
             if (filteredCommonalities.length < currentTandem.commonalities.length) {
@@ -8112,27 +8138,166 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             tbody.innerHTML = '';
 
             currentTandem.commonalities.forEach(c => {
+                const isPLZField = c.question.toLowerCase().includes('postleitzahl') || c.question.toLowerCase().includes('plz');
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${c.question}</td>
                     <td contenteditable="true">${c.answer1}</td>
                     <td contenteditable="true">${c.answer2}</td>
                     <td contenteditable="true" 
-                        style="background: var(--swaf-lightest-teal); cursor: text;" 
-                        title="Klick hier für passende Formulierungsvorschläge"
-                        onfocus="handleCellFocus(this)">${c.commonality}</td>
-                    <td>
+                        style="background: var(--swaf-lightest-teal); cursor: text; ${isPLZField ? 'padding-right: 90px; position: relative;' : ''}" 
+                        title="${isPLZField ? '🔄 Distanz wird automatisch berechnet' : 'Klick hier für passende Formulierungsvorschläge'}"
+                        onfocus="handleCellFocus(this)"
+                        data-is-plz="${isPLZField}"
+                        data-answer1="${(c.answer1 || '').replace(/"/g, '&quot;')}"
+                        data-answer2="${(c.answer2 || '').replace(/"/g, '&quot;')}">
+                        ${isPLZField ? '🔄 Berechne Distanz...' : c.commonality}
+                    </td>
+                    <td style="position: relative;">
+                        ${!isPLZField ? `<button onclick="openAIAssistant('${c.question.replace(/'/g, "\\'")}', '${(c.answer1 || '').replace(/'/g, "\\'")}', '${(c.answer2 || '').replace(/'/g, "\\'")}');" class="btn btn-outline btn-small" style="margin-right: 0.5rem;" title="KI-Unterstützung">🤖 KI</button>` : ''}
                         <button onclick="deleteRow(this)" class="btn btn-outline btn-small">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
 
+            setTimeout(() => {
+                autoCalculatePLZDistances();
+            }, 300);
+
             showNotification('📊 Alle Felder werden angezeigt (Feldkonfiguration temporär ignoriert)', 'info', 3000);
+        }
+
+        async function autoCalculatePLZDistances() {
+            const table = document.getElementById('tandem-table');
+            if (!table) return;
+            
+            const plzCells = table.querySelectorAll('td[data-is-plz="true"]');
+            
+            for (const cell of plzCells) {
+                const answer1 = cell.getAttribute('data-answer1');
+                const answer2 = cell.getAttribute('data-answer2');
+                
+                const plz1 = extractPLZ(answer1);
+                const plz2 = extractPLZ(answer2);
+                
+                if (plz1 && plz2) {
+                    try {
+                        const result = await calculatePLZDistanceAdvanced(plz1, plz2);
+                        
+                        if (result && result.distance !== null) {
+                            let distanceText = '';
+                            
+                            if (result.distance === 0) {
+                                distanceText = 'Ihr wohnt in derselben PLZ';
+                            } else {
+                                if (result.distance <= 10) {
+                                    distanceText = `Sehr nah (${result.distance} km)`;
+                                } else if (result.distance <= 25) {
+                                    distanceText = `Gleiche Region (ca. ${result.distance} km)`;
+                                } else {
+                                    distanceText = `Ähnliche Region (ca. ${result.distance} km)`;
+                                }
+                            }
+                            
+                            const mapsLinks = generateMapsLinks(plz1, plz2);
+                            const mapsLinksJSON = JSON.stringify(mapsLinks).replace(/"/g, '&quot;');
+                            
+                            // Erstelle editierbaren Text + Navigation Button
+                            cell.innerHTML = `
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span contenteditable="true" style="flex: 1;">${distanceText}</span>
+                                    <button onclick="event.stopPropagation(); showNavigationOptions(JSON.parse('${mapsLinksJSON}'), '${plz1}', '${plz2}');" 
+                                            class="btn btn-outline btn-small" 
+                                            style="padding: 0.3rem 0.6rem; white-space: nowrap; position: absolute; right: 0.5rem;"
+                                            title="Navigation öffnen">
+                                        🗺️ Navi
+                                    </button>
+                                </div>
+                            `;
+                            cell.style.background = 'var(--swaf-lightest-teal)';
+                        }
+                    } catch (error) {
+                        console.error('Fehler bei PLZ-Berechnung:', error);
+                        cell.textContent = 'Distanz nicht berechenbar';
+                    }
+                } else {
+                    cell.textContent = 'Keine gültigen PLZ gefunden';
+                }
+            }
+        }
+
+        function openAIAssistant(question, answer1, answer2) {
+            const promptTemplate = localStorage.getItem('swaf_ai_prompt') || 'Schreibe hierzu einen kurzen Text. Die Frage zu den Antworten lautet {Frage}. Schreibe, wie die Antworten zusammenpassen könnten bzw. gebe Beispiele aus. Hier die Antworten: Person 1 - {Antwort1}, Person 2 - {Antwort2}. Schreibe den Text nach diesem Beispiel: "Ihr habt beide angegeben, dass ihr gerne kocht - ob mit Freund*innen oder alleine. Also los! Probiert doch einmal gemeinsam neue Rezepte. Außerdem geht ihr beide gerne Spazieren. "Nach dem Essen sollst du Ruhn, oder 1.000 Schritte tun." Also habt ihr ja quasi schon einen Tagesplan ;) Weil ihr beide gerne auch kulturelle Dinge macht, wie in das Theater/Museum/oder auf andere Kulturveranstaltungen geht - schaut doch mal auf rausgegangen.de was es in Köln so die nächsten Tage gibt. Oder guckt bei uns im Eventportal: www.startwithafriend.de/events" - Nenne KEINE Namen oder andere Personenbezeichnungen.';
+            
+            const prompt = promptTemplate
+                .replace('{Frage}', question)
+                .replace('{Antwort1}', answer1)
+                .replace('{Antwort2}', answer2);
+            
+            createModal('🤖 KI-Unterstützung', `
+                <p style="margin-bottom: 1rem;">Wähle deinen bevorzugten KI-Assistenten:</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="openChatGPT(\`${prompt.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`);" style="padding: 1rem;">
+                        💬 ChatGPT öffnen
+                    </button>
+                    <button class="btn btn-secondary" onclick="openClaude(\`${prompt.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`);" style="padding: 1rem;">
+                        🤖 Claude.ai öffnen
+                    </button>
+                </div>
+                
+                <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                    <h4 style="margin-top: 0;">📋 Prompt-Vorschau:</h4>
+                    <textarea readonly style="width: 100%; height: 150px; font-family: monospace; font-size: 0.85rem; resize: vertical;">${prompt}</textarea>
+                    <button class="btn btn-outline btn-small" onclick="navigator.clipboard.writeText(\`${prompt.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`); showNotification('📋 Prompt kopiert', 'success', 2000);" style="margin-top: 0.5rem;">
+                        📋 Prompt kopieren
+                    </button>
+                </div>
+            `, [
+                { text: 'Schließen', class: 'btn-outline', action: 'closeModal' }
+            ]);
+        }
+
+        function openChatGPT(prompt) {
+            navigator.clipboard.writeText(prompt).then(() => {
+                window.open('https://chat.openai.com/', '_blank');
+                closeModal();
+                showNotification('💬 ChatGPT geöffnet - Prompt wurde in Zwischenablage kopiert. Einfach einfügen (Strg+V)!', 'success', 4000);
+            });
+        }
+
+        function openClaude(prompt) {
+            navigator.clipboard.writeText(prompt).then(() => {
+                window.open('https://claude.ai/new', '_blank');
+                closeModal();
+                showNotification('🤖 Claude.ai geöffnet - Prompt wurde in Zwischenablage kopiert. Einfach einfügen (Strg+V)!', 'success', 4000);
+            });
+        }
+
+        function saveAIPrompt() {
+            const prompt = document.getElementById('ai-prompt-template').value;
+            localStorage.setItem('swaf_ai_prompt', prompt);
+            showNotification('✅ KI-Prompt gespeichert', 'success');
+        }
+
+        function resetAIPrompt() {
+            const defaultPrompt = 'Schreibe hierzu einen kurzen Text. Die Frage zu den Antworten lautet {Frage}. Schreibe, wie die Antworten zusammenpassen könnten bzw. gebe Beispiele aus. Hier die Antworten: Person 1 - {Antwort1}, Person 2 - {Antwort2}. Schreibe den Text nach diesem Beispiel: "Ihr habt beide angegeben, dass ihr gerne kocht - ob mit Freund*innen oder alleine. Also los! Probiert doch einmal gemeinsam neue Rezepte. Außerdem geht ihr beide gerne Spazieren. "Nach dem Essen sollst du Ruhn, oder 1.000 Schritte tun." Also habt ihr ja quasi schon einen Tagesplan ;) Weil ihr beide gerne auch kulturelle Dinge macht, wie in das Theater/Museum/oder auf andere Kulturveranstaltungen geht - schaut doch mal auf rausgegangen.de was es in Köln so die nächsten Tage gibt. Oder guckt bei uns im Eventportal: www.startwithafriend.de/events" - Nenne KEINE Namen oder andere Personenbezeichnungen.';
+            document.getElementById('ai-prompt-template').value = defaultPrompt;
+            localStorage.setItem('swaf_ai_prompt', defaultPrompt);
+            showNotification('✅ KI-Prompt zurückgesetzt', 'success');
         }
 
         // Globale Funktion verfügbar machen
         window.showAllFields = showAllFields;
+
+        window.autoCalculatePLZDistances = autoCalculatePLZDistances;
+        window.openAIAssistant = openAIAssistant;
+        window.openChatGPT = openChatGPT;
+        window.openClaude = openClaude;
+        window.saveAIPrompt = saveAIPrompt;
+        window.resetAIPrompt = resetAIPrompt;
 
         window.loadFieldsWithOrder = loadFieldsWithOrder;
         window.moveFieldUp = moveFieldUp;
