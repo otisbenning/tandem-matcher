@@ -8229,50 +8229,99 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         }
 
         function openAIAssistant(question, answer1, answer2) {
-            const promptTemplate = localStorage.getItem('swaf_ai_prompt') || 'Schreibe hierzu einen kurzen Text. Die Frage zu den Antworten lautet {Frage}. Schreibe, wie die Antworten zusammenpassen könnten bzw. gebe Beispiele aus. Hier die Antworten: Person 1 - {Antwort1}, Person 2 - {Antwort2}. Schreibe den Text nach diesem Beispiel: "Ihr habt beide angegeben, dass ihr gerne kocht - ob mit Freund*innen oder alleine. Also los! Probiert doch einmal gemeinsam neue Rezepte. Außerdem geht ihr beide gerne Spazieren. "Nach dem Essen sollst du Ruhn, oder 1.000 Schritte tun." Also habt ihr ja quasi schon einen Tagesplan ;) Weil ihr beide gerne auch kulturelle Dinge macht, wie in das Theater/Museum/oder auf andere Kulturveranstaltungen geht - schaut doch mal auf rausgegangen.de was es in Köln so die nächsten Tage gibt. Oder guckt bei uns im Eventportal: www.startwithafriend.de/events" - Nenne KEINE Namen oder andere Personenbezeichnungen.';
+            const promptTemplate = localStorage.getItem('swaf_ai_prompt') || 'Schreibe hierzu einen kurzen Text...';
+            
+            // Ersetze leere Antworten mit "Keine Angabe"
+            const cleanAnswer1 = (answer1 && answer1.trim()) ? answer1 : 'Keine Angabe';
+            const cleanAnswer2 = (answer2 && answer2.trim()) ? answer2 : 'Keine Angabe';
             
             const prompt = promptTemplate
                 .replace('{Frage}', question)
-                .replace('{Antwort1}', answer1)
-                .replace('{Antwort2}', answer2);
+                .replace('{Antwort1}', cleanAnswer1)
+                .replace('{Antwort2}', cleanAnswer2);
+            
+            // Speichere Prompt temporär für Modal-Buttons
+            window._currentAIPrompt = prompt;
+            
+            const escapedPrompt = prompt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             
             createModal('🤖 KI-Unterstützung', `
                 <p style="margin-bottom: 1rem;">Wähle deinen bevorzugten KI-Assistenten:</p>
                 
                 <div style="display: flex; flex-direction: column; gap: 1rem;">
-                    <button class="btn btn-primary" onclick="openChatGPT(\`${prompt.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`);" style="padding: 1rem;">
+                    <button class="btn btn-primary" id="open-chatgpt-btn" style="padding: 1rem;">
                         💬 ChatGPT öffnen
                     </button>
-                    <button class="btn btn-secondary" onclick="openClaude(\`${prompt.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`);" style="padding: 1rem;">
+                    <button class="btn btn-secondary" id="open-claude-btn" style="padding: 1rem;">
                         🤖 Claude.ai öffnen
                     </button>
                 </div>
                 
                 <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
                     <h4 style="margin-top: 0;">📋 Prompt-Vorschau:</h4>
-                    <textarea readonly style="width: 100%; height: 150px; font-family: monospace; font-size: 0.85rem; resize: vertical;">${prompt}</textarea>
-                    <button class="btn btn-outline btn-small" onclick="navigator.clipboard.writeText(\`${prompt.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`); showNotification('📋 Prompt kopiert', 'success', 2000);" style="margin-top: 0.5rem;">
+                    <textarea id="ai-prompt-preview" readonly style="width: 100%; height: 150px; font-family: monospace; font-size: 0.85rem; resize: vertical;">${escapedPrompt}</textarea>
+                    <button class="btn btn-outline btn-small" id="copy-prompt-btn" style="margin-top: 0.5rem;">
                         📋 Prompt kopieren
                     </button>
                 </div>
             `, [
                 { text: 'Schließen', class: 'btn-outline', action: 'closeModal' }
             ]);
+            
+            // Event Listener nach Modal-Erstellung hinzufügen
+            setTimeout(() => {
+                const chatgptBtn = document.getElementById('open-chatgpt-btn');
+                const claudeBtn = document.getElementById('open-claude-btn');
+                const copyBtn = document.getElementById('copy-prompt-btn');
+                
+                if (chatgptBtn) {
+                    chatgptBtn.addEventListener('click', function() {
+                        openChatGPT(window._currentAIPrompt);
+                    });
+                }
+                
+                if (claudeBtn) {
+                    claudeBtn.addEventListener('click', function() {
+                        openClaude(window._currentAIPrompt);
+                    });
+                }
+                
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', function() {
+                        const textarea = document.getElementById('ai-prompt-preview');
+                        navigator.clipboard.writeText(textarea.value).then(() => {
+                            showNotification('📋 Prompt kopiert', 'success', 2000);
+                        });
+                    });
+                }
+            }, 100);
         }
 
         function openChatGPT(prompt) {
+            console.log('💬 Öffne ChatGPT...');
             navigator.clipboard.writeText(prompt).then(() => {
                 window.open('https://chat.openai.com/', '_blank');
                 closeModal();
                 showNotification('💬 ChatGPT geöffnet - Prompt wurde in Zwischenablage kopiert. Einfach einfügen (Strg+V)!', 'success', 4000);
+            }).catch(err => {
+                console.error('Fehler beim Kopieren:', err);
+                window.open('https://chat.openai.com/', '_blank');
+                closeModal();
+                showNotification('💬 ChatGPT geöffnet - Bitte Prompt manuell kopieren', 'warning', 4000);
             });
         }
 
         function openClaude(prompt) {
+            console.log('🤖 Öffne Claude.ai...');
             navigator.clipboard.writeText(prompt).then(() => {
                 window.open('https://claude.ai/new', '_blank');
                 closeModal();
                 showNotification('🤖 Claude.ai geöffnet - Prompt wurde in Zwischenablage kopiert. Einfach einfügen (Strg+V)!', 'success', 4000);
+            }).catch(err => {
+                console.error('Fehler beim Kopieren:', err);
+                window.open('https://claude.ai/new', '_blank');
+                closeModal();
+                showNotification('🤖 Claude.ai geöffnet - Bitte Prompt manuell kopieren', 'warning', 4000);
             });
         }
 
