@@ -4646,12 +4646,26 @@
                         ${isPLZField ? '🔄 Berechne Distanz...' : c.commonality}
                     </td>
                     <td style="position: relative;">
-                        ${!isPLZField ? `<button onclick="openAIAssistant('${c.question.replace(/'/g, "\\'")}', '${(c.answer1 || '').replace(/'/g, "\\'")}', '${(c.answer2 || '').replace(/'/g, "\\'")}');" class="btn btn-outline btn-small" style="margin-right: 0.5rem;" title="KI-Unterstützung">🤖 KI</button>` : ''}
+                        ${!isPLZField ? `<button class="ai-assist-btn btn btn-outline btn-small" style="margin-right: 0.5rem;" title="KI-Unterstützung" data-question="${c.question.replace(/"/g, '&quot;')}" data-answer1="${(c.answer1 || '').replace(/"/g, '&quot;')}" data-answer2="${(c.answer2 || '').replace(/"/g, '&quot;')}">🤖 KI</button>` : ''}
                         <button onclick="deleteRow(this)" class="btn btn-outline btn-small">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
+
+            // Event Listener für KI-Buttons
+            setTimeout(() => {
+                const aiButtons = document.querySelectorAll('.ai-assist-btn');
+                aiButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const question = this.getAttribute('data-question');
+                        const answer1 = this.getAttribute('data-answer1');
+                        const answer2 = this.getAttribute('data-answer2');
+                        openAIAssistant(question, answer1, answer2);
+                    });
+                });
+            }, 100);
 
             // Automatische PLZ-Distanzberechnung starten
             setTimeout(() => {
@@ -8155,12 +8169,26 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                         ${isPLZField ? '🔄 Berechne Distanz...' : c.commonality}
                     </td>
                     <td style="position: relative;">
-                        ${!isPLZField ? `<button onclick="openAIAssistant('${c.question.replace(/'/g, "\\'")}', '${(c.answer1 || '').replace(/'/g, "\\'")}', '${(c.answer2 || '').replace(/'/g, "\\'")}');" class="btn btn-outline btn-small" style="margin-right: 0.5rem;" title="KI-Unterstützung">🤖 KI</button>` : ''}
+                        ${!isPLZField ? `<button class="ai-assist-btn btn btn-outline btn-small" style="margin-right: 0.5rem;" title="KI-Unterstützung" data-question="${c.question.replace(/"/g, '&quot;')}" data-answer1="${(c.answer1 || '').replace(/"/g, '&quot;')}" data-answer2="${(c.answer2 || '').replace(/"/g, '&quot;')}">🤖 KI</button>` : ''}
                         <button onclick="deleteRow(this)" class="btn btn-outline btn-small">🗑️</button>
                     </td>
                 `;
                 tbody.appendChild(row);
             });
+
+            // Event Listener für KI-Buttons
+            setTimeout(() => {
+                const aiButtons = document.querySelectorAll('.ai-assist-btn');
+                aiButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const question = this.getAttribute('data-question');
+                        const answer1 = this.getAttribute('data-answer1');
+                        const answer2 = this.getAttribute('data-answer2');
+                        openAIAssistant(question, answer1, answer2);
+                    });
+                });
+            }, 100);
 
             setTimeout(() => {
                 autoCalculatePLZDistances();
@@ -8229,19 +8257,33 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         }
 
         function openAIAssistant(question, answer1, answer2) {
-            const promptTemplate = localStorage.getItem('swaf_ai_prompt') || 'Schreibe hierzu einen kurzen Text...';
+            console.log('🤖 openAIAssistant aufgerufen');
+            console.log('Question:', question);
+            console.log('Answer1:', answer1);
+            console.log('Answer2:', answer2);
+            
+            const promptTemplate = localStorage.getItem('swaf_ai_prompt') || 'Schreibe hierzu einen kurzen Text. Die Frage zu den Antworten lautet {Frage}. Schreibe, wie die Antworten zusammenpassen könnten bzw. gebe Beispiele aus. Hier die Antworten: Person 1 - {Antwort1}, Person 2 - {Antwort2}. Schreibe den Text nach diesem Beispiel: "Ihr habt beide angegeben, dass ihr gerne kocht - ob mit Freund*innen oder alleine. Also los! Probiert doch einmal gemeinsam neue Rezepte. Außerdem geht ihr beide gerne Spazieren. "Nach dem Essen sollst du Ruhn, oder 1.000 Schritte tun." Also habt ihr ja quasi schon einen Tagesplan ;) Weil ihr beide gerne auch kulturelle Dinge macht, wie in das Theater/Museum/oder auf andere Kulturveranstaltungen geht - schaut doch mal auf rausgegangen.de was es in Köln so die nächsten Tage gibt. Oder guckt bei uns im Eventportal: www.startwithafriend.de/events" - Nenne KEINE Namen oder andere Personenbezeichnungen.';
+            
+            console.log('Prompt Template Länge:', promptTemplate.length);
             
             // Ersetze leere Antworten mit "Keine Angabe"
             const cleanAnswer1 = (answer1 && answer1.trim()) ? answer1 : 'Keine Angabe';
             const cleanAnswer2 = (answer2 && answer2.trim()) ? answer2 : 'Keine Angabe';
+            
+            console.log('Clean Answer1:', cleanAnswer1);
+            console.log('Clean Answer2:', cleanAnswer2);
             
             const prompt = promptTemplate
                 .replace('{Frage}', question)
                 .replace('{Antwort1}', cleanAnswer1)
                 .replace('{Antwort2}', cleanAnswer2);
             
-            // Speichere Prompt temporär für Modal-Buttons
+            console.log('Finaler Prompt:', prompt);
+            console.log('Prompt Länge:', prompt.length);
+            
+            // Speichere Prompt temporär
             window._currentAIPrompt = prompt;
+            console.log('Prompt in window gespeichert');
             
             const escapedPrompt = prompt.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             
@@ -8274,14 +8316,22 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 const claudeBtn = document.getElementById('open-claude-btn');
                 const copyBtn = document.getElementById('copy-prompt-btn');
                 
+                console.log('Event Listener werden hinzugefügt...');
+                console.log('ChatGPT Button gefunden:', !!chatgptBtn);
+                console.log('Claude Button gefunden:', !!claudeBtn);
+                
                 if (chatgptBtn) {
                     chatgptBtn.addEventListener('click', function() {
+                        console.log('ChatGPT Button geklickt!');
+                        console.log('Prompt aus window:', window._currentAIPrompt);
                         openChatGPT(window._currentAIPrompt);
                     });
                 }
                 
                 if (claudeBtn) {
                     claudeBtn.addEventListener('click', function() {
+                        console.log('Claude Button geklickt!');
+                        console.log('Prompt aus window:', window._currentAIPrompt);
                         openClaude(window._currentAIPrompt);
                     });
                 }
