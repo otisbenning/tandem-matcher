@@ -1316,8 +1316,25 @@
                         <!-- Kartenansicht -->
                         <div id="map-view-container" style="display: none;">
                             <div id="profile-map" style="height: 500px; border-radius: 8px; margin-bottom: 1rem;"></div>
+                            
+                            <!-- Farb-Legende -->
+                            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 20px; height: 20px; border-radius: 50%; background: #FFB000; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
+                                    <span><strong>Locals</strong></span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 20px; height: 20px; border-radius: 50%; background: #009892; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
+                                    <span><strong>Einwanderer*innen</strong></span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div style="width: 20px; height: 20px; border-radius: 50%; background: #C30045; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
+                                    <span><strong>Ausgewählt</strong></span>
+                                </div>
+                            </div>
+                            
                             <div class="alert alert-info" style="font-size: 0.9rem;">
-                                <strong>💡 Tipp:</strong> Klicke auf die Markierungen um Profile anzuzeigen und auszuwählen.
+                                <strong>💡 Tipp:</strong> Klicke auf die Markierungen um Profile anzuzeigen und auszuwählen. Profile mit derselben PLZ werden nebeneinander angezeigt.
                             </div>
                         </div>
 
@@ -3097,6 +3114,9 @@
             }
         
             const bounds = [];
+            const plzOffsets = {}; // Tracking für PLZ-Duplikate
+
+            const bounds = [];
         
             // Erstelle Marker für jedes Profil
             for (const profile of availableProfiles) {
@@ -3110,9 +3130,27 @@
                 const plz = extractPLZ(plzField.answer);
                 if (!plz) continue;
         
-                // Hole Koordinaten
-                const coords = await getPLZCoordinates(plz);
+                 // Hole Koordinaten
+                let coords = await getPLZCoordinates(plz);
                 if (!coords) continue;
+
+                // Behandle PLZ-Duplikate: Verschiebe Marker leicht
+                if (!plzOffsets[plz]) {
+                    plzOffsets[plz] = 0;
+                } else {
+                    // Verschiebe jeden weiteren Marker um ~100 Meter in verschiedene Richtungen
+                    const offsetCount = plzOffsets[plz];
+                    const angle = (offsetCount * 90) % 360; // 0°, 90°, 180°, 270°
+                    const distance = 0.001; // ~100 Meter
+                    
+                    const latOffset = distance * Math.cos(angle * Math.PI / 180);
+                    const lngOffset = distance * Math.sin(angle * Math.PI / 180);
+                    
+                    coords = [coords[0] + latOffset, coords[1] + lngOffset];
+                    
+                    console.log(`📍 PLZ ${plz} Duplikat #${offsetCount + 1} - verschoben um ${angle}°`);
+                }
+                plzOffsets[plz]++;
         
                 // Extrahiere Profilinformationen
                 const alter = profile.fields.find(f => f.question.toLowerCase().includes('alter'))?.answer || 'N/A';
@@ -3131,9 +3169,19 @@
                     f.question.toLowerCase().includes('tandem')
                 )?.answer || 'N/A';
         
-                // Bestimme Marker-Farbe basierend auf Auswahl
+                 // Bestimme Marker-Farbe basierend auf Gruppe und Auswahl
                 const isSelected = selectedProfiles.some(id => id == profile.id);
-                const markerColor = isSelected ? '#C30045' : '#009892';
+                
+                // Bestimme Grundfarbe nach Gruppe
+                let baseColor = '#009892'; // Standard: Teal
+                if (gruppe.toLowerCase().includes('local')) {
+                    baseColor = '#FFB000'; // Gelb/Gold für Locals
+                } else if (gruppe.toLowerCase().includes('einwander')) {
+                    baseColor = '#009892'; // Teal für Einwanderer*innen
+                }
+                
+                // Wenn ausgewählt, nutze Rot
+                const markerColor = isSelected ? '#C30045' : baseColor;
         
                 // Erstelle Custom Icon
                 const customIcon = L.divIcon({
@@ -9604,5 +9652,4 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 </body>
 
 </html>
-
 
