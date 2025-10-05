@@ -3115,8 +3115,6 @@
         
             const bounds = [];
             const plzOffsets = {}; // Tracking für PLZ-Duplikate
-
-            const bounds = [];
         
             // Erstelle Marker für jedes Profil
             for (const profile of availableProfiles) {
@@ -9643,6 +9641,10 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             showNotification('👤 Namen-Tests in Konsole ausgegeben', 'info', 3000);
         }
 
+        window.switchProfileView = switchProfileView;
+        window.loadProfileMap = loadProfileMap;
+        window.toggleProfileSelectionFromMap = toggleProfileSelectionFromMap;
+
         window.testNameExtraction = testNameExtraction;        
     </script>
             <!-- Leaflet JS für Karten -->
@@ -9652,4 +9654,3 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 </body>
 
 </html>
-
