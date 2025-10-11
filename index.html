@@ -4345,8 +4345,9 @@
                 }
                 const matchesAge = (profileAge === 0) || (profileAge >= ageMin && profileAge <= ageMax);
                 
-                // Zeige nur Profile, die alle Filter erfüllen
-                item.style.display = (matchesSearch && matchesGender && matchesAge) ? 'block' : 'none';
+                // WICHTIG: Zeige/Verstecke Profile, aber behalte das Grid-Layout bei
+                // Verwende '' statt 'block', damit das Grid-Layout funktioniert
+                item.style.display = (matchesSearch && matchesGender && matchesAge) ? '' : 'none';
             });
             
             // Zeige Anzahl gefilterter Profile
@@ -4354,6 +4355,13 @@
                 item.style.display !== 'none'
             ).length;
             console.log(`🔍 ${visibleCount} von ${profileItems.length} Profilen sichtbar nach Filterung`);
+            
+            // Zeige Feedback
+            if (visibleCount === 0 && profileItems.length > 0) {
+                showNotification('⚠️ Keine Profile entsprechen den Filtern', 'warning', 3000);
+            } else if (visibleCount < profileItems.length) {
+                showNotification(`🔍 ${visibleCount} von ${profileItems.length} Profilen gefunden`, 'info', 2000);
+            }
         }
 
         function suggestAutoMatches() {
