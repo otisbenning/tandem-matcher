@@ -1935,6 +1935,8 @@
             ]
         };
 
+        let questionCategoryMapping = JSON.parse(localStorage.getItem('swaf_question_category_mapping') || '{}');
+
         // ===============================
         // INITIALISIERUNG
         // ===============================
@@ -6179,6 +6181,18 @@
                     console.error('❌ Fehler beim Laden der kontextspezifischen Templates:', error);
                 }
             }
+            
+            // Lade auch die Fragen-Zuordnungen
+            const savedMapping = localStorage.getItem('swaf_question_category_mapping');
+            if (savedMapping) {
+                try {
+                    questionCategoryMapping = JSON.parse(savedMapping);
+                    console.log('✅ Gespeicherte Fragen-Zuordnungen geladen:', Object.keys(questionCategoryMapping).length, 'Zuordnungen');
+                } catch (error) {
+                    console.error('❌ Fehler beim Laden der Fragen-Zuordnungen:', error);
+                    questionCategoryMapping = {};
+                }
+            }
         }
 
         function saveContextualTemplates() {
@@ -7483,12 +7497,17 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                     <p style="font-size: 0.9rem; margin: 0.5rem 0;">
                         <strong>${profileQuestions.length} einzigartige Fragen</strong> in ${profiles.length} Profilen gefunden.
                     </p>
-                    <button class="btn btn-outline btn-small" onclick="assignQuestionsToCategories()" style="margin-top: 0.5rem;">
-                        🔗 Fragen automatisch Kategorien zuordnen
-                    </button>
-                    <button class="btn btn-outline btn-small" onclick="showUnassignedQuestions()" style="margin-top: 0.5rem;">
-                        ❓ Nicht zugeordnete Fragen anzeigen
-                    </button>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                        <button class="btn btn-primary btn-small" onclick="showQuestionAssignmentDialog()">
+                            🔗 Fragen zuordnen
+                        </button>
+                        <button class="btn btn-outline btn-small" onclick="assignQuestionsToCategories()">
+                            ⚡ Auto-Zuordnung
+                        </button>
+                        <button class="btn btn-outline btn-small" onclick="showUnassignedQuestions()">
+                            ❓ Nicht zugeordnet
+                        </button>
+                    </div>
                 </div>
             `;
 
@@ -7512,13 +7531,31 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                         <!-- Zugeordnete Fragen anzeigen -->
                         ${assignedQuestions.length > 0 ? `
                             <div style="background: var(--swaf-lightest-teal); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.85rem;">
-                                <strong>🔗 Zugeordnete Fragen (${assignedQuestions.length}):</strong><br>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <strong>🔗 Zugeordnete Fragen (${assignedQuestions.length}):</strong>
+                                    <button class="btn btn-outline btn-small" onclick="showQuestionAssignmentDialog()" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                                        ✏️ Bearbeiten
+                                    </button>
+                                </div>
                                 <div style="max-height: 100px; overflow-y: auto; margin-top: 0.5rem;">
-                                    ${assignedQuestions.map(q => `• ${q}`).join('<br>')}
+                                    ${assignedQuestions.map(q => {
+                                        const isManual = questionCategoryMapping[q] === category;
+                                        return `<div style="margin: 0.2rem 0;">
+                                            ${isManual ? '🔗' : '⚡'} ${q}
+                                            ${isManual ? `<button onclick="removeQuestionFromCategory('${q.replace(/'/g, "\\'")}'); event.stopPropagation();" style="background: none; border: none; color: var(--swaf-red); cursor: pointer; font-size: 0.8rem;" title="Zuordnung entfernen">❌</button>` : ''}
+                                        </div>`;
+                                    }).join('')}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--swaf-dark-gray); margin-top: 0.5rem;">
+                                    🔗 = Manuell zugeordnet | ⚡ = Automatisch erkannt
                                 </div>
                             </div>
-                        ` : '<p style="font-size: 0.85rem; color: var(--swaf-dark-gray); font-style: italic;">Keine Fragen zugeordnet</p>'}
-                        
+                        ` : `<p style="font-size: 0.85rem; color: var(--swaf-dark-gray); font-style: italic;">
+                            Keine Fragen zugeordnet. 
+                            <button class="btn btn-outline btn-small" onclick="showQuestionAssignmentDialog()" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; margin-left: 0.5rem;">
+                                ➕ Zuordnen
+                            </button>
+                        </p>`}                        
                         <!-- Templates-Tabelle -->
                         <div style="max-height: 400px; overflow-y: auto;">
                             <table style="width: 100%; border-collapse: collapse;">
@@ -7592,7 +7629,15 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 profileQuestions = extractQuestionsFromProfiles();
             }
             
-            // Mapping von Kategorien zu Schlüsselwörtern
+            // Erst manuell zugeordnete Fragen prüfen
+            const manuallyAssigned = [];
+            Object.keys(questionCategoryMapping).forEach(question => {
+                if (questionCategoryMapping[question] === category) {
+                    manuallyAssigned.push(question);
+                }
+            });
+            
+            // Mapping von Kategorien zu Schlüsselwörtern für automatische Zuordnung
             const categoryKeywords = {
                 'alter': ['alter', 'geburtstag', 'altersunterschied', 'geboren', 'jahr'],
                 'hobby': ['hobby', 'hobbys', 'interesse', 'freizeit', 'sport', 'aktivität', 'machst du gerne', 'lieblings'],
@@ -7607,10 +7652,15 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             
             const keywords = categoryKeywords[category] || [];
             
-            return profileQuestions.filter(question => {
+            const autoAssigned = profileQuestions.filter(question => {
                 const lowerQuestion = question.toLowerCase();
                 return keywords.some(keyword => lowerQuestion.includes(keyword));
             });
+            
+            // Kombiniere manuelle und automatische Zuordnungen (ohne Duplikate)
+            const combined = [...new Set([...manuallyAssigned, ...autoAssigned])];
+            
+            return combined.filter(q => profileQuestions.includes(q));
         }
 
         function assignQuestionsToCategories() {
@@ -7723,6 +7773,83 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             showNotification(`✅ Kategorie "${cleanKey}" erstellt!`, 'success');
         }
 
+        function assignQuestionToCategory(question, category) {
+            questionCategoryMapping[question] = category;
+            localStorage.setItem('swaf_question_category_mapping', JSON.stringify(questionCategoryMapping));
+            showNotification(`✅ Frage "${question}" zu "${getCategoryDisplayName(category)}" zugeordnet`, 'success');
+            refreshContextualTemplatesEditor();
+        }
+
+        function removeQuestionFromCategory(question) {
+            delete questionCategoryMapping[question];
+            localStorage.setItem('swaf_question_category_mapping', JSON.stringify(questionCategoryMapping));
+            showNotification(`❌ Zuordnung für "${question}" entfernt`, 'info');
+            refreshContextualTemplatesEditor();
+        }
+
+        function showQuestionAssignmentDialog() {
+            const profileQuestions = extractQuestionsFromProfiles();
+            const categories = Object.keys(contextualTemplates);
+            
+            if (profileQuestions.length === 0) {
+                showNotification('Keine Fragen in Profilen gefunden. Bitte zuerst Profile importieren.', 'warning');
+                return;
+            }
+            
+            const modal = createModal('🔗 Fragen zu Kategorien zuordnen', `
+                <div style="max-height: 600px; overflow-y: auto;">
+                    <p style="margin-bottom: 1rem;">
+                        <strong>${profileQuestions.length} Fragen gefunden.</strong> 
+                        Wähle eine Frage und ordne sie einer Kategorie zu.
+                    </p>
+                    
+                    <div style="display: grid; gap: 1rem;">
+                        ${profileQuestions.map(question => {
+                            const currentCategory = questionCategoryMapping[question];
+                            const isAssigned = !!currentCategory;
+                            
+                            return `
+                                <div style="border: 2px solid ${isAssigned ? 'var(--swaf-teal)' : '#ddd'}; border-radius: 8px; padding: 1rem; background: ${isAssigned ? 'var(--swaf-lightest-teal)' : 'white'};">
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <strong style="color: var(--swaf-red);">${question}</strong>
+                                    </div>
+                                    
+                                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                        <select id="category-select-${question.replace(/[^a-z0-9]/gi, '')}" 
+                                                style="flex: 1; min-width: 200px;"
+                                                onchange="assignQuestionToCategory('${question.replace(/'/g, "\\'")}', this.value); closeModal();">
+                                            <option value="">-- Kategorie wählen --</option>
+                                            ${categories.map(cat => `
+                                                <option value="${cat}" ${currentCategory === cat ? 'selected' : ''}>
+                                                    ${getCategoryDisplayName(cat)}
+                                                </option>
+                                            `).join('')}
+                                        </select>
+                                        
+                                        ${isAssigned ? `
+                                            <button class="btn btn-outline btn-small" 
+                                                    onclick="removeQuestionFromCategory('${question.replace(/'/g, "\\'")}'); closeModal();"
+                                                    style="background: var(--swaf-red); color: white;">
+                                                🗑️ Entfernen
+                                            </button>
+                                        ` : ''}
+                                        
+                                        ${isAssigned ? `
+                                            <span style="font-size: 0.85rem; color: var(--swaf-teal); font-weight: 600;">
+                                                ✓ Zugeordnet zu: ${getCategoryDisplayName(currentCategory)}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `, [
+                { text: 'Schließen', class: 'btn-outline', action: 'closeModal' }
+            ]);
+        }        
+
         function getCategoryDisplayName(category) {
             const displayNames = {
                 'alter': 'Alter & Lebenssituation',
@@ -7825,8 +7952,9 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             const data = {
                 contextualTemplates: contextualTemplates,
                 predefinedTemplates: predefinedTemplates,
+                questionCategoryMapping: questionCategoryMapping,
                 exported: new Date().toISOString(),
-                version: '2.1',
+                version: '2.2',
                 type: 'swaf_combined_templates'
             };
 
@@ -7868,6 +7996,13 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                             localStorage.setItem('swaf_predefined_templates', JSON.stringify(predefinedTemplates));
                             importMessages.push('Allgemeine Formulierungen');
                         }
+
+                        // Import Fragen-Zuordnungen (falls vorhanden)
+                        if (data.questionCategoryMapping && typeof data.questionCategoryMapping === 'object') {
+                            questionCategoryMapping = data.questionCategoryMapping;
+                            localStorage.setItem('swaf_question_category_mapping', JSON.stringify(questionCategoryMapping));
+                            importMessages.push('Fragen-Zuordnungen');
+                        }                        
                         
                         if (importMessages.length > 0) {
                             if (confirm(`${importMessages.join(' und ')} importieren?\n\n(Vorhandene werden überschrieben)`)) {
@@ -8426,6 +8561,9 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         window.assignQuestionsToCategories = assignQuestionsToCategories;
         window.showUnassignedQuestions = showUnassignedQuestions;
         window.createCategoryForQuestion = createCategoryForQuestion;
+        window.assignQuestionToCategory = assignQuestionToCategory;
+        window.removeQuestionFromCategory = removeQuestionFromCategory;
+        window.showQuestionAssignmentDialog = showQuestionAssignmentDialog;
         window.editPredefinedTemplates = editPredefinedTemplates;
         window.toggleBookmarkletStatus = toggleBookmarkletStatus;
         window.handleCellFocus = handleCellFocus;
