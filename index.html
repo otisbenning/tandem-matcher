@@ -3118,6 +3118,12 @@
         async function loadProfileMap() {
             console.log('🗺️ Lade Kartenansicht...');
         
+            // Hole Filter-Werte
+            const search = document.getElementById('profile-search').value.toLowerCase();
+            const genderFilter = document.getElementById('filter-gender').value.toLowerCase();
+            const ageMin = parseInt(document.getElementById('filter-age-min').value) || 0;
+            const ageMax = parseInt(document.getElementById('filter-age-max').value) || 999;
+
             // Initialisiere Karte wenn noch nicht vorhanden
             if (!profileMap) {
                 profileMap = L.map('profile-map').setView([51.1657, 10.4515], 6); // Deutschland Zentrum
@@ -3151,6 +3157,42 @@
         
             // Erstelle Marker für jedes Profil
             for (const profile of availableProfiles) {
+
+                // Anwenden der Filter
+                // 1. Name/Text-Suche
+                const matchesSearch = !search || profile.name.toLowerCase().includes(search);
+                
+                // 2. Geschlecht-Filter
+                const genderField = profile.fields.find(f => 
+                    f.question.toLowerCase().includes('geschlecht')
+                );
+                const profileGender = genderField ? genderField.answer.toLowerCase() : '';
+                const matchesGender = !genderFilter || profileGender.includes(genderFilter);
+                
+                // 3. Alter-Filter
+                const ageField = profile.fields.find(f => 
+                    f.question.toLowerCase() === 'alter' || 
+                    f.question.toLowerCase().includes('geburtstag')
+                );
+                let profileAge = 0;
+                if (ageField) {
+                    profileAge = parseInt(ageField.answer) || 0;
+                    if (profileAge === 0 && ageField.answer.includes('/')) {
+                        const parts = ageField.answer.split(/[\/\.]/);
+                        if (parts.length === 3) {
+                            const year = parseInt(parts[2]);
+                            const currentYear = new Date().getFullYear();
+                            profileAge = currentYear - year;
+                        }
+                    }
+                }
+                const matchesAge = (profileAge === 0) || (profileAge >= ageMin && profileAge <= ageMax);
+                
+                // Überspringe Profile, die nicht den Filtern entsprechen
+                if (!matchesSearch || !matchesGender || !matchesAge) {
+                    continue;
+                }
+
                 const plzField = profile.fields.find(f => 
                     f.question.toLowerCase().includes('postleitzahl') || 
                     f.question.toLowerCase().includes('plz')
@@ -4302,6 +4344,14 @@
             const ageMin = parseInt(document.getElementById('filter-age-min').value) || 0;
             const ageMax = parseInt(document.getElementById('filter-age-max').value) || 999;
             
+            // Prüfe welche Ansicht aktiv ist
+            if (currentView === 'map') {
+                // Kartenansicht: Lade Karte neu mit gefilterten Profilen
+                loadProfileMap();
+                return;
+            }
+            
+            // Listenansicht: Filtere .profile-item Elemente
             const profileItems = document.querySelectorAll('.profile-item');
 
             profileItems.forEach(item => {
