@@ -1647,7 +1647,8 @@
                         </div>
 
                         <div style="margin: 1rem 0;">
-                            <button class="btn btn-secondary" onclick="exportAppData()">💾 Daten sichern</button>
+                            <button class="btn btn-primary" onclick="exportAppData()" title="Exportiert ALLE Daten inkl. Profile, Tandems, Templates, Einstellungen">💾 Komplettes Backup erstellen</button>
+                            <button class="btn btn-secondary" onclick="createAutoBackupManual()" title="Erstellt ein temporäres Backup für die nächste Session">🔄 Session speichern</button>
                             <button class="btn btn-outline" onclick="importAppData()">📥 Daten wiederherstellen</button>
                         </div>
 
@@ -2038,6 +2039,128 @@
                         break;    
                 }
             }, 100);
+        }
+
+        // ===============================
+        // AUTO-BACKUP & RESTORE SYSTEM
+        // ===============================
+        function checkForAutoRestore() {
+            const lastSession = localStorage.getItem('swaf_last_session_backup');
+            const lastSessionTime = localStorage.getItem('swaf_last_session_time');
+            
+            if (lastSession && lastSessionTime) {
+                const sessionTime = new Date(lastSessionTime);
+                const now = new Date();
+                const hoursSinceLastSession = (now - sessionTime) / (1000 * 60 * 60);
+                
+                // Nur anzeigen wenn die letzte Session innerhalb der letzten 24 Stunden war
+                if (hoursSinceLastSession < 24) {
+                    const hasCurrentData = profiles.length > 0 || tandems.length > 0;
+                    
+                    if (!hasCurrentData) {
+                        createModal('🔄 Session wiederherstellen?', `
+                            <div class="alert alert-info">
+                                <strong>Es wurde eine vorherige Session gefunden!</strong>
+                                <p>Letzte Aktivität: ${sessionTime.toLocaleString('de-DE')}</p>
+                                <p>Möchtest du deine letzte Arbeitssession wiederherstellen?</p>
+                            </div>
+                        `, [
+                            { 
+                                text: 'Nein, neu starten', 
+                                class: 'btn-outline', 
+                                action: () => {
+                                    localStorage.removeItem('swaf_last_session_backup');
+                                    localStorage.removeItem('swaf_last_session_time');
+                                    closeModal();
+                                    showNotification('Neue Session gestartet', 'info');
+                                }
+                            },
+                            { 
+                                text: 'Ja, wiederherstellen', 
+                                class: 'btn-primary', 
+                                action: () => {
+                                    restoreLastSession();
+                                    closeModal();
+                                }
+                            }
+                        ]);
+                    }
+                }
+            }
+        }
+
+        function restoreLastSession() {
+            try {
+                const lastSession = localStorage.getItem('swaf_last_session_backup');
+                if (!lastSession) {
+                    showNotification('❌ Keine Session zum Wiederherstellen gefunden', 'error');
+                    return;
+                }
+                
+                const data = JSON.parse(lastSession);
+                
+                // Alle Daten wiederherstellen
+                if (data.profiles) profiles = data.profiles;
+                if (data.tandems) tandems = data.tandems;
+                if (data.selectedFields) selectedFields = data.selectedFields;
+                if (data.textTemplates) textTemplates = data.textTemplates;
+                if (data.predefinedTemplates) {
+                    predefinedTemplates.length = 0;
+                    predefinedTemplates.push(...data.predefinedTemplates);
+                }
+                if (data.contextualTemplates) {
+                    localStorage.setItem('swaf_contextual_templates', JSON.stringify(data.contextualTemplates));
+                }
+                if (data.questionCategoryMapping) {
+                    localStorage.setItem('swaf_question_category_mapping', JSON.stringify(data.questionCategoryMapping));
+                }
+                if (data.emailTemplate) emailTemplate = data.emailTemplate;
+                if (data.plzCache) {
+                    plzCache = data.plzCache;
+                    localStorage.setItem('swaf_plz_cache', JSON.stringify(plzCache));
+                }
+                
+                saveAllData();
+                localStorage.setItem('swaf_text_templates', JSON.stringify(textTemplates));
+                localStorage.setItem('swaf_predefined_templates', JSON.stringify(predefinedTemplates));
+                localStorage.setItem('swaf_email_template', JSON.stringify(emailTemplate));
+                
+                updateUI();
+                loadEmailTemplate();
+                loadPredefinedTemplates();
+                
+                showNotification('✅ Session erfolgreich wiederhergestellt', 'success');
+                
+            } catch (error) {
+                console.error('Fehler beim Wiederherstellen der Session:', error);
+                showNotification('❌ Fehler beim Wiederherstellen: ' + error.message, 'error');
+            }
+        }
+
+        function createAutoBackup() {
+            try {
+                const data = {
+                    profiles: profiles,
+                    tandems: tandems,
+                    selectedFields: selectedFields,
+                    textTemplates: textTemplates,
+                    predefinedTemplates: predefinedTemplates,
+                    contextualTemplates: JSON.parse(localStorage.getItem('swaf_contextual_templates') || '{}'),
+                    questionCategoryMapping: JSON.parse(localStorage.getItem('swaf_question_category_mapping') || '{}'),
+                    emailTemplate: emailTemplate,
+                    plzCache: plzCache,
+                    exported: new Date().toISOString(),
+                    version: '2.1'
+                };
+                
+                localStorage.setItem('swaf_last_session_backup', JSON.stringify(data));
+                localStorage.setItem('swaf_last_session_time', new Date().toISOString());
+                
+                return true;
+            } catch (error) {
+                console.error('Fehler beim Erstellen des Auto-Backups:', error);
+                return false;
+            }
         }
 
         // ===============================
@@ -5646,17 +5769,32 @@
             downloadFile(JSON.stringify(data, null, 2), `SwaF_Tandems_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
         }
 
+        function createAutoBackupManual() {
+            if (createAutoBackup()) {
+                showNotification('✅ Session gespeichert - wird beim nächsten Laden wiederhergestellt', 'success', 4000);
+            } else {
+                showNotification('❌ Fehler beim Speichern der Session', 'error');
+            }
+        }
+
         function exportAppData() {
             const data = {
                 profiles: profiles,
                 tandems: tandems,
                 selectedFields: selectedFields,
+                textTemplates: textTemplates,
+                predefinedTemplates: predefinedTemplates,
+                contextualTemplates: JSON.parse(localStorage.getItem('swaf_contextual_templates') || '{}'),
+                questionCategoryMapping: JSON.parse(localStorage.getItem('swaf_question_category_mapping') || '{}'),
+                emailTemplate: emailTemplate,
+                plzCache: plzCache,
+                autoClipboardDetection: localStorage.getItem('swaf_auto_clipboard_detection') !== 'false',
                 exported: new Date().toISOString(),
-                version: '2.0'
+                version: '2.1'
             };
 
-            downloadFile(JSON.stringify(data, null, 2), `SwaF_Backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
-            showNotification('✅ Daten erfolgreich gesichert', 'success');
+            downloadFile(JSON.stringify(data, null, 2), `SwaF_Komplett-Backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+            showNotification('✅ Vollständiges Backup erfolgreich erstellt', 'success');
         }
 
         function importAppData() {
@@ -5673,18 +5811,52 @@
                     const data = JSON.parse(e.target.result);
 
                     if (confirm('Möchtest du die importierten Daten mit den vorhandenen zusammenführen (Ja) oder alle vorhandenen Daten ersetzen (Nein)?')) {
+                        // Zusammenführen
                         if (data.profiles) profiles.push(...data.profiles);
                         if (data.tandems) tandems.push(...data.tandems);
                         if (data.selectedFields) selectedFields.push(...data.selectedFields.filter(f => !selectedFields.includes(f)));
+                        if (data.textTemplates) textTemplates.push(...data.textTemplates);
+                        if (data.predefinedTemplates) {
+                            predefinedTemplates.push(...data.predefinedTemplates.filter(t => 
+                                !predefinedTemplates.some(existing => existing.title === t.title)
+                            ));
+                        }
                     } else {
+                        // Ersetzen
                         if (data.profiles) profiles = data.profiles;
                         if (data.tandems) tandems = data.tandems;
                         if (data.selectedFields) selectedFields = data.selectedFields;
+                        if (data.textTemplates) textTemplates = data.textTemplates;
+                        if (data.predefinedTemplates) {
+                            predefinedTemplates.length = 0;
+                            predefinedTemplates.push(...data.predefinedTemplates);
+                        }
+                        if (data.contextualTemplates) {
+                            localStorage.setItem('swaf_contextual_templates', JSON.stringify(data.contextualTemplates));
+                        }
+                        if (data.questionCategoryMapping) {
+                            localStorage.setItem('swaf_question_category_mapping', JSON.stringify(data.questionCategoryMapping));
+                        }
+                        if (data.emailTemplate) emailTemplate = data.emailTemplate;
+                        if (data.plzCache) {
+                            plzCache = data.plzCache;
+                            localStorage.setItem('swaf_plz_cache', JSON.stringify(plzCache));
+                        }
+                        if (data.hasOwnProperty('autoClipboardDetection')) {
+                            localStorage.setItem('swaf_auto_clipboard_detection', data.autoClipboardDetection ? 'true' : 'false');
+                        }
                     }
 
                     saveAllData();
+                    localStorage.setItem('swaf_text_templates', JSON.stringify(textTemplates));
+                    localStorage.setItem('swaf_predefined_templates', JSON.stringify(predefinedTemplates));
+                    localStorage.setItem('swaf_email_template', JSON.stringify(emailTemplate));
+                    
                     updateUI();
-                    showNotification('✅ Daten erfolgreich importiert', 'success');
+                    loadEmailTemplate();
+                    loadPredefinedTemplates();
+                    
+                    showNotification('✅ Vollständiges Backup erfolgreich wiederhergestellt', 'success');
 
                 } catch (error) {
                     showNotification('❌ Fehler beim Importieren: ' + error.message, 'error');
@@ -8416,9 +8588,26 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         // ===============================
         window.addEventListener('beforeunload', function (e) {
             if (profiles.length > 0 || tandems.length > 0) {
-                e.preventDefault();
-                e.returnValue = '';
+                // Automatisches Backup erstellen
+                const backupCreated = createAutoBackup();
+                
+                if (!backupCreated) {
+                    e.preventDefault();
+                    e.returnValue = 'Warnung: Backup konnte nicht erstellt werden. Möchtest du wirklich die Seite verlassen?';
+                } else {
+                    // Optional: Warnung trotzdem anzeigen
+                    e.preventDefault();
+                    e.returnValue = 'Deine Daten wurden automatisch gesichert. Trotzdem die Seite verlassen?';
+                }
             }
+        });
+
+        // Auto-Restore beim Laden der Seite prüfen
+        window.addEventListener('load', function() {
+            // Kurze Verzögerung, damit die UI vollständig geladen ist
+            setTimeout(() => {
+                checkForAutoRestore();
+            }, 500);
         });
 
         // Keyboard Shortcuts
