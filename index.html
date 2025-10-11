@@ -1553,47 +1553,6 @@
                                     passende Vorschläge</li>
                             </ul>
                         </div>
-
-                        <div class="grid grid-2">
-                            <div>
-                                <h4>🔧 Neuen Textbaustein erstellen:</h4>
-                                <div class="form-group">
-                                    <label>Titel/Kategorie:</label>
-                                    <input type="text" id="template-title" placeholder="z.B. Sport-Gemeinsamkeit">
-                                </div>
-                                <div class="form-group">
-                                    <label>Textbaustein:</label>
-                                    <textarea id="template-text" rows="3"
-                                        placeholder="z.B. Ihr interessiert euch beide für Sport und Bewegung"></textarea>
-                                </div>
-                                <button class="btn btn-primary" onclick="saveTextTemplate()">💾 Textbaustein
-                                    speichern</button>
-                            </div>
-
-                            <div>
-                                <h4>📋 Gespeicherte Textbausteine:</h4>
-                                <div id="saved-templates"
-                                    style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; padding: 0.5rem;">
-                                    <!-- Wird dynamisch gefüllt -->
-                                </div>
-                                <div style="margin-top: 0.5rem;">
-                                    <button class="btn btn-outline btn-small" onclick="loadTextTemplates()">🔄
-                                        Aktualisieren</button>
-                                    <button class="btn btn-outline btn-small" onclick="clearAllTemplates()">🗑️ Alle
-                                        löschen</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- NEU: Allgemeine Formulierungsvorschläge -->
-                        <div style="margin-top: 2rem; padding: 1.5rem; border: 2px solid var(--swaf-red); border-radius: 8px; background: var(--swaf-lightest-red);">
-                            <h4 style="color: var(--swaf-red); margin-top: 0;">📋 Allgemeine Formulierungsvorschläge</h4>
-                            <p style="margin-bottom: 1rem; font-size: 0.9rem;">Diese Vorschläge stehen in allen Tandem-Bearbeitungen zur Verfügung:</p>
-                            
-                            <div id="predefined-templates">
-                                <!-- Wird dynamisch gefüllt -->
-                            </div>
-                        </div>
                     </div>
 
                     <div id="tandem-editor" class="hidden" style="margin-top: 1rem;">
@@ -5805,7 +5764,10 @@
 
         function loadTextTemplates() {
             const container = document.getElementById('saved-templates');
-            if (!container) return;
+            if (!container) {
+                console.log('ℹ️ saved-templates Container nicht vorhanden (wurde entfernt)');
+                return;
+            }
 
             if (textTemplates.length === 0) {
                 container.innerHTML = '<p style="text-align: center; color: var(--swaf-dark-gray); font-style: italic; padding: 1rem;">Noch keine eigenen Textbausteine gespeichert.</p>';
@@ -5826,9 +5788,6 @@
                     </div>
                 </div>
             `).join('');
-            
-            // NEU: Lade auch die allgemeinen Templates
-            loadPredefinedTemplates();
         }
 
         function saveTextTemplate() {
