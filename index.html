@@ -1302,7 +1302,24 @@
                             <input type="text" id="profile-search" placeholder="Profile suchen..."
                                 onkeyup="filterProfiles()">
                         </div>
-
+                        <div class="form-group" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <select id="filter-gender" onchange="filterProfiles()" style="flex: 1; min-width: 150px;">
+                                <option value="">Alle Geschlechter</option>
+                                <option value="weiblich">Weiblich</option>
+                                <option value="männlich">Männlich</option>
+                                <option value="divers">Divers</option>
+                                <option value="keine angabe">Keine Angabe</option>
+                            </select>
+                            
+                            <input type="number" id="filter-age-min" placeholder="Alter von" 
+                                onchange="filterProfiles()" style="flex: 1; min-width: 100px;" min="0" max="120">
+                            
+                            <input type="number" id="filter-age-max" placeholder="Alter bis" 
+                                onchange="filterProfiles()" style="flex: 1; min-width: 100px;" min="0" max="120">
+                            
+                            <button class="btn btn-outline btn-small" onclick="clearFilters()" 
+                                style="white-space: nowrap;">🔄 Filter zurücksetzen</button>
+                        </div>
                         <div id="matching-status"
                             style="margin: 0.5rem 0; padding: 0.5rem; background: var(--swaf-lightest-teal); border-radius: 4px; text-align: center; font-weight: 600;">
                             0 von 2 Profilen ausgewählt
@@ -3319,10 +3336,22 @@
 
                     console.log(`  -> Ist ausgewählt: ${isSelected} (${selectedClass})`);
 
+                    // Extrahiere Alter und Geschlecht für die Anzeige
+                    const ageField = profile.fields.find(f => 
+                        f.question.toLowerCase() === 'alter' || 
+                        f.question.toLowerCase().includes('geburtstag')
+                    );
+                    const genderField = profile.fields.find(f => 
+                        f.question.toLowerCase().includes('geschlecht')
+                    );
+
+                    const ageText = ageField ? ` • ${ageField.answer}` : '';
+                    const genderText = genderField ? ` • ${genderField.answer}` : '';
+
                     return `
                         <div class="profile-item ${selectedClass}" onclick="selectProfile('${profile.id}')" data-profile-id="${profile.id}">
                             <strong>${profile.name}</strong>
-                            <p><small>${profile.fields.length} Felder</small></p>
+                            <p><small>${profile.fields.length} Felder${ageText}${genderText}</small></p>
                             <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--swaf-dark-gray);">
                                 ${profile.fields.slice(0, 3).map(f => f.question).join(', ')}
                                 ${profile.fields.length > 3 ? '...' : ''}
@@ -4212,6 +4241,15 @@
             removeTandem(selectedTandemPairId);
         }
 
+        function clearFilters() {
+            document.getElementById('profile-search').value = '';
+            document.getElementById('filter-gender').value = '';
+            document.getElementById('filter-age-min').value = '';
+            document.getElementById('filter-age-max').value = '';
+            filterProfiles();
+            showNotification('✅ Alle Filter zurückgesetzt', 'success', 2000);
+        }
+
         function clearProfileSelection() {
             console.log('🗑️ Lösche Profile-Auswahl...');
             console.log('📋 Auswahl vor Löschung:', selectedProfiles);
@@ -4260,12 +4298,62 @@
 
         function filterProfiles() {
             const search = document.getElementById('profile-search').value.toLowerCase();
+            const genderFilter = document.getElementById('filter-gender').value.toLowerCase();
+            const ageMin = parseInt(document.getElementById('filter-age-min').value) || 0;
+            const ageMax = parseInt(document.getElementById('filter-age-max').value) || 999;
+            
             const profileItems = document.querySelectorAll('.profile-item');
 
             profileItems.forEach(item => {
+                const profileId = item.getAttribute('data-profile-id');
+                const profile = profiles.find(p => p.id == profileId);
+                
+                if (!profile) {
+                    item.style.display = 'none';
+                    return;
+                }
+
+                // Name/Text-Suche
                 const name = item.textContent.toLowerCase();
-                item.style.display = name.includes(search) ? 'block' : 'none';
+                const matchesSearch = name.includes(search);
+                
+                // Geschlecht-Filter
+                const genderField = profile.fields.find(f => 
+                    f.question.toLowerCase().includes('geschlecht')
+                );
+                const profileGender = genderField ? genderField.answer.toLowerCase() : '';
+                const matchesGender = !genderFilter || profileGender.includes(genderFilter);
+                
+                // Alter-Filter
+                const ageField = profile.fields.find(f => 
+                    f.question.toLowerCase() === 'alter' || 
+                    f.question.toLowerCase().includes('geburtstag')
+                );
+                let profileAge = 0;
+                if (ageField) {
+                    // Versuche Alter direkt zu parsen oder aus Geburtstag zu berechnen
+                    profileAge = parseInt(ageField.answer) || 0;
+                    if (profileAge === 0 && ageField.answer.includes('/')) {
+                        // Geburtsdatum Format: DD/MM/YYYY oder DD.MM.YYYY
+                        const parts = ageField.answer.split(/[\/\.]/);
+                        if (parts.length === 3) {
+                            const year = parseInt(parts[2]);
+                            const currentYear = new Date().getFullYear();
+                            profileAge = currentYear - year;
+                        }
+                    }
+                }
+                const matchesAge = (profileAge === 0) || (profileAge >= ageMin && profileAge <= ageMax);
+                
+                // Zeige nur Profile, die alle Filter erfüllen
+                item.style.display = (matchesSearch && matchesGender && matchesAge) ? 'block' : 'none';
             });
+            
+            // Zeige Anzahl gefilterter Profile
+            const visibleCount = Array.from(profileItems).filter(item => 
+                item.style.display !== 'none'
+            ).length;
+            console.log(`🔍 ${visibleCount} von ${profileItems.length} Profilen sichtbar nach Filterung`);
         }
 
         function suggestAutoMatches() {
@@ -8055,6 +8143,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         window.testPLZDistance = testPLZDistance;
         window.loadAvailableProfiles = loadAvailableProfiles;
         window.filterProfiles = filterProfiles;
+        window.clearFilters = clearFilters;
         window.matchSelectedProfiles = matchSelectedProfiles;
         window.suggestAutoMatches = suggestAutoMatches;
         window.clearProfileSelection = clearProfileSelection;
