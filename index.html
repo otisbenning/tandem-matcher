@@ -5964,10 +5964,10 @@
             currentContextQuestion = question;
             const contextTemplates = contextualTemplates[context] || [];
 
-            // Kombiniere kontextspezifische und allgemeine Templates
+            // Kombiniere kontextspezifische und ALLE allgemeinen Templates
             const allTemplates = [
                 ...contextTemplates,
-                ...getRelevantGeneralTemplates(context)
+                ...predefinedTemplates.map(t => ({ text: t.text, priority: false, source: 'allgemein' }))
             ];
 
             updateFloatingTemplatesContent(allTemplates, `${getContextDisplayName(context)}: ${question}`);
@@ -6026,15 +6026,16 @@
 
             titleElement.textContent = title;
 
-            // Gruppiere nach Priorität
+            // Gruppiere nach Priorität und Quelle
             const priorityTemplates = templates.filter(t => t.priority);
-            const normalTemplates = templates.filter(t => !t.priority);
+            const specificTemplates = templates.filter(t => !t.priority && !t.source);
+            const generalTemplates = templates.filter(t => t.source === 'allgemein');
 
-            let html = '';
+            let html = '<div style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem;">';
 
             if (priorityTemplates.length > 0) {
                 html += '<div class="template-category">';
-                html += '<div class="template-category-title">Empfohlen</div>';
+                html += '<div class="template-category-title">⭐ Empfohlen</div>';
                 priorityTemplates.forEach(template => {
                     html += `<button class="floating-template-btn priority" onclick="insertFloatingTemplate('${template.text.replace(/'/g, "\\'")}')">
                         ${template.text}
@@ -6043,16 +6044,29 @@
                 html += '</div>';
             }
 
-            if (normalTemplates.length > 0) {
+            if (specificTemplates.length > 0) {
                 html += '<div class="template-category">';
-                html += '<div class="template-category-title">Weitere</div>';
-                normalTemplates.forEach(template => {
+                html += '<div class="template-category-title">🎯 Fragespezifisch</div>';
+                specificTemplates.forEach(template => {
                     html += `<button class="floating-template-btn" onclick="insertFloatingTemplate('${template.text.replace(/'/g, "\\'")}')">
                         ${template.text}
                     </button>`;
                 });
                 html += '</div>';
             }
+
+            if (generalTemplates.length > 0) {
+                html += '<div class="template-category">';
+                html += '<div class="template-category-title">📋 Allgemeine Vorschläge</div>';
+                generalTemplates.forEach(template => {
+                    html += `<button class="floating-template-btn" onclick="insertFloatingTemplate('${template.text.replace(/'/g, "\\'")}')">
+                        ${template.text}
+                    </button>`;
+                });
+                html += '</div>';
+            }
+
+            html += '</div>'; // Schließt das scrollbare div
 
             contentElement.innerHTML = html;
         }
@@ -6112,7 +6126,10 @@
         // ===============================
         function editContextualTemplates() {
             loadContextualTemplatesFromStorage();
-
+            
+            // Extrahiere alle Fragen aus den Profilen
+            const profileQuestions = extractQuestionsFromProfiles();
+            
             const modal = createModal('📝 Fragespezifische Formulierungen bearbeiten', `
                 <div style="max-height: 600px; overflow-y: auto;">
                     <div style="margin-bottom: 1rem;">
@@ -7455,67 +7472,255 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
         function generateContextualTemplatesHTML() {
             let html = '';
+            
+            // Extrahiere Fragen aus Profilen
+            const profileQuestions = extractQuestionsFromProfiles();
+            
+            // Zeige Info über gefundene Fragen
+            html += `
+                <div style="background: var(--swaf-lightest-teal); padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                    <h4 style="margin-top: 0;">📊 Gefundene Fragen in Profilen</h4>
+                    <p style="font-size: 0.9rem; margin: 0.5rem 0;">
+                        <strong>${profileQuestions.length} einzigartige Fragen</strong> in ${profiles.length} Profilen gefunden.
+                    </p>
+                    <button class="btn btn-outline btn-small" onclick="assignQuestionsToCategories()" style="margin-top: 0.5rem;">
+                        🔗 Fragen automatisch Kategorien zuordnen
+                    </button>
+                    <button class="btn btn-outline btn-small" onclick="showUnassignedQuestions()" style="margin-top: 0.5rem;">
+                        ❓ Nicht zugeordnete Fragen anzeigen
+                    </button>
+                </div>
+            `;
 
             Object.keys(contextualTemplates).forEach(category => {
                 const templates = contextualTemplates[category];
                 const categoryDisplayName = getCategoryDisplayName(category);
+                
+                // Finde zugeordnete Fragen für diese Kategorie
+                const assignedQuestions = getQuestionsForCategory(category, profileQuestions);
 
                 html += `
                     <div class="contextual-category-section" style="border: 2px solid var(--swaf-teal); border-radius: 8px; margin: 1rem 0; padding: 1rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <h4 style="margin: 0; color: var(--swaf-red);">
-                                📂 ${categoryDisplayName} (${category})
-                            </h4>
-                            <div>
-                                <button class="btn btn-outline btn-small" onclick="addTemplateToCategory('${category}')">➕ Template hinzufügen</button>
-                                <button class="btn btn-outline btn-small" onclick="deleteCategory('${category}')" style="background: var(--swaf-red); color: white;">🗑️ Kategorie löschen</button>
+                            <h3 style="margin: 0; color: var(--swaf-teal);">${categoryDisplayName}</h3>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="btn btn-outline btn-small" onclick="addTemplateToCategory('${category}')">➕ Template</button>
+                                <button class="btn btn-outline btn-small" onclick="deleteCategory('${category}')" style="background: var(--swaf-red); color: white;">🗑️</button>
                             </div>
                         </div>
                         
-                        <table style="width: 100%; border-collapse: collapse; background: white;">
-                            <thead>
-                                <tr style="background: var(--swaf-teal); color: white;">
-                                    <th style="padding: 0.5rem; border: 1px solid #ddd; width: 80px;">Priorität</th>
-                                    <th style="padding: 0.5rem; border: 1px solid #ddd;">Formulierungstext</th>
-                                    <th style="padding: 0.5rem; border: 1px solid #ddd; width: 120px;">Aktionen</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${templates.map((template, index) => `
-                                    <tr>
-                                        <td style="padding: 0.5rem; border: 1px solid #ddd; text-align: center;">
-                                            <input type="checkbox" 
-                                                ${template.priority ? 'checked' : ''} 
-                                                onchange="toggleTemplatePriority('${category}', ${index})"
-                                                title="Empfohlenes Template">
-                                            <br><small>Empfohlen</small>
-                                        </td>
-                                        <td style="padding: 0.5rem; border: 1px solid #ddd;">
-                                            <textarea style="width: 100%; min-height: 50px; border: 1px solid #ccc; padding: 0.3rem;" 
-                                                    onchange="updateTemplateText('${category}', ${index}, this.value)">${template.text}</textarea>
-                                        </td>
-                                        <td style="padding: 0.5rem; border: 1px solid #ddd; text-align: center;">
-                                            <div style="display: flex; flex-direction: column; gap: 0.3rem;">
-                                                <button class="btn btn-outline btn-small" 
-                                                        onclick="moveTemplate('${category}', ${index}, -1)" 
-                                                        ${index === 0 ? 'disabled' : ''}>↑</button>
-                                                <button class="btn btn-outline btn-small" 
-                                                        onclick="moveTemplate('${category}', ${index}, 1)" 
-                                                        ${index === templates.length - 1 ? 'disabled' : ''}>↓</button>
-                                                <button class="btn btn-outline btn-small" 
-                                                        onclick="deleteTemplate('${category}', ${index})" 
-                                                        style="background: var(--swaf-red); color: white;">🗑️</button>
-                                            </div>
-                                        </td>
+                        <!-- Zugeordnete Fragen anzeigen -->
+                        ${assignedQuestions.length > 0 ? `
+                            <div style="background: var(--swaf-lightest-teal); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; font-size: 0.85rem;">
+                                <strong>🔗 Zugeordnete Fragen (${assignedQuestions.length}):</strong><br>
+                                <div style="max-height: 100px; overflow-y: auto; margin-top: 0.5rem;">
+                                    ${assignedQuestions.map(q => `• ${q}`).join('<br>')}
+                                </div>
+                            </div>
+                        ` : '<p style="font-size: 0.85rem; color: var(--swaf-dark-gray); font-style: italic;">Keine Fragen zugeordnet</p>'}
+                        
+                        <!-- Templates-Tabelle -->
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: var(--swaf-lightest-teal);">
+                                        <th style="padding: 0.5rem; text-align: left; width: 60px;">Priorität</th>
+                                        <th style="padding: 0.5rem; text-align: left;">Formulierungstext</th>
+                                        <th style="padding: 0.5rem; text-align: center; width: 150px;">Aktionen</th>
                                     </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    ${templates.map((template, index) => `
+                                        <tr style="border-bottom: 1px solid #ddd;">
+                                            <td style="padding: 0.5rem; text-align: center;">
+                                                <input type="checkbox" 
+                                                    class="template-priority-checkbox" 
+                                                    ${template.priority ? 'checked' : ''} 
+                                                    onchange="toggleTemplatePriority('${category}', ${index}); refreshContextualTemplatesEditor();"
+                                                    title="Priorisiert = wird zuerst angezeigt">
+                                            </td>
+                                            <td style="padding: 0.5rem;">
+                                                <textarea rows="2" 
+                                                        style="width: 100%; border: 1px solid #ddd; border-radius: 4px; padding: 0.5rem;"
+                                                        onchange="updateTemplateText('${category}', ${index}, this.value)"
+                                                        onblur="saveContextualTemplates()">${template.text}</textarea>
+                                            </td>
+                                            <td style="padding: 0.5rem; text-align: center;">
+                                                <div style="display: flex; gap: 0.3rem; justify-content: center; flex-wrap: wrap;">
+                                                    <button class="btn btn-outline btn-small" 
+                                                            onclick="moveTemplate('${category}', ${index}, -1)" 
+                                                            ${index === 0 ? 'disabled' : ''}>↑</button>
+                                                    <button class="btn btn-outline btn-small" 
+                                                            onclick="moveTemplate('${category}', ${index}, 1)" 
+                                                            ${index === templates.length - 1 ? 'disabled' : ''}>↓</button>
+                                                    <button class="btn btn-outline btn-small" 
+                                                            onclick="deleteTemplate('${category}', ${index})" 
+                                                            style="background: var(--swaf-red); color: white;">🗑️</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 `;
             });
 
             return html;
+        }
+
+        // ===============================
+        // ERWEITERTE FRAGEN-VERWALTUNG
+        // ===============================
+        function extractQuestionsFromProfiles() {
+            const questions = new Set();
+            
+            profiles.forEach(profile => {
+                profile.fields.forEach(field => {
+                    // Normalisiere Frage für besseres Matching
+                    const normalizedQuestion = normalizeQuestion(field.question);
+                    questions.add(normalizedQuestion);
+                });
+            });
+            
+            return Array.from(questions).sort();
+        }
+
+        function getQuestionsForCategory(category, profileQuestions = null) {
+            if (!profileQuestions) {
+                profileQuestions = extractQuestionsFromProfiles();
+            }
+            
+            // Mapping von Kategorien zu Schlüsselwörtern
+            const categoryKeywords = {
+                'alter': ['alter', 'geburtstag', 'altersunterschied', 'geboren', 'jahr'],
+                'hobby': ['hobby', 'hobbys', 'interesse', 'freizeit', 'sport', 'aktivität', 'machst du gerne', 'lieblings'],
+                'sprache': ['sprache', 'sprachen', 'sprichst', 'deutsch', 'englisch', 'muttersprache'],
+                'postleitzahl': ['postleitzahl', 'plz'],
+                'wohnort': ['wohnort', 'standort', 'ort', 'stadt', 'region', 'adresse'],
+                'beruf': ['beruf', 'arbeit', 'job', 'branche', 'tätig', 'arbeiten'],
+                'studium': ['studium', 'ausbildung', 'schule', 'universität', 'bildung', 'abschluss'],
+                'zeit': ['zeit', 'treffen', 'verfügbar', 'wann', 'zeitpunkt', 'wochenende'],
+                'verkehr': ['verkehr', 'bewegst', 'transport', 'anreisen', 'fahrrad', 'bus', 'bahn']
+            };
+            
+            const keywords = categoryKeywords[category] || [];
+            
+            return profileQuestions.filter(question => {
+                const lowerQuestion = question.toLowerCase();
+                return keywords.some(keyword => lowerQuestion.includes(keyword));
+            });
+        }
+
+        function assignQuestionsToCategories() {
+            const profileQuestions = extractQuestionsFromProfiles();
+            let assignedCount = 0;
+            let unassignedQuestions = [];
+            
+            profileQuestions.forEach(question => {
+                let assigned = false;
+                
+                // Versuche automatische Zuordnung
+                for (const category of Object.keys(contextualTemplates)) {
+                    const assignedQuestions = getQuestionsForCategory(category, [question]);
+                    if (assignedQuestions.length > 0) {
+                        assigned = true;
+                        assignedCount++;
+                        break;
+                    }
+                }
+                
+                if (!assigned) {
+                    unassignedQuestions.push(question);
+                }
+            });
+            
+            if (unassignedQuestions.length > 0) {
+                showNotification(
+                    `✅ ${assignedCount} Fragen zugeordnet, ${unassignedQuestions.length} noch nicht zugeordnet`,
+                    'info',
+                    5000
+                );
+                
+                // Frage ob neue Kategorien erstellt werden sollen
+                if (confirm(`${unassignedQuestions.length} Fragen konnten nicht zugeordnet werden.\n\nMöchtest du diese Fragen sehen und ggf. neue Kategorien erstellen?`)) {
+                    showUnassignedQuestions();
+                }
+            } else {
+                showNotification(`✅ Alle ${assignedCount} Fragen erfolgreich zugeordnet!`, 'success');
+            }
+            
+            refreshContextualTemplatesEditor();
+        }
+
+        function showUnassignedQuestions() {
+            const profileQuestions = extractQuestionsFromProfiles();
+            const unassignedQuestions = [];
+            
+            profileQuestions.forEach(question => {
+                let assigned = false;
+                
+                for (const category of Object.keys(contextualTemplates)) {
+                    const assignedQuestions = getQuestionsForCategory(category, [question]);
+                    if (assignedQuestions.length > 0) {
+                        assigned = true;
+                        break;
+                    }
+                }
+                
+                if (!assigned) {
+                    unassignedQuestions.push(question);
+                }
+            });
+            
+            if (unassignedQuestions.length === 0) {
+                showNotification('✅ Alle Fragen sind Kategorien zugeordnet!', 'success');
+                return;
+            }
+            
+            const modal = createModal('❓ Nicht zugeordnete Fragen', `
+                <div style="max-height: 500px; overflow-y: auto;">
+                    <p>Diese ${unassignedQuestions.length} Fragen aus deinen Profilen sind noch keiner Kategorie zugeordnet:</p>
+                    <ul style="list-style: none; padding: 0;">
+                        ${unassignedQuestions.map(q => `
+                            <li style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin: 0.5rem 0; background: white;">
+                                <strong>${q}</strong>
+                                <button class="btn btn-outline btn-small" 
+                                        onclick="createCategoryForQuestion('${q.replace(/'/g, "\\'")}'); closeModal();" 
+                                        style="float: right;">
+                                    ➕ Neue Kategorie erstellen
+                                </button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `, [
+                { text: 'Schließen', class: 'btn-outline', action: 'closeModal' }
+            ]);
+        }
+
+        function createCategoryForQuestion(question) {
+            const categoryKey = prompt(`Neue Kategorie für Frage erstellen:\n"${question}"\n\nKategorie-ID eingeben (z.B. "musik", "familie"):`);
+            
+            if (!categoryKey || categoryKey.trim() === '') return;
+            
+            const cleanKey = categoryKey.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+            
+            if (contextualTemplates[cleanKey]) {
+                alert('Kategorie existiert bereits!');
+                return;
+            }
+            
+            // Erstelle neue Kategorie mit Standard-Template
+            contextualTemplates[cleanKey] = [
+                { text: `Passt gut zusammen!`, priority: true },
+                { text: `Könnt ihr euch drüber austauschen`, priority: false }
+            ];
+            
+            saveContextualTemplates();
+            editContextualTemplates();
+            showNotification(`✅ Kategorie "${cleanKey}" erstellt!`, 'success');
         }
 
         function getCategoryDisplayName(category) {
@@ -7619,8 +7824,10 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         function exportContextualTemplates() {
             const data = {
                 contextualTemplates: contextualTemplates,
+                predefinedTemplates: predefinedTemplates,
                 exported: new Date().toISOString(),
-                version: '2.0'
+                version: '2.1',
+                type: 'swaf_combined_templates'
             };
 
             downloadFile(
@@ -7645,12 +7852,28 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                     try {
                         const data = JSON.parse(e.target.result);
 
+                        let importMessages = [];
+                        
+                        // Import fragespezifische Templates
                         if (data.contextualTemplates && typeof data.contextualTemplates === 'object') {
-                            if (confirm('Fragespezifische Formulierungen importieren? (Vorhandene werden überschrieben)')) {
-                                contextualTemplates = data.contextualTemplates;
-                                localStorage.setItem('swaf_contextual_templates', JSON.stringify(contextualTemplates));
+                            contextualTemplates = data.contextualTemplates;
+                            localStorage.setItem('swaf_contextual_templates', JSON.stringify(contextualTemplates));
+                            importMessages.push('Fragespezifische Formulierungen');
+                        }
+                        
+                        // Import allgemeine Templates (falls vorhanden)
+                        if (data.predefinedTemplates && Array.isArray(data.predefinedTemplates)) {
+                            predefinedTemplates.length = 0;
+                            predefinedTemplates.push(...data.predefinedTemplates);
+                            localStorage.setItem('swaf_predefined_templates', JSON.stringify(predefinedTemplates));
+                            importMessages.push('Allgemeine Formulierungen');
+                        }
+                        
+                        if (importMessages.length > 0) {
+                            if (confirm(`${importMessages.join(' und ')} importieren?\n\n(Vorhandene werden überschrieben)`)) {
                                 refreshContextualTemplatesEditor();
-                                showNotification('✅ Fragespezifische Formulierungen importiert', 'success');
+                                loadPredefinedTemplates();
+                                showNotification(`✅ ${importMessages.join(' und ')} importiert`, 'success');
                             }
                         } else {
                             throw new Error('Keine gültigen fragespezifischen Templates gefunden');
@@ -8198,6 +8421,11 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         window.loadTextTemplates = loadTextTemplates;
         window.clearAllTemplates = clearAllTemplates;
         window.editContextualTemplates = editContextualTemplates;
+        window.extractQuestionsFromProfiles = extractQuestionsFromProfiles;
+        window.getQuestionsForCategory = getQuestionsForCategory;
+        window.assignQuestionsToCategories = assignQuestionsToCategories;
+        window.showUnassignedQuestions = showUnassignedQuestions;
+        window.createCategoryForQuestion = createCategoryForQuestion;
         window.editPredefinedTemplates = editPredefinedTemplates;
         window.toggleBookmarkletStatus = toggleBookmarkletStatus;
         window.handleCellFocus = handleCellFocus;
