@@ -2304,12 +2304,23 @@
                 if (pastedText.includes('SWAF_PROFILE_START') && pastedText.includes('SWAF_PROFILE_END')) {
                     e.preventDefault();
                     console.log('✅ SwaF-Profildaten erkannt!');
+                    
+                    // 🧹 KRITISCH: SOFORT Batch leeren BEVOR Import startet
+                    console.log('🧹 PRE-IMPORT: Leere Batch-Speicher...');
+                    localStorage.removeItem('swaf_batch_profiles');
+                    
+                    // Jetzt Profile importieren
                     processClipboardProfileData(pastedText);
                     
-                    // Nach erfolgreicher Verarbeitung: Batch & Zwischenablage leeren
+                    // Zwischenablage leeren nach Import
                     setTimeout(() => {
-                        clearBatchAndClipboard();
-                    }, 500);
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText('').then(() => {
+                                console.log('✅ Zwischenablage geleert');
+                                showNotification('✅ Import abgeschlossen - Batch zurückgesetzt', 'success', 2000);
+                            }).catch(() => {});
+                        }
+                    }, 300);
                 }
             } catch (error) {
                 console.error('❌ Fehler beim Verarbeiten des Paste-Events:', error);
@@ -2354,6 +2365,10 @@
 
 
         function processClipboardProfileData(text) {
+            // 🧹 SOFORT Batch leeren beim Start der Verarbeitung
+            console.log('🧹 Leere Batch SOFORT beim Import-Start...');
+            localStorage.removeItem('swaf_batch_profiles');
+            
             try {
                 console.log('🔍 Verarbeite Zwischenablage-Daten...');
                 
