@@ -1091,22 +1091,23 @@
                 </div>
 
                 <!-- Batch-Verwaltung -->
-                <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; margin: 1rem 0; border-left: 4px solid #ff9800;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <strong style="font-size: 1rem;">📦 Bookmarklet-Batch-Speicher</strong>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <button class="btn btn-outline btn-small" onclick="showBatchStatus()">
-                                📊 Status prüfen
-                            </button>
-                            <button class="btn btn-outline btn-small" onclick="resetBatch()" style="background: #ff6b6b; color: white;">
-                                🗑️ Batch leeren
-                            </button>
+                <div style="background: #ffebee; padding: 1.5rem; border-radius: 8px; margin: 1rem 0; border: 2px solid #f44336;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                        <div>
+                            <strong style="font-size: 1.1rem; color: #c62828;">⚠️ Bookmarklet-Batch-Speicher</strong>
+                            <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">
+                                Das Bookmarklet sammelt Profile. <strong>Nach dem Import hier leeren!</strong>
+                            </p>
                         </div>
+                        <button class="btn btn-primary" onclick="resetBatch()" style="background: #f44336; font-size: 1.1rem; padding: 0.75rem 1.5rem;">
+                            🗑️ BATCH LEEREN
+                        </button>
                     </div>
-                    <p style="margin: 0; font-size: 0.9rem; color: var(--swaf-dark-gray);">
-                        Das Bookmarklet sammelt Profile in einem Batch. Nach dem Import wird dieser automatisch geleert.<br>
-                        <strong>Manuelles Leeren nötig?</strong> Nutze den Button oben.
-                    </p>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-outline btn-small" onclick="showBatchStatus()">
+                            📊 Status prüfen
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Vereinfachte Bookmarklet-Sektion -->
@@ -2283,17 +2284,11 @@
                 handlePasteEvent(e);
             });
 
-            // 🧹 KRITISCH: Leere Batch SOFORT beim Fokus-Wechsel zur App
+            // Überwache Fokus-Events nur wenn automatische Erkennung aktiviert ist
             window.addEventListener('focus', function () {
-                console.log('👁️ App erhält Fokus');
-                
-                // Leere Batch SOFORT beim Fokus
-                clearBatchOnFocus();
-                
-                // Dann optional Zwischenablage prüfen
                 const autoDetection = localStorage.getItem('swaf_auto_clipboard_detection') !== 'false';
                 if (autoDetection) {
-                    console.log('🔍 Prüfe Zwischenablage...');
+                    console.log('🔍 Fenster wieder im Fokus - prüfe Zwischenablage...');
                     setTimeout(() => {
                         checkClipboardForProfileDataSilently();
                     }, 1000);
@@ -2600,23 +2595,41 @@
         }
 
         function resetBatch() {
+            console.log('🔍 Reset Batch aufgerufen...');
+            
             const batchJSON = localStorage.getItem('swaf_batch_profiles');
             
             if (!batchJSON) {
-                showNotification('ℹ️ Kein Batch vorhanden', 'info', 2000);
+                showNotification('✅ Batch ist bereits leer', 'success', 2000);
+                console.log('ℹ️ Kein Batch vorhanden');
                 return;
             }
             
             try {
-                const profiles = JSON.parse(batchJSON);
+                let profiles;
+                const parsed = JSON.parse(batchJSON);
                 
-                if (confirm(`🗑️ Batch mit ${profiles.length} Profil(en) löschen?\n\nDies verhindert, dass die Profile erneut importiert werden.`)) {
-                    localStorage.removeItem('swaf_batch_profiles');
-                    console.log('🗑️ Batch manuell geleert');
-                    showNotification('✅ Batch geleert - bereit für neue Profile', 'success', 3000);
+                if (Array.isArray(parsed)) {
+                    profiles = parsed;
+                } else if (parsed.profiles && Array.isArray(parsed.profiles)) {
+                    profiles = parsed.profiles;
+                } else {
+                    profiles = [parsed];
                 }
+                
+                console.log(`📊 Batch enthält ${profiles.length} Profile`);
+                
+                localStorage.removeItem('swaf_batch_profiles');
+                console.log('✅ Batch geleert');
+                
+                showNotification(
+                    `✅ Batch geleert!\n\n${profiles.length} Profile entfernt.\n\nBookmarklet startet jetzt wieder bei 1.`, 
+                    'success', 
+                    4000
+                );
+                
             } catch (e) {
-                // Batch ist korrupt - einfach löschen
+                console.error('❌ Fehler beim Parsen:', e);
                 localStorage.removeItem('swaf_batch_profiles');
                 showNotification('✅ Korrupter Batch entfernt', 'success', 2000);
             }
