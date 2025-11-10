@@ -1108,7 +1108,7 @@
                         <div style="text-align: center; margin: 2rem 0;">
                             <p style="margin-bottom: 1rem;">Ziehe diesen Button in deine Lesezeichen-Leiste:</p>
 
-                            <a href="javascript:(function(){try{var d={url:location.href,name:'',fields:[],pageType:'',timestamp:Date.now()};console.log('🚀 SwaF Sammler gestartet...');if(document.querySelector('.js_question-wrapper')){d.pageType='Interview';var h=document.querySelector('h1')||document.querySelector('.breadcrumb-item.active');d.name=h?(h.textContent||'').trim():'Interview_'+Date.now();document.querySelectorAll('.js_question-wrapper').forEach(function(w){var qEl=w.querySelector('h2 span.text-break')||w.querySelector('h2');if(!qEl)return;var q=qEl.textContent.trim();var ans=[];w.querySelectorAll('input[type=checkbox]:checked,input[type=radio]:checked').forEach(function(inp){var sp=inp.nextElementSibling;if(sp&&sp.tagName==='SPAN'){ans.push(sp.textContent.trim());}else{var parent=inp.closest('label');if(parent)ans.push(parent.textContent.trim());}});var selectedOptions=w.querySelectorAll('option[selected]');selectedOptions.forEach(function(opt){var optText=opt.textContent.trim();if(optText&&!optText.startsWith('--')&&optText!=='Bitte wählen'&&optText!=='Auswählen'&&!optText.includes('Hier kannst du')){ans.push(optText);}});w.querySelectorAll('textarea').forEach(function(ta){if(ta.disabled||ta.style.position==='absolute'||ta.style.opacity==='0'||ta.style.top==='-10000px'||ta.style.visibility==='hidden'||ta.offsetHeight===0||ta.offsetWidth===0)return;var content='';if(ta.textContent&&ta.textContent.trim()){content=ta.textContent.trim();}else if(ta.innerHTML&&ta.innerHTML.trim()){content=ta.innerHTML.trim();}else if(ta.value&&ta.value.trim()){content=ta.value.trim();}if(content&&content!=='Hier kannst du etwas schreiben...'&&content.length>0){ans.push(content);}});w.querySelectorAll('input[type=text],input[type=email],input[type=number]').forEach(function(inp){var val=inp.value.trim();if(val&&val!==''&&!val.startsWith('--')&&val!=='Bitte ausfüllen'){ans.push(val);}});var answer=ans.filter(function(a){return a&&a.length>0&&!a.startsWith('--')&&a!=='Bitte wählen'&&a!=='Auswählen';}).join(', ');if(q&&answer){d.fields.push({question:q,answer:answer});}});}else{d.pageType='Hauptprofil';var nameEl=document.querySelector('span[name=name]')||document.querySelector('.o_field_char')||document.querySelector('h1');if(nameEl)d.name=(nameEl.textContent||nameEl.innerText||'').trim();if(!d.name)d.name='Profil_'+Date.now();document.querySelectorAll('span.o_field_widget,div.o_field_widget,a.o_field_widget').forEach(function(field){var labels=document.querySelectorAll('label.o_form_label');var matchedLabel=null;for(var i=0;i<labels.length;i++){var label=labels[i];var fieldRect=field.getBoundingClientRect();var labelRect=label.getBoundingClientRect();if(Math.abs(labelRect.top-fieldRect.top)<10&&labelRect.left<fieldRect.left){if(!matchedLabel||Math.abs(labelRect.left-fieldRect.left)<Math.abs(matchedLabel.getBoundingClientRect().left-fieldRect.left)){matchedLabel=label;}}}if(matchedLabel){var question=matchedLabel.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){d.fields.push({question:question,answer:answer});}}});document.querySelectorAll('.tab-pane').forEach(function(pane){pane.querySelectorAll('tr').forEach(function(row){var label=row.querySelector('label.o_form_label');var field=row.querySelector('span.o_field_widget,div.o_field_widget,a.o_field_widget');if(label&&field&&!field.classList.contains('o_field_empty')){var question=label.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){var exists=d.fields.some(function(f){return f.question===question;});if(!exists){d.fields.push({question:question,answer:answer});}}}});});}var batchData=localStorage.getItem('swaf_batch_profiles');var batch;if(batchData){var parsed=JSON.parse(batchData);if(Array.isArray(parsed)){batch={profiles:parsed,started:Date.now()};}else if(parsed.profiles){batch=parsed;}else{batch={profiles:[],started:Date.now()};}}else{batch={profiles:[],started:Date.now()};}batch.profiles.push(d);localStorage.setItem('swaf_batch_profiles',JSON.stringify(batch));var msg='✅ Profil gesammelt!\n\n📊 Im Batch: '+batch.profiles.length+' Dokument(e)';alert(msg);}catch(e){alert('❌ Fehler: '+e.message);console.error(e);}})()" class="simple-bookmarklet" draggable="true">
+                            <a href="javascript:(function(){try{var d={url:location.href,name:'',fields:[],pageType:'',timestamp:Date.now()};console.log('🚀 SwaF Sammler gestartet...');if(document.querySelector('.js_question-wrapper')){d.pageType='Interview';var h=document.querySelector('h1')||document.querySelector('.breadcrumb-item.active');d.name=h?(h.textContent||'').trim():'Interview_'+Date.now();document.querySelectorAll('.js_question-wrapper').forEach(function(w){var qEl=w.querySelector('h2 span.text-break')||w.querySelector('h2');if(!qEl)return;var q=qEl.textContent.trim();var ans=[];w.querySelectorAll('input[type=checkbox]:checked,input[type=radio]:checked').forEach(function(inp){var sp=inp.nextElementSibling;if(sp&&sp.tagName==='SPAN'){ans.push(sp.textContent.trim());}else{var parent=inp.closest('label');if(parent)ans.push(parent.textContent.trim());}});var selectedOptions=w.querySelectorAll('option[selected]');selectedOptions.forEach(function(opt){var optText=opt.textContent.trim();if(optText&&!optText.startsWith('--')&&optText!=='Bitte wählen'&&optText!=='Auswählen'&&!optText.includes('Hier kannst du')){ans.push(optText);}});w.querySelectorAll('textarea').forEach(function(ta){if(ta.disabled||ta.style.position==='absolute'||ta.style.opacity==='0'||ta.style.top==='-10000px'||ta.style.visibility==='hidden'||ta.offsetHeight===0||ta.offsetWidth===0)return;var content='';if(ta.textContent&&ta.textContent.trim()){content=ta.textContent.trim();}else if(ta.innerHTML&&ta.innerHTML.trim()){content=ta.innerHTML.trim();}else if(ta.value&&ta.value.trim()){content=ta.value.trim();}if(content&&content!=='Hier kannst du etwas schreiben...'&&content.length>0){ans.push(content);}});w.querySelectorAll('input[type=text],input[type=email],input[type=number]').forEach(function(inp){var val=inp.value.trim();if(val&&val!==''&&!val.startsWith('--')&&val!=='Bitte ausfüllen'){ans.push(val);}});var answer=ans.filter(function(a){return a&&a.length>0&&!a.startsWith('--')&&a!=='Bitte wählen'&&a!=='Auswählen';}).join(', ');if(q&&answer){d.fields.push({question:q,answer:answer});}});}else{d.pageType='Hauptprofil';var nameEl=document.querySelector('span[name=name]')||document.querySelector('.o_field_char')||document.querySelector('h1');if(nameEl)d.name=(nameEl.textContent||nameEl.innerText||'').trim();if(!d.name)d.name='Profil_'+Date.now();document.querySelectorAll('span.o_field_widget,div.o_field_widget,a.o_field_widget').forEach(function(field){var labels=document.querySelectorAll('label.o_form_label');var matchedLabel=null;for(var i=0;i<labels.length;i++){var label=labels[i];var fieldRect=field.getBoundingClientRect();var labelRect=label.getBoundingClientRect();if(Math.abs(labelRect.top-fieldRect.top)<10&&labelRect.left<fieldRect.left){if(!matchedLabel||Math.abs(labelRect.left-fieldRect.left)<Math.abs(matchedLabel.getBoundingClientRect().left-fieldRect.left)){matchedLabel=label;}}}if(matchedLabel){var question=matchedLabel.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){d.fields.push({question:question,answer:answer});}}});document.querySelectorAll('.tab-pane').forEach(function(pane){pane.querySelectorAll('tr').forEach(function(row){var label=row.querySelector('label.o_form_label');var field=row.querySelector('span.o_field_widget,div.o_field_widget,a.o_field_widget');if(label&&field&&!field.classList.contains('o_field_empty')){var question=label.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){var exists=d.fields.some(function(f){return f.question===question;});if(!exists){d.fields.push({question:question,answer:answer});}}}});});}var stored=localStorage.getItem('swaf_batch_profiles');var arr=[];if(stored){try{var parsed=JSON.parse(stored);arr=Array.isArray(parsed)?parsed:(parsed.profiles||[]);}catch(e){arr=[];}}arr.push(d);localStorage.setItem('swaf_batch_profiles',JSON.stringify(arr));alert('✅ Profil gesammelt!\n\n📊 Im Batch: '+arr.length+' Dokument(e)\n\n💡 In der App:\n1. Klick "📋 Batch → Zwischenablage"\n2. Drück STRG+V');}catch(e){alert('❌ Fehler: '+e.message);console.error(e);}})()" class="simple-bookmarklet" draggable="true">
                                 📋 SwaF Sammler (Batch)
                             </a>
 
@@ -1215,7 +1215,13 @@
                         <button class="btn btn-outline btn-small" onclick="transferBatchToClipboard()">
                             📋 Batch übertragen (Strg+V bereit machen)
                         </button>
+                        <button class="btn btn-primary btn-small" onclick="transferBatchToClipboard()">
+                            📋 Batch → Zwischenablage
+                        </button>
 
+                        <button class="btn btn-outline btn-small" onclick="cleanupBatchStorage()" style="background: #ff9800; color: white;">
+                            🧹 Storage bereinigen
+                        </button>
                         <button class="btn btn-outline btn-small" onclick="showBatchStatus()">
                             📊 Batch-Status
                         </button>
@@ -2519,6 +2525,65 @@
             return names.size;
         }
         
+        function transferBatchToClipboard() {
+            const batchJSON = localStorage.getItem('swaf_batch_profiles');
+            
+            if (!batchJSON) {
+                showNotification('ℹ️ Kein Batch vorhanden', 'info');
+                return;
+            }
+            
+            try {
+                const batch = JSON.parse(batchJSON);
+                
+                // Prüfe ob batch.profiles existiert
+                const profiles = batch.profiles || (Array.isArray(batch) ? batch : []);
+                
+                if (profiles.length === 0) {
+                    showNotification('ℹ️ Batch ist leer', 'info');
+                    return;
+                }
+                
+                // Erstelle für jedes Profil einen SWAF_PROFILE_START/END Block
+                let clipboardContent = '';
+                profiles.forEach(profile => {
+                    clipboardContent += 'SWAF_PROFILE_START' + JSON.stringify(profile) + 'SWAF_PROFILE_END\n';
+                });
+                
+                // Kopiere in Zwischenablage
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(clipboardContent).then(() => {
+                        showNotification(
+                            `✅ ${profiles.length} Profile in Zwischenablage kopiert!\n\n` +
+                            `Jetzt STRG+V drücken um zu importieren.`,
+                            'success',
+                            5000
+                        );
+                        
+                        // Leere den Batch nach erfolgreicher Übertragung
+                        localStorage.removeItem('swaf_batch_profiles');
+                    }).catch(err => {
+                        console.error('Fehler beim Kopieren:', err);
+                        showNotification('❌ Fehler beim Kopieren in Zwischenablage', 'error');
+                    });
+                } else {
+                    showNotification('❌ Zwischenablage nicht verfügbar', 'error');
+                }
+            } catch (e) {
+                console.error('Fehler beim Verarbeiten:', e);
+                showNotification('❌ Fehler: ' + e.message, 'error');
+            }
+        }
+
+        function cleanupBatchStorage() {
+            try {
+                localStorage.removeItem('swaf_batch_profiles');
+                showNotification('✅ Batch-Speicher bereinigt', 'success');
+                console.log('🧹 localStorage bereinigt');
+            } catch (e) {
+                showNotification('❌ Fehler beim Bereinigen', 'error');
+            }
+        }
 
         function importCurrentBatch() {
             const batchData = localStorage.getItem('swaf_batch_profiles');
@@ -9222,6 +9287,13 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         window.analyzeCurrentData = analyzeCurrentData;
         window.debugQuestionSimilarity = debugQuestionSimilarity;
         window.ensurePredefinedTemplatesContainer = ensurePredefinedTemplatesContainer;
+        window.resetBatch = resetBatch;
+        window.showBatchStatus = showBatchStatus;
+        window.transferBatchToClipboard = transferBatchToClipboard;
+        window.cleanupBatchStorage = cleanupBatchStorage;
+        window.importCurrentBatch = importCurrentBatch;
+        window.countUniquePersons = countUniquePersons;
+
 
         function showAllFields() {
             console.log('🔄 Zeige alle Felder ohne Filter...');
