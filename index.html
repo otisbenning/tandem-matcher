@@ -1108,7 +1108,7 @@
                         <div style="text-align: center; margin: 2rem 0;">
                             <p style="margin-bottom: 1rem;">Ziehe diesen Button in deine Lesezeichen-Leiste:</p>
 
-                            <a href="javascript:(function(){try{var d={url:location.href,name:'',fields:[],pageType:'',timestamp:Date.now()};console.log('🚀 SwaF Sammler gestartet...');if(document.querySelector('.js_question-wrapper')){d.pageType='Interview';var h=document.querySelector('h1')||document.querySelector('.breadcrumb-item.active');d.name=h?(h.textContent||'').trim():'Interview_'+Date.now();console.log('📋 Interview-Modus, Name:',d.name);document.querySelectorAll('.js_question-wrapper').forEach(function(w,idx){console.log('🔍 Verarbeite Frage',idx+1);var qEl=w.querySelector('h2 span.text-break')||w.querySelector('h2');if(!qEl){console.log('❌ Keine Frage gefunden in Wrapper',idx+1);return;}var q=qEl.textContent.trim();console.log('❓ Frage:',q);var ans=[];w.querySelectorAll('input[type=checkbox]:checked,input[type=radio]:checked').forEach(function(inp){var sp=inp.nextElementSibling;if(sp&&sp.tagName==='SPAN'){ans.push(sp.textContent.trim());}else{var parent=inp.closest('label');if(parent)ans.push(parent.textContent.trim());}});var selectedOptions=w.querySelectorAll('option[selected]');selectedOptions.forEach(function(opt){var optText=opt.textContent.trim();if(optText&&!optText.startsWith('--')&&optText!=='Bitte wählen'&&optText!=='Auswählen'&&!optText.includes('Hier kannst du')){ans.push(optText);}});w.querySelectorAll('textarea').forEach(function(ta){if(ta.disabled||ta.style.position==='absolute'||ta.style.opacity==='0'||ta.style.top==='-10000px'||ta.style.visibility==='hidden'||ta.offsetHeight===0||ta.offsetWidth===0){return;}var content='';if(ta.textContent&&ta.textContent.trim()){content=ta.textContent.trim();}else if(ta.innerHTML&&ta.innerHTML.trim()){content=ta.innerHTML.trim();}else if(ta.value&&ta.value.trim()){content=ta.value.trim();}if(content&&content!=='Hier kannst du etwas schreiben...'&&content.length>0){ans.push(content);}});w.querySelectorAll('input[type=text],input[type=email],input[type=number]').forEach(function(inp){var val=inp.value.trim();if(val&&val!==''&&!val.startsWith('--')&&val!=='Bitte ausfüllen'){ans.push(val);}});var answer=ans.filter(function(a){return a&&a.length>0&&!a.startsWith('--')&&a!=='Bitte wählen'&&a!=='Auswählen';}).join(', ');if(q&&answer){d.fields.push({question:q,answer:answer});}});}else{d.pageType='Hauptprofil';var nameEl=document.querySelector('span[name=name]')||document.querySelector('.o_field_char')||document.querySelector('h1');if(nameEl)d.name=(nameEl.textContent||nameEl.innerText||'').trim();if(!d.name)d.name='Profil_'+Date.now();document.querySelectorAll('span.o_field_widget,div.o_field_widget,a.o_field_widget').forEach(function(field){var labels=document.querySelectorAll('label.o_form_label');var matchedLabel=null;for(var i=0;i<labels.length;i++){var label=labels[i];var fieldRect=field.getBoundingClientRect();var labelRect=label.getBoundingClientRect();if(Math.abs(labelRect.top-fieldRect.top)<10&&labelRect.left<fieldRect.left){if(!matchedLabel||Math.abs(labelRect.left-fieldRect.left)<Math.abs(matchedLabel.getBoundingClientRect().left-fieldRect.left)){matchedLabel=label;}}}if(matchedLabel){var question=matchedLabel.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){d.fields.push({question:question,answer:answer});}}});document.querySelectorAll('.tab-pane').forEach(function(pane){pane.querySelectorAll('tr').forEach(function(row){var label=row.querySelector('label.o_form_label');var field=row.querySelector('span.o_field_widget,div.o_field_widget,a.o_field_widget');if(label&&field&&!field.classList.contains('o_field_empty')){var question=label.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){var exists=d.fields.some(function(f){return f.question===question;});if(!exists){d.fields.push({question:question,answer:answer});}}}});});}var batchData=localStorage.getItem('swaf_batch_profiles');var batch=batchData?JSON.parse(batchData):{profiles:[],started:Date.now()};batch.profiles.push(d);localStorage.setItem('swaf_batch_profiles',JSON.stringify(batch));var personCount=0;var profileNames={};batch.profiles.forEach(function(p){var baseName=p.name.replace(/\s*\(.*?\)\s*/g,'').trim();if(!profileNames[baseName]){profileNames[baseName]=0;personCount++;}profileNames[baseName]++;});var msg='✅ Profil gesammelt!\n\n📊 Batch-Status:\n• '+personCount+' Person(en) ('+batch.profiles.length+' Dokumente)\n• Gestartet: '+new Date(batch.started).toLocaleTimeString('de-DE')+'\n\nWähle eine Option:';if(confirm(msg+'\n\nOK = Weiter sammeln\nAbbrechen = Batch jetzt übertragen')){console.log('👍 Weitersammeln gewählt');}else{var clipboardData='SWAF_BATCH_START'+JSON.stringify(batch.profiles)+'SWAF_BATCH_END';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(clipboardData).then(function(){alert('✅ '+batch.profiles.length+' Profile in Zwischenablage kopiert!\n\n🔄 Wechsle zur App - Daten werden automatisch erkannt!');localStorage.removeItem('swaf_batch_profiles');}).catch(function(){alert('✅ Batch bereit!\n\nBitte zur App wechseln für automatischen Import.');});}else{alert('✅ Batch bereit!\n\nBitte zur App wechseln für automatischen Import.');}}}catch(e){alert('❌ Fehler: '+e.message);console.error('❌ SwaF Sammler Fehler:',e);}})()" class="simple-bookmarklet" draggable="true">
+                            <a href="javascript:(function(){try{var d={url:location.href,name:'',fields:[],pageType:'',timestamp:Date.now()};console.log('🚀 SwaF Sammler gestartet...');if(document.querySelector('.js_question-wrapper')){d.pageType='Interview';var h=document.querySelector('h1')||document.querySelector('.breadcrumb-item.active');d.name=h?(h.textContent||'').trim():'Interview_'+Date.now();document.querySelectorAll('.js_question-wrapper').forEach(function(w){var qEl=w.querySelector('h2 span.text-break')||w.querySelector('h2');if(!qEl)return;var q=qEl.textContent.trim();var ans=[];w.querySelectorAll('input[type=checkbox]:checked,input[type=radio]:checked').forEach(function(inp){var sp=inp.nextElementSibling;if(sp&&sp.tagName==='SPAN'){ans.push(sp.textContent.trim());}else{var parent=inp.closest('label');if(parent)ans.push(parent.textContent.trim());}});var selectedOptions=w.querySelectorAll('option[selected]');selectedOptions.forEach(function(opt){var optText=opt.textContent.trim();if(optText&&!optText.startsWith('--')&&optText!=='Bitte wählen'&&optText!=='Auswählen'&&!optText.includes('Hier kannst du')){ans.push(optText);}});w.querySelectorAll('textarea').forEach(function(ta){if(ta.disabled||ta.style.position==='absolute'||ta.style.opacity==='0'||ta.style.top==='-10000px'||ta.style.visibility==='hidden'||ta.offsetHeight===0||ta.offsetWidth===0)return;var content='';if(ta.textContent&&ta.textContent.trim()){content=ta.textContent.trim();}else if(ta.innerHTML&&ta.innerHTML.trim()){content=ta.innerHTML.trim();}else if(ta.value&&ta.value.trim()){content=ta.value.trim();}if(content&&content!=='Hier kannst du etwas schreiben...'&&content.length>0){ans.push(content);}});w.querySelectorAll('input[type=text],input[type=email],input[type=number]').forEach(function(inp){var val=inp.value.trim();if(val&&val!==''&&!val.startsWith('--')&&val!=='Bitte ausfüllen'){ans.push(val);}});var answer=ans.filter(function(a){return a&&a.length>0&&!a.startsWith('--')&&a!=='Bitte wählen'&&a!=='Auswählen';}).join(', ');if(q&&answer){d.fields.push({question:q,answer:answer});}});}else{d.pageType='Hauptprofil';var nameEl=document.querySelector('span[name=name]')||document.querySelector('.o_field_char')||document.querySelector('h1');if(nameEl)d.name=(nameEl.textContent||nameEl.innerText||'').trim();if(!d.name)d.name='Profil_'+Date.now();document.querySelectorAll('span.o_field_widget,div.o_field_widget,a.o_field_widget').forEach(function(field){var labels=document.querySelectorAll('label.o_form_label');var matchedLabel=null;for(var i=0;i<labels.length;i++){var label=labels[i];var fieldRect=field.getBoundingClientRect();var labelRect=label.getBoundingClientRect();if(Math.abs(labelRect.top-fieldRect.top)<10&&labelRect.left<fieldRect.left){if(!matchedLabel||Math.abs(labelRect.left-fieldRect.left)<Math.abs(matchedLabel.getBoundingClientRect().left-fieldRect.left)){matchedLabel=label;}}}if(matchedLabel){var question=matchedLabel.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){d.fields.push({question:question,answer:answer});}}});document.querySelectorAll('.tab-pane').forEach(function(pane){pane.querySelectorAll('tr').forEach(function(row){var label=row.querySelector('label.o_form_label');var field=row.querySelector('span.o_field_widget,div.o_field_widget,a.o_field_widget');if(label&&field&&!field.classList.contains('o_field_empty')){var question=label.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){var exists=d.fields.some(function(f){return f.question===question;});if(!exists){d.fields.push({question:question,answer:answer});}}}});});}var batch=localStorage.getItem('swaf_batch_profiles');var profiles=batch?JSON.parse(batch):[];profiles.push(d);localStorage.setItem('swaf_batch_profiles',JSON.stringify(profiles));var msg='✅ Profil gesammelt!\n\n📊 Im Batch: '+profiles.length+' Dokument(e)';alert(msg);}catch(e){alert('❌ Fehler: '+e.message);console.error(e);}})()" class="simple-bookmarklet" draggable="true">
                                 📋 SwaF Sammler (Batch)
                             </a>
 
@@ -1212,15 +1212,16 @@
                         <button class="btn btn-outline btn-small" onclick="testClipboardFormat()">
                             🧪 Clipboard-Format testen
                         </button>
-                        <button class="btn btn-outline btn-small" onclick="checkForBookmarkletData()">
-                            🔍 Nach localStorage-Daten suchen
-                        </button>
-                        <button class="btn btn-outline btn-small" onclick="resetBatch()" style="background: #ff6b6b; color: white;">
-                            🗑️ Batch leeren
+                        <button class="btn btn-outline btn-small" onclick="transferBatchToClipboard()">
+                            📋 Batch übertragen (Strg+V bereit machen)
                         </button>
 
-                        <button class="btn btn-outline btn-small" onclick="showBatchStatus()" style="background: var(--swaf-primary); color: white;">
-                            📦 Batch-Status
+                        <button class="btn btn-outline btn-small" onclick="showBatchStatus()">
+                            📊 Batch-Status
+                        </button>
+
+                        <button class="btn btn-outline btn-small" onclick="resetBatch()" style="background: #ff6b6b; color: white;">
+                            🗑️ Batch leeren
                         </button>
                         <button class="btn btn-outline btn-small" onclick="showDebugInfo()">
                             📊 Debug-Info anzeigen
@@ -2319,98 +2320,50 @@
         function processClipboardProfileData(text) {
             try {
                 console.log('🔍 Verarbeite Zwischenablage-Daten...');
-                console.log('📄 Rohdaten (erste 200 Zeichen):', text.substring(0, 200));
-
+                
                 const startMarker = 'SWAF_PROFILE_START';
                 const endMarker = 'SWAF_PROFILE_END';
-
-                const startIndex = text.indexOf(startMarker);
-                const endIndex = text.indexOf(endMarker);
-
-                console.log('📍 Start-Position:', startIndex, 'End-Position:', endIndex);
-
-                if (startIndex === -1) {
-                    throw new Error('Start-Marker "SWAF_PROFILE_START" nicht gefunden');
+                
+                // Prüfe ob mehrere Profile vorhanden sind
+                const matches = text.match(/SWAF_PROFILE_START(.*?)SWAF_PROFILE_END/g);
+                
+                if (!matches || matches.length === 0) {
+                    throw new Error('Keine gültigen SWAF-Profildaten gefunden');
                 }
-
-                if (endIndex === -1) {
-                    throw new Error('End-Marker "SWAF_PROFILE_END" nicht gefunden');
-                }
-
-                if (endIndex <= startIndex) {
-                    throw new Error('End-Marker muss nach Start-Marker stehen');
-                }
-
-                // Extrahiere JSON-Daten zwischen den Markern
-                const jsonStart = startIndex + startMarker.length;
-                const jsonData = text.substring(jsonStart, endIndex).trim();
-
-                console.log('📋 Extrahierte JSON-Daten:', jsonData.substring(0, 200) + '...');
-                console.log('📏 JSON-Länge:', jsonData.length);
-
-                if (!jsonData) {
-                    throw new Error('Keine JSON-Daten zwischen den Markern gefunden');
-                }
-
-                // Versuche JSON zu parsen
-                let profileData;
-                try {
-                    profileData = JSON.parse(jsonData);
-                } catch (parseError) {
-                    console.error('❌ JSON-Parse-Fehler:', parseError);
-                    console.log('🔍 Problematische JSON-Daten:', jsonData);
-
-                    // Versuche häufige Probleme zu reparieren
-                    let cleanedJson = jsonData
-                        .replace(/[\r\n\t]/g, '') // Entferne Zeilenumbrüche und Tabs
-                        .replace(/\\"/g, '"')      // Repariere escaped quotes
-                        .trim();
-
-                    console.log('🔧 Bereinigte JSON-Daten:', cleanedJson.substring(0, 200) + '...');
-
+                
+                console.log(`📦 ${matches.length} Profil(e) gefunden`);
+                
+                let imported = 0;
+                
+                matches.forEach((match, index) => {
                     try {
-                        profileData = JSON.parse(cleanedJson);
-                        console.log('✅ JSON erfolgreich nach Bereinigung geparst');
-                    } catch (secondParseError) {
-                        console.error('❌ Auch nach Bereinigung Parse-Fehler:', secondParseError);
-                        throw new Error('JSON-Daten sind beschädigt: ' + parseError.message);
+                        const jsonStr = match.replace(startMarker, '').replace(endMarker, '');
+                        const profileData = JSON.parse(jsonStr);
+                        
+                        console.log(`📥 Importiere Profil ${index + 1}:`, profileData.name);
+                        receiveProfileData(profileData);
+                        imported++;
+                    } catch (err) {
+                        console.error(`❌ Fehler bei Profil ${index + 1}:`, err);
                     }
-                }
-
-                // Validiere die Profildaten
-                if (!profileData || typeof profileData !== 'object') {
-                    throw new Error('Profildaten sind kein gültiges Objekt');
-                }
-
-                if (!profileData.name && !profileData.url) {
-                    throw new Error('Profildaten enthalten weder Name noch URL');
-                }
-
-                if (!Array.isArray(profileData.fields)) {
-                    console.log('⚠️ Felder sind kein Array, korrigiere...');
-                    profileData.fields = [];
-                }
-
-                console.log('📥 Profildaten erfolgreich verarbeitet:', profileData);
-                console.log('👤 Name:', profileData.name);
-                console.log('📊 Anzahl Felder:', profileData.fields.length);
-
-                receiveProfileData(profileData);
-                showNotification('🎉 Profil automatisch aus Zwischenablage importiert!', 'success', 5000);
-
-                // Leere die Zwischenablage nach erfolgreicher Verarbeitung
+                });
+                
+                showNotification(
+                    `✅ ${imported} von ${matches.length} Profil(en) erfolgreich importiert!`,
+                    'success',
+                    5000
+                );
+                
+                // Leere die Zwischenablage
                 try {
-                    navigator.clipboard.writeText('').catch(() => { });
+                    navigator.clipboard.writeText('').catch(() => {});
                 } catch (e) {
-                    console.log('ℹ️ Zwischenablage konnte nicht geleert werden (normal)');
+                    console.log('ℹ️ Zwischenablage konnte nicht geleert werden');
                 }
-
+                
             } catch (error) {
-                console.error('❌ Fehler beim Verarbeiten der Zwischenablage-Daten:', error);
-                console.log('📄 Vollständiger Text:', text);
-
-                showNotification('❌ Fehler beim Verarbeiten der Profildaten: ' + error.message, 'error', 8000);
-                showDebugClipboardData(text, error.message);
+                console.error('❌ Fehler beim Verarbeiten:', error);
+                showNotification('❌ Fehler: ' + error.message, 'error', 8000);
             }
         }
 
@@ -2447,65 +2400,53 @@
             }, 3000); // Reduziert von 1000ms auf 3000ms
         }
 
-        function checkForBatchData() {
-            try {
-                const batchData = localStorage.getItem('swaf_batch_profiles');
-                if (batchData) {
-                    const batch = JSON.parse(batchData);
-                    
-                    // Prüfe Alter des Batches (24h Auto-Reset)
-                    const batchAge = Date.now() - batch.started;
-                    if (batchAge > 24 * 60 * 60 * 1000) {
-                        console.log('⏰ Batch älter als 24h - wird geleert');
-                        localStorage.removeItem('swaf_batch_profiles');
-                        return;
-                    }
-                    
-                    console.log('📦 Batch-Daten gefunden:', batch.profiles.length, 'Profile');
-                    
-                    // Zeige Bestätigung
-                    const personCount = countUniquePersons(batch.profiles);
-                    const importNow = confirm(
-                        `📦 Batch gefunden!\n\n` +
-                        `${personCount} Person(en) (${batch.profiles.length} Dokumente)\n` +
-                        `Gestartet: ${new Date(batch.started).toLocaleString('de-DE')}\n\n` +
-                        `Jetzt importieren?`
-                    );
-                    
-                    if (importNow) {
-                        importBatchProfiles(batch.profiles);
-                        localStorage.removeItem('swaf_batch_profiles');
-                    }
-                }
-            } catch (e) {
-                console.error('❌ Fehler beim Prüfen der Batch-Daten:', e);
-            }
-        }
-        
-        function resetBatch() {
-            const batchData = localStorage.getItem('swaf_batch_profiles');
-            if (!batchData) {
-                showNotification('ℹ️ Kein aktiver Batch vorhanden', 'info');
+        function transferBatchToClipboard() {
+            const batchJSON = localStorage.getItem('swaf_batch_profiles');
+            
+            if (!batchJSON) {
+                showNotification('ℹ️ Kein Batch vorhanden', 'info');
                 return;
             }
             
-            const batch = JSON.parse(batchData);
-            const personCount = countUniquePersons(batch.profiles);
+            const profiles = JSON.parse(batchJSON);
             
-            if (confirm(
-                `🗑️ Batch löschen?\n\n` +
-                `${personCount} Person(en) (${batch.profiles.length} Dokumente) gehen verloren!`
-            )) {
-                localStorage.removeItem('swaf_batch_profiles');
-                showNotification('✅ Batch geleert', 'success');
+            if (profiles.length === 0) {
+                showNotification('ℹ️ Batch ist leer', 'info');
+                return;
+            }
+            
+            // Erstelle für jedes Profil einen SWAF_PROFILE_START/END Block
+            let clipboardContent = '';
+            profiles.forEach(profile => {
+                clipboardContent += 'SWAF_PROFILE_START' + JSON.stringify(profile) + 'SWAF_PROFILE_END\n';
+            });
+            
+            // Kopiere in Zwischenablage
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(clipboardContent).then(() => {
+                    showNotification(
+                        `✅ ${profiles.length} Profile in Zwischenablage kopiert!\n\n` +
+                        `Jetzt STRG+V drücken um zu importieren.`,
+                        'success',
+                        5000
+                    );
+                    
+                    // Leere den Batch nach erfolgreicher Übertragung
+                    localStorage.removeItem('swaf_batch_profiles');
+                }).catch(err => {
+                    console.error('Fehler beim Kopieren:', err);
+                    showNotification('❌ Fehler beim Kopieren in Zwischenablage', 'error');
+                });
+            } else {
+                showNotification('❌ Zwischenablage nicht verfügbar', 'error');
             }
         }
 
         function showBatchStatus() {
-            const batchData = localStorage.getItem('swaf_batch_profiles');
+            const batchJSON = localStorage.getItem('swaf_batch_profiles');
             
-            if (!batchData) {
-                createModal('📦 Batch-Status', `
+            if (!batchJSON) {
+                createModal('📊 Batch-Status', `
                     <div style="text-align: center; padding: 2rem;">
                         <p style="font-size: 1.2rem;">ℹ️ Kein aktiver Batch</p>
                         <p style="color: #666; margin-top: 1rem;">
@@ -2518,57 +2459,66 @@
                 return;
             }
             
-            const batch = JSON.parse(batchData);
-            const personCount = countUniquePersons(batch.profiles);
-            const startTime = new Date(batch.started).toLocaleString('de-DE');
-            const age = Math.round((Date.now() - batch.started) / (1000 * 60));
+            const profiles = JSON.parse(batchJSON);
             
-            // Gruppiere Profile für detaillierte Ansicht
-            const personGroups = {};
-            batch.profiles.forEach(profile => {
-                const baseName = profile.name.replace(/\s*\(.*?\)\s*/g, '').trim();
-                if (!personGroups[baseName]) {
-                    personGroups[baseName] = [];
-                }
-                personGroups[baseName].push(profile);
-            });
-            
-            let detailHTML = '';
-            Object.entries(personGroups).forEach(([name, profiles]) => {
-                detailHTML += `
+            let profileList = '';
+            profiles.forEach((p, i) => {
+                profileList += `
                     <div style="background: var(--swaf-lightest-teal); padding: 0.5rem; margin: 0.5rem 0; border-radius: 4px;">
-                        <strong>${name}</strong>
-                        <span style="color: #666; margin-left: 0.5rem;">
-                            ${profiles.map(p => p.pageType).join(' + ')}
-                        </span>
+                        <strong>${i + 1}. ${p.name}</strong>
+                        <span style="color: #666; margin-left: 0.5rem;">(${p.pageType}, ${p.fields.length} Felder)</span>
                     </div>
                 `;
             });
             
-            createModal('📦 Batch-Status', `
+            createModal('📊 Batch-Status', `
                 <div style="text-align: left;">
-                    <h3 style="margin-bottom: 1rem;">Aktueller Batch</h3>
+                    <h3>Gesammelte Profile: ${profiles.length}</h3>
                     
-                    <div style="background: var(--swaf-lightest-teal); padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
-                        <p><strong>👥 Personen:</strong> ${personCount}</p>
-                        <p><strong>📄 Dokumente:</strong> ${batch.profiles.length}</p>
-                        <p><strong>⏰ Gestartet:</strong> ${startTime}</p>
-                        <p><strong>🕐 Alter:</strong> ${age} Minuten</p>
+                    <div style="margin: 1rem 0;">
+                        ${profileList}
                     </div>
                     
-                    <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Gesammelte Profile:</h4>
-                    ${detailHTML}
-                    
-                    <div style="background: #fff3cd; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
-                        <small>💡 <strong>Tipp:</strong> Der Batch wird automatisch beim Öffnen der App importiert oder nach 24h gelöscht.</small>
+                    <div style="background: #e3f2fd; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                        <p><strong>💡 Nächste Schritte:</strong></p>
+                        <ol style="margin: 0.5rem 0 0 1.5rem;">
+                            <li>Klicke "📋 Batch übertragen"</li>
+                            <li>Drücke STRG+V (oder CMD+V)</li>
+                            <li>Alle Profile werden importiert</li>
+                        </ol>
                     </div>
                 </div>
             `, [
-                { text: 'Batch jetzt importieren', class: 'btn-primary', action: 'importCurrentBatch' },
-                { text: 'Batch löschen', class: 'btn-outline', action: 'resetBatch' },
+                { text: 'Batch übertragen', class: 'btn-primary', action: 'transferBatchToClipboard' },
                 { text: 'Schließen', class: 'btn-outline', action: 'closeModal' }
             ]);
         }
+
+        function resetBatch() {
+            const batchJSON = localStorage.getItem('swaf_batch_profiles');
+            
+            if (!batchJSON) {
+                showNotification('ℹ️ Kein Batch vorhanden', 'info');
+                return;
+            }
+            
+            const profiles = JSON.parse(batchJSON);
+            
+            if (confirm(`🗑️ Batch mit ${profiles.length} Profil(en) löschen?`)) {
+                localStorage.removeItem('swaf_batch_profiles');
+                showNotification('✅ Batch geleert', 'success');
+            }
+        }
+
+        function countUniquePersons(profiles) {
+            const names = new Set();
+            profiles.forEach(p => {
+                const baseName = p.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+                names.add(baseName);
+            });
+            return names.size;
+        }
+        
 
         function importCurrentBatch() {
             const batchData = localStorage.getItem('swaf_batch_profiles');
