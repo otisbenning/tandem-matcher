@@ -2429,10 +2429,24 @@
             console.log('👁️ App erhält Fokus - prüfe Batch...');
             
             const batch = localStorage.getItem('swaf_batch_profiles');
+            console.log('📦 Batch-Inhalt:', batch ? batch.substring(0, 100) + '...' : 'LEER');
+            
             if (batch) {
-                console.log('🧹 Batch gefunden beim Fokus-Wechsel - leere SOFORT');
-                localStorage.removeItem('swaf_batch_profiles');
-                showNotification('🧹 Batch zurückgesetzt - bereit für Import', 'info', 2000);
+                try {
+                    const parsed = JSON.parse(batch);
+                    const count = Array.isArray(parsed) ? parsed.length : 1;
+                    console.log(`🧹 Batch gefunden: ${count} Profile - leere SOFORT`);
+                    
+                    localStorage.removeItem('swaf_batch_profiles');
+                    console.log('✅ Batch gelöscht');
+                    
+                    showNotification(`🧹 Batch zurückgesetzt (${count} Profile entfernt)`, 'success', 2000);
+                } catch (e) {
+                    console.error('❌ Fehler beim Parsen:', e);
+                    localStorage.removeItem('swaf_batch_profiles');
+                }
+            } else {
+                console.log('ℹ️ Kein Batch vorhanden');
             }
         }
 
@@ -9401,6 +9415,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         window.countUniquePersons = countUniquePersons;
         window.clearClipboard = clearClipboard;
         window.clearBatchAndClipboard = clearBatchAndClipboard;
+        window.clearBatchOnFocus = clearBatchOnFocus;
 
 
         function showAllFields() {
