@@ -2283,12 +2283,17 @@
                 handlePasteEvent(e);
             });
 
-            // Überwache Fokus-Events nur wenn automatische Erkennung aktiviert ist
+            // 🧹 KRITISCH: Leere Batch SOFORT beim Fokus-Wechsel zur App
             window.addEventListener('focus', function () {
+                console.log('👁️ App erhält Fokus');
+                
+                // Leere Batch SOFORT beim Fokus
+                clearBatchOnFocus();
+                
+                // Dann optional Zwischenablage prüfen
                 const autoDetection = localStorage.getItem('swaf_auto_clipboard_detection') !== 'false';
                 if (autoDetection) {
-                    console.log('🔍 Fenster wieder im Fokus - prüfe Zwischenablage...');
-                    // Weniger aufdringlich - nur einmal und mit längerer Verzögerung
+                    console.log('🔍 Prüfe Zwischenablage...');
                     setTimeout(() => {
                         checkClipboardForProfileDataSilently();
                     }, 1000);
@@ -2365,10 +2370,6 @@
 
 
         function processClipboardProfileData(text) {
-            // 🧹 SOFORT Batch leeren beim Start der Verarbeitung
-            console.log('🧹 Leere Batch SOFORT beim Import-Start...');
-            localStorage.removeItem('swaf_batch_profiles');
-            
             try {
                 console.log('🔍 Verarbeite Zwischenablage-Daten...');
                 
@@ -2404,16 +2405,7 @@
                     'success',
                     5000
                 );
-                
-                // 🧹 SOFORT nach Import: Batch-Speicher leeren
-                console.log('🧹 Leere Batch-Speicher...');
-                try {
-                    localStorage.removeItem('swaf_batch_profiles');
-                    console.log('✅ Batch-Speicher (localStorage) geleert');
-                } catch (e) {
-                    console.error('❌ Fehler beim Leeren des Batch:', e);
-                }
-                
+                                
                 // Leere die Zwischenablage
                 try {
                     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2433,6 +2425,16 @@
             }
         }
 
+        function clearBatchOnFocus() {
+            console.log('👁️ App erhält Fokus - prüfe Batch...');
+            
+            const batch = localStorage.getItem('swaf_batch_profiles');
+            if (batch) {
+                console.log('🧹 Batch gefunden beim Fokus-Wechsel - leere SOFORT');
+                localStorage.removeItem('swaf_batch_profiles');
+                showNotification('🧹 Batch zurückgesetzt - bereit für Import', 'info', 2000);
+            }
+        }
 
         function clearBatchAndClipboard() {
             console.log('🧹 Leere Batch-Speicher und Zwischenablage...');
