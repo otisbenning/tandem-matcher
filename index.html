@@ -978,6 +978,72 @@
             color: var(--swaf-teal);
         }
 
+        /* Ausklappbare Profile */
+        .profile-details {
+            display: none;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 2px solid var(--swaf-lightest-teal);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .profile-details.expanded {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 300px;
+            }
+        }
+
+        .profile-details-content {
+            font-size: 0.85rem;
+        }
+
+        .profile-field-item {
+            padding: 0.4rem 0;
+            border-bottom: 1px solid var(--swaf-lightest-teal);
+        }
+
+        .profile-field-item:last-child {
+            border-bottom: none;
+        }
+
+        .profile-field-question {
+            font-weight: 600;
+            color: var(--swaf-teal);
+            margin-bottom: 0.2rem;
+        }
+
+        .profile-field-answer {
+            color: var(--swaf-dark-gray);
+        }
+
+        .expand-toggle {
+            display: inline-block;
+            cursor: pointer;
+            color: var(--swaf-teal);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 3px;
+            background: var(--swaf-lightest-teal);
+            transition: all 0.2s;
+        }
+
+        .expand-toggle:hover {
+            background: var(--swaf-teal);
+            color: white;
+        }
+
         .smart-suggestion .suggestion-context {
             font-size: 0.8rem;
             color: var(--swaf-dark-gray);
@@ -1370,6 +1436,9 @@
                             </button>
                             <button class="btn btn-outline btn-small" onclick="fixProfileSelection()">
                                 🔧 IDs reparieren
+                            </button>
+                            <button class="btn btn-outline btn-small" onclick="exportProfilesToExcel()">
+                                📊 Profile als Excel exportieren
                             </button>
                         </div>
                     </div>
@@ -3474,13 +3543,24 @@
                     const ageText = ageField ? ` • ${ageField.answer}` : '';
                     const genderText = genderField ? ` • ${genderField.answer}` : '';
 
+                    // Erstelle Detailansicht mit allen relevanten Feldern
+                    const detailsHTML = createProfileDetailsHTML(profile);
+
                     return `
-                        <div class="profile-item ${selectedClass}" onclick="selectProfile('${profile.id}')" data-profile-id="${profile.id}">
-                            <strong>${profile.name}</strong>
-                            <p><small>${profile.fields.length} Felder${ageText}${genderText}</small></p>
-                            <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--swaf-dark-gray);">
-                                ${profile.fields.slice(0, 3).map(f => f.question).join(', ')}
-                                ${profile.fields.length > 3 ? '...' : ''}
+                        <div class="profile-item ${selectedClass}" data-profile-id="${profile.id}">
+                            <div onclick="selectProfile('${profile.id}')">
+                                <strong>${profile.name}</strong>
+                                <p><small>${profile.fields.length} Felder${ageText}${genderText}</small></p>
+                                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--swaf-dark-gray);">
+                                    ${profile.fields.slice(0, 3).map(f => f.question).join(', ')}
+                                    ${profile.fields.length > 3 ? '...' : ''}
+                                </div>
+                            </div>
+                            <span class="expand-toggle" onclick="toggleProfileDetails(event, '${profile.id}')">
+                                📋 Details anzeigen
+                            </span>
+                            <div class="profile-details" id="details-${profile.id}">
+                                ${detailsHTML}
                             </div>
                         </div>
                     `;
@@ -4400,6 +4480,62 @@
 
             console.log('✅ Auswahl erfolgreich gelöscht. Neue Auswahl:', selectedProfiles);
             showNotification('✅ Auswahl gelöscht', 'success', 2000);
+        }
+
+        // ===============================
+        // PROFIL-DETAILS FUNKTIONEN
+        // ===============================
+        function createProfileDetailsHTML(profile) {
+            // Relevante Felder für Matching (filtere sensible Daten)
+            const relevantFields = profile.fields.filter(field => {
+                const question = field.question.toLowerCase();
+                // Filtere sensible oder irrelevante Felder
+                return !question.includes('email') &&
+                    !question.includes('e-mail') &&
+                    !question.includes('telefon') &&
+                    !question.includes('nachname') &&
+                    !question.includes('passwort') &&
+                    !question.includes('id') &&
+                    field.answer && 
+                    field.answer.trim() !== '';
+            });
+
+            if (relevantFields.length === 0) {
+                return '<p style="color: var(--swaf-dark-gray); font-style: italic;">Keine weiteren Details verfügbar</p>';
+            }
+
+            return `
+                <div class="profile-details-content">
+                    ${relevantFields.map(field => `
+                        <div class="profile-field-item">
+                            <div class="profile-field-question">${escapeHtml(field.question)}</div>
+                            <div class="profile-field-answer">${escapeHtml(field.answer)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function toggleProfileDetails(event, profileId) {
+            event.stopPropagation(); // Verhindere selectProfile Aufruf
+            
+            const detailsDiv = document.getElementById(`details-${profileId}`);
+            const toggleBtn = event.target;
+            
+            if (!detailsDiv) {
+                console.error('Details-Div nicht gefunden für Profil:', profileId);
+                return;
+            }
+            
+            if (detailsDiv.classList.contains('expanded')) {
+                // Schließen
+                detailsDiv.classList.remove('expanded');
+                toggleBtn.textContent = '📋 Details anzeigen';
+            } else {
+                // Öffnen
+                detailsDiv.classList.add('expanded');
+                toggleBtn.textContent = '🔼 Details ausblenden';
+            }
         }
 
         function clearAllTandems() {
@@ -5795,6 +5931,95 @@
 
             downloadFile(JSON.stringify(data, null, 2), `SwaF_Komplett-Backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
             showNotification('✅ Vollständiges Backup erfolgreich erstellt', 'success');
+        }
+
+        // ===============================
+        // EXCEL-EXPORT FUNKTIONEN
+        // ===============================
+        function exportProfilesToExcel() {
+            console.log('📊 Starte Excel-Export für alle Profile...');
+            
+            if (profiles.length === 0) {
+                showNotification('❌ Keine Profile zum Exportieren vorhanden', 'error');
+                return;
+            }
+
+            try {
+                // Sammle alle eindeutigen Fragen aus allen Profilen
+                const allQuestions = new Set();
+                profiles.forEach(profile => {
+                    profile.fields.forEach(field => {
+                        // Filtere sensible Daten
+                        const question = field.question.toLowerCase();
+                        if (!question.includes('email') &&
+                            !question.includes('e-mail') &&
+                            !question.includes('telefon') &&
+                            !question.includes('nachname') &&
+                            !question.includes('passwort')) {
+                            allQuestions.add(field.question);
+                        }
+                    });
+                });
+
+                const questionsList = Array.from(allQuestions).sort();
+                
+                // Erstelle Header-Zeile
+                const headers = ['Name', 'Anzahl Felder', 'Gesammelt am', ...questionsList];
+                
+                // Erstelle Datenzeilen
+                const rows = profiles.map(profile => {
+                    const row = {
+                        'Name': profile.name,
+                        'Anzahl Felder': profile.fields.length,
+                        'Gesammelt am': new Date(profile.timestamp).toLocaleString('de-DE')
+                    };
+                    
+                    // Füge Antworten für jede Frage hinzu
+                    questionsList.forEach(question => {
+                        const field = profile.fields.find(f => f.question === question);
+                        row[question] = field ? field.answer : '';
+                    });
+                    
+                    return row;
+                });
+
+                // Erstelle Workbook
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+                
+                // Setze Spaltenbreiten
+                const colWidths = headers.map(header => {
+                    if (header === 'Name') return { wch: 25 };
+                    if (header === 'Anzahl Felder') return { wch: 15 };
+                    if (header === 'Gesammelt am') return { wch: 20 };
+                    return { wch: 30 };
+                });
+                ws['!cols'] = colWidths;
+
+                // Füge Worksheet zum Workbook hinzu
+                XLSX.utils.book_append_sheet(wb, ws, 'Profile');
+
+                // Zusätzliches Worksheet mit Statistiken
+                const statsData = [
+                    { 'Statistik': 'Anzahl Profile', 'Wert': profiles.length },
+                    { 'Statistik': 'Anzahl Tandems', 'Wert': tandems.length },
+                    { 'Statistik': 'Durchschn. Felder pro Profil', 'Wert': Math.round(profiles.reduce((sum, p) => sum + p.fields.length, 0) / profiles.length) },
+                    { 'Statistik': 'Export Datum', 'Wert': new Date().toLocaleString('de-DE') }
+                ];
+                const statsWs = XLSX.utils.json_to_sheet(statsData);
+                XLSX.utils.book_append_sheet(wb, statsWs, 'Statistiken');
+
+                // Generiere Excel-Datei
+                const filename = `SwaF_Profile_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+                XLSX.writeFile(wb, filename);
+
+                showNotification(`✅ ${profiles.length} Profile als Excel exportiert`, 'success');
+                console.log('✅ Excel-Export erfolgreich abgeschlossen');
+                
+            } catch (error) {
+                console.error('❌ Fehler beim Excel-Export:', error);
+                showNotification('❌ Fehler beim Excel-Export: ' + error.message, 'error');
+            }
         }
 
         function importAppData() {
@@ -10622,6 +10847,8 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
                 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
                 crossorigin=""></script>
+        <!-- SheetJS für Excel-Export -->
+        <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>        
 </body>
 
 </html>
