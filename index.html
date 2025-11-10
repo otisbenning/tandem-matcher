@@ -2306,21 +2306,9 @@
                     console.log('✅ SwaF-Profildaten erkannt!');
                     processClipboardProfileData(pastedText);
                     
-                    // 🧹 Nach Verarbeitung: Batch und Zwischenablage leeren
+                    // Nach erfolgreicher Verarbeitung: Batch & Zwischenablage leeren
                     setTimeout(() => {
-                        try {
-                            localStorage.removeItem('swaf_batch_profiles');
-                            console.log('✅ Batch nach STRG+V geleert');
-                            
-                            if (navigator.clipboard && navigator.clipboard.writeText) {
-                                navigator.clipboard.writeText('').then(() => {
-                                    console.log('✅ Zwischenablage nach STRG+V geleert');
-                                    showNotification('✅ Import abgeschlossen - Batch & Zwischenablage geleert', 'success', 3000);
-                                }).catch(() => {});
-                            }
-                        } catch (e) {
-                            console.error('⚠️ Fehler beim Leeren:', e);
-                        }
+                        clearBatchAndClipboard();
                     }, 500);
                 }
             } catch (error) {
@@ -2402,26 +2390,17 @@
                     5000
                 );
                 
-                // Leere die Zwischenablage
+                // 🧹 SOFORT nach Import: Batch-Speicher leeren
+                console.log('🧹 Leere Batch-Speicher...');
                 try {
-                    navigator.clipboard.writeText('').catch(() => {});
-                } catch (e) {
-                    console.log('ℹ️ Zwischenablage konnte nicht geleert werden');
-                }
-                
-                } catch (error) {
-                    console.error('❌ Fehler beim Verarbeiten der Profildaten:', error);
-                    showDebugClipboardData(text, error.message);
-                }
-                
-                // 🧹 KRITISCH: Batch-Speicher und Zwischenablage SOFORT leeren
-                console.log('🧹 Leere Batch-Speicher und Zwischenablage...');
-                try {
-                    // Leere den localStorage Batch
                     localStorage.removeItem('swaf_batch_profiles');
                     console.log('✅ Batch-Speicher (localStorage) geleert');
-                    
-                    // Leere die Zwischenablage
+                } catch (e) {
+                    console.error('❌ Fehler beim Leeren des Batch:', e);
+                }
+                
+                // Leere die Zwischenablage
+                try {
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         navigator.clipboard.writeText('').then(() => {
                             console.log('✅ Zwischenablage geleert');
@@ -2430,24 +2409,37 @@
                         });
                     }
                 } catch (e) {
-                    console.error('❌ Fehler beim Leeren:', e);
+                    console.log('ℹ️ Zwischenablage konnte nicht geleert werden');
                 }
+                
+            } catch (error) {
+                console.error('❌ Fehler beim Verarbeiten der Profildaten:', error);
+                showDebugClipboardData(text, error.message);
             }
-            
-            // Leere den Batch-Speicher nach erfolgreichem Import
-            setTimeout(() => {
-                try {
-                    const batchData = localStorage.getItem('swaf_batch_profiles');
-                    if (batchData) {
-                        localStorage.removeItem('swaf_batch_profiles');
-                        console.log('✅ Batch-Speicher (localStorage) geleert');
-                        showNotification('✅ Import abgeschlossen - Batch-Speicher geleert', 'success', 2000);
-                    }
-                } catch (e) {
-                    console.log('⚠️ Batch-Speicher konnte nicht geleert werden:', e);
-                }
-            }, 1000);
         }
+
+
+        function clearBatchAndClipboard() {
+            console.log('🧹 Leere Batch-Speicher und Zwischenablage...');
+            try {
+                // Leere den localStorage Batch
+                localStorage.removeItem('swaf_batch_profiles');
+                console.log('✅ Batch-Speicher (localStorage) geleert');
+                
+                // Leere die Zwischenablage
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText('').then(() => {
+                        console.log('✅ Zwischenablage geleert');
+                        showNotification('✅ Batch & Zwischenablage geleert', 'success', 2000);
+                    }).catch((err) => {
+                        console.log('⚠️ Zwischenablage konnte nicht geleert werden:', err);
+                    });
+                }
+            } catch (e) {
+                console.error('❌ Fehler beim Leeren:', e);
+            }
+        }
+
 
         // ===============================
         // PROFIL-SAMMLUNG
@@ -9391,6 +9383,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         window.importCurrentBatch = importCurrentBatch;
         window.countUniquePersons = countUniquePersons;
         window.clearClipboard = clearClipboard;
+        window.clearBatchAndClipboard = clearBatchAndClipboard;
 
 
         function showAllFields() {
