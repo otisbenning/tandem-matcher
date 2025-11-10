@@ -1090,6 +1090,25 @@
                     </p>
                 </div>
 
+                <!-- Batch-Verwaltung -->
+                <div style="background: #fff3e0; padding: 1rem; border-radius: 4px; margin: 1rem 0; border-left: 4px solid #ff9800;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <strong style="font-size: 1rem;">📦 Bookmarklet-Batch-Speicher</strong>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="btn btn-outline btn-small" onclick="showBatchStatus()">
+                                📊 Status prüfen
+                            </button>
+                            <button class="btn btn-outline btn-small" onclick="resetBatch()" style="background: #ff6b6b; color: white;">
+                                🗑️ Batch leeren
+                            </button>
+                        </div>
+                    </div>
+                    <p style="margin: 0; font-size: 0.9rem; color: var(--swaf-dark-gray);">
+                        Das Bookmarklet sammelt Profile in einem Batch. Nach dem Import wird dieser automatisch geleert.<br>
+                        <strong>Manuelles Leeren nötig?</strong> Nutze den Button oben.
+                    </p>
+                </div>
+
                 <!-- Vereinfachte Bookmarklet-Sektion -->
                 <div class="card">
                     <h3>📌 Schritt 1: Bookmarklet installieren</h3>
@@ -2349,7 +2368,7 @@
                 const endMarker = 'SWAF_PROFILE_END';
                 
                 // Prüfe ob mehrere Profile vorhanden sind
-                const matches = text.match(/SWAF_PROFILE_START(.*?)SWAF_PROFILE_END/g);
+                const matches = text.match(/SWAF_PROFILE_START(.*?)SWAF_PROFILE_END/gs);
                 
                 if (!matches || matches.length === 0) {
                     throw new Error('Keine gültigen SWAF-Profildaten gefunden');
@@ -2386,9 +2405,23 @@
                 }
                 
             } catch (error) {
-                console.error('❌ Fehler beim Verarbeiten:', error);
-                showNotification('❌ Fehler: ' + error.message, 'error', 8000);
+                console.error('❌ Fehler beim Verarbeiten der Profildaten:', error);
+                showDebugClipboardData(text, error.message);
             }
+            
+            // Leere den Batch-Speicher nach erfolgreichem Import
+            setTimeout(() => {
+                try {
+                    const batchData = localStorage.getItem('swaf_batch_profiles');
+                    if (batchData) {
+                        localStorage.removeItem('swaf_batch_profiles');
+                        console.log('✅ Batch-Speicher (localStorage) geleert');
+                        showNotification('✅ Import abgeschlossen - Batch-Speicher geleert', 'success', 2000);
+                    }
+                } catch (e) {
+                    console.log('⚠️ Batch-Speicher konnte nicht geleert werden:', e);
+                }
+            }, 1000);
         }
 
         // ===============================
