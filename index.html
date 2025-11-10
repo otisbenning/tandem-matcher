@@ -1136,6 +1136,9 @@
                         <button class="btn btn-secondary" onclick="pasteFromClipboard()" style="margin-top: 0.5rem;">
                             📋 Aus Zwischenablage einfügen
                         </button>
+                        <button class="btn btn-outline btn-small" onclick="clearClipboard()" style="background: #ff6b6b; color: white;">
+                            🗑️ Zwischenablage leeren
+                        </button>
                     </div>
                 </div>
 
@@ -1208,6 +1211,9 @@
                         </button>
                         <button class="btn btn-outline btn-small" onclick="pasteFromClipboard()">
                             📥 Manuell einfügen
+                        </button>
+                        <button class="btn btn-outline btn-small" onclick="clearClipboard()" style="background: #ff6b6b; color: white;">
+                            🗑️ Zwischenablage leeren
                         </button>
                         <button class="btn btn-outline btn-small" onclick="testClipboardFormat()">
                             🧪 Clipboard-Format testen
@@ -2280,6 +2286,18 @@
                     e.preventDefault();
                     console.log('✅ SwaF-Profildaten erkannt!');
                     processClipboardProfileData(pastedText);
+                    
+                    // Leere die Zwischenablage nach erfolgreicher Verarbeitung
+                    setTimeout(() => {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText('').then(() => {
+                                console.log('✅ Zwischenablage geleert');
+                                showNotification('✅ Profil(e) importiert - Zwischenablage geleert', 'success', 2000);
+                            }).catch((err) => {
+                                console.log('⚠️ Zwischenablage konnte nicht geleert werden:', err);
+                            });
+                        }
+                    }, 500);
                 }
             } catch (error) {
                 console.error('❌ Fehler beim Verarbeiten des Paste-Events:', error);
@@ -2582,6 +2600,20 @@
                 console.log('🧹 localStorage bereinigt');
             } catch (e) {
                 showNotification('❌ Fehler beim Bereinigen', 'error');
+            }
+        }
+
+        function clearClipboard() {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText('').then(() => {
+                    showNotification('✅ Zwischenablage geleert', 'success', 2000);
+                    console.log('🗑️ Zwischenablage wurde manuell geleert');
+                }).catch((err) => {
+                    showNotification('❌ Fehler beim Leeren der Zwischenablage', 'error', 3000);
+                    console.error('❌ Fehler:', err);
+                });
+            } else {
+                showNotification('⚠️ Zwischenablage-API nicht verfügbar', 'warning', 3000);
             }
         }
 
@@ -9293,6 +9325,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         window.cleanupBatchStorage = cleanupBatchStorage;
         window.importCurrentBatch = importCurrentBatch;
         window.countUniquePersons = countUniquePersons;
+        window.clearClipboard = clearClipboard;
 
 
         function showAllFields() {
