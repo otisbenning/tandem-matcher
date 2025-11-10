@@ -1108,8 +1108,8 @@
                         <div style="text-align: center; margin: 2rem 0;">
                             <p style="margin-bottom: 1rem;">Ziehe diesen Button in deine Lesezeichen-Leiste:</p>
 
-                            <a href="javascript:(function(){try{var d={url:location.href,name:'',fields:[],pageType:'',timestamp:Date.now()};console.log('🚀 SwaF Sammler gestartet...');if(document.querySelector('.js_question-wrapper')){d.pageType='Interview';var h=document.querySelector('h1')||document.querySelector('.breadcrumb-item.active');d.name=h?(h.textContent||'').trim():'Interview_'+Date.now();console.log('📋 Interview-Modus, Name:',d.name);document.querySelectorAll('.js_question-wrapper').forEach(function(w,idx){console.log('🔍 Verarbeite Frage',idx+1);var qEl=w.querySelector('h2 span.text-break')||w.querySelector('h2');if(!qEl){console.log('❌ Keine Frage gefunden in Wrapper',idx+1);return;}var q=qEl.textContent.trim();console.log('❓ Frage:',q);var ans=[];w.querySelectorAll('input[type=checkbox]:checked,input[type=radio]:checked').forEach(function(inp){var sp=inp.nextElementSibling;if(sp&&sp.tagName==='SPAN'){ans.push(sp.textContent.trim());}else{var parent=inp.closest('label');if(parent)ans.push(parent.textContent.trim());}});var selectedOptions=w.querySelectorAll('option[selected]');console.log('  📊 Gefundene selected options:',selectedOptions.length);selectedOptions.forEach(function(opt,optIdx){var optText=opt.textContent.trim();console.log('  🔹 Option',optIdx+1,':',optText);if(optText&&!optText.startsWith('--')&&optText!=='Bitte wählen'&&optText!=='Auswählen'&&!optText.includes('Hier kannst du')){ans.push(optText);console.log('    ✅ Option hinzugefügt');}else{console.log('    ⏭️ Option ignoriert (Placeholder)');}});w.querySelectorAll('textarea').forEach(function(ta,taIdx){console.log('📝 Textarea',taIdx+1,':');if(ta.disabled||ta.style.position==='absolute'||ta.style.opacity==='0'||ta.style.top==='-10000px'||ta.style.visibility==='hidden'||ta.offsetHeight===0||ta.offsetWidth===0){console.log('  ⏭️ Textarea ignoriert (versteckt)');return;}var content='';if(ta.textContent&&ta.textContent.trim()){content=ta.textContent.trim();}else if(ta.innerHTML&&ta.innerHTML.trim()){content=ta.innerHTML.trim();}else if(ta.value&&ta.value.trim()){content=ta.value.trim();}if(content&&content!=='Hier kannst du etwas schreiben...'&&content.length>0){ans.push(content);console.log('  ✅ Antwort hinzugefügt:',content.substring(0,100)+'...');}});w.querySelectorAll('input[type=text],input[type=email],input[type=number]').forEach(function(inp){var val=inp.value.trim();if(val&&val!==''&&!val.startsWith('--')&&val!=='Bitte ausfüllen'){ans.push(val);}});var answer=ans.filter(function(a){return a&&a.length>0&&!a.startsWith('--')&&a!=='Bitte wählen'&&a!=='Auswählen';}).join(', ');console.log('📋 Finale Antwort:',answer);if(q&&answer){d.fields.push({question:q,answer:answer});console.log('✅ Feld hinzugefügt:',q,'=',answer.substring(0,100)+'...');}else{console.log('❌ Feld NICHT hinzugefügt - Frage:',!!q,'Antwort:',!!answer);}});}else{d.pageType='Hauptprofil';var nameEl=document.querySelector('span[name=name]')||document.querySelector('.o_field_char')||document.querySelector('h1');if(nameEl)d.name=(nameEl.textContent||nameEl.innerText||'').trim();if(!d.name)d.name='Profil_'+Date.now();document.querySelectorAll('span.o_field_widget,div.o_field_widget,a.o_field_widget').forEach(function(field){var labels=document.querySelectorAll('label.o_form_label');var matchedLabel=null;for(var i=0;i<labels.length;i++){var label=labels[i];var fieldRect=field.getBoundingClientRect();var labelRect=label.getBoundingClientRect();if(Math.abs(labelRect.top-fieldRect.top)<10&&labelRect.left<fieldRect.left){if(!matchedLabel||Math.abs(labelRect.left-fieldRect.left)<Math.abs(matchedLabel.getBoundingClientRect().left-fieldRect.left)){matchedLabel=label;}}}if(matchedLabel){var question=matchedLabel.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){d.fields.push({question:question,answer:answer});console.log('✅ Hauptprofil:',question,'=',answer);}}});document.querySelectorAll('.tab-pane').forEach(function(pane,tabIndex){pane.querySelectorAll('tr').forEach(function(row){var label=row.querySelector('label.o_form_label');var field=row.querySelector('span.o_field_widget,div.o_field_widget,a.o_field_widget');if(label&&field&&!field.classList.contains('o_field_empty')){var question=label.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){var exists=d.fields.some(function(f){return f.question===question;});if(!exists){d.fields.push({question:question,answer:answer});console.log('✅ Tab-Feld:',question,'=',answer);}}}});});}console.log('📊 SwaF Sammler ('+d.pageType+') - Gefunden:',d.name,'mit',d.fields.length,'Feldern');console.log('🔍 Alle Felder:',d.fields);var clipboardData='SWAF_PROFILE_START'+JSON.stringify(d)+'SWAF_PROFILE_END';localStorage.setItem('swaf_bookmarklet_data',JSON.stringify(d));if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(clipboardData).then(function(){alert('✅ '+d.pageType+' erfasst: '+d.name+' ('+d.fields.length+' Felder)\n📋 Daten in Zwischenablage kopiert!\n\n🔄 Zur App wechseln - Daten werden automatisch erkannt!\n\nÖffne Browser-Konsole für Details.');}).catch(function(err){alert('✅ '+d.pageType+' erfasst: '+d.name+' ('+d.fields.length+' Felder)\n⚠️ Zwischenablage-Zugriff fehlgeschlagen\n\n📋 Kopiere diese Daten manuell:\n'+clipboardData);});}else{alert('✅ '+d.pageType+' erfasst: '+d.name+' ('+d.fields.length+' Felder)\n📋 Kopiere diese Daten manuell:\n'+clipboardData);}}catch(e){alert('❌ Fehler: '+e.message);console.error('❌ SwaF Sammler Fehler:',e);}})()" class="simple-bookmarklet" draggable="true">
-                                📋 SwaF Sammler
+                            <a href="javascript:(function(){try{var d={url:location.href,name:'',fields:[],pageType:'',timestamp:Date.now()};console.log('🚀 SwaF Sammler gestartet...');if(document.querySelector('.js_question-wrapper')){d.pageType='Interview';var h=document.querySelector('h1')||document.querySelector('.breadcrumb-item.active');d.name=h?(h.textContent||'').trim():'Interview_'+Date.now();console.log('📋 Interview-Modus, Name:',d.name);document.querySelectorAll('.js_question-wrapper').forEach(function(w,idx){console.log('🔍 Verarbeite Frage',idx+1);var qEl=w.querySelector('h2 span.text-break')||w.querySelector('h2');if(!qEl){console.log('❌ Keine Frage gefunden in Wrapper',idx+1);return;}var q=qEl.textContent.trim();console.log('❓ Frage:',q);var ans=[];w.querySelectorAll('input[type=checkbox]:checked,input[type=radio]:checked').forEach(function(inp){var sp=inp.nextElementSibling;if(sp&&sp.tagName==='SPAN'){ans.push(sp.textContent.trim());}else{var parent=inp.closest('label');if(parent)ans.push(parent.textContent.trim());}});var selectedOptions=w.querySelectorAll('option[selected]');selectedOptions.forEach(function(opt){var optText=opt.textContent.trim();if(optText&&!optText.startsWith('--')&&optText!=='Bitte wählen'&&optText!=='Auswählen'&&!optText.includes('Hier kannst du')){ans.push(optText);}});w.querySelectorAll('textarea').forEach(function(ta){if(ta.disabled||ta.style.position==='absolute'||ta.style.opacity==='0'||ta.style.top==='-10000px'||ta.style.visibility==='hidden'||ta.offsetHeight===0||ta.offsetWidth===0){return;}var content='';if(ta.textContent&&ta.textContent.trim()){content=ta.textContent.trim();}else if(ta.innerHTML&&ta.innerHTML.trim()){content=ta.innerHTML.trim();}else if(ta.value&&ta.value.trim()){content=ta.value.trim();}if(content&&content!=='Hier kannst du etwas schreiben...'&&content.length>0){ans.push(content);}});w.querySelectorAll('input[type=text],input[type=email],input[type=number]').forEach(function(inp){var val=inp.value.trim();if(val&&val!==''&&!val.startsWith('--')&&val!=='Bitte ausfüllen'){ans.push(val);}});var answer=ans.filter(function(a){return a&&a.length>0&&!a.startsWith('--')&&a!=='Bitte wählen'&&a!=='Auswählen';}).join(', ');if(q&&answer){d.fields.push({question:q,answer:answer});}});}else{d.pageType='Hauptprofil';var nameEl=document.querySelector('span[name=name]')||document.querySelector('.o_field_char')||document.querySelector('h1');if(nameEl)d.name=(nameEl.textContent||nameEl.innerText||'').trim();if(!d.name)d.name='Profil_'+Date.now();document.querySelectorAll('span.o_field_widget,div.o_field_widget,a.o_field_widget').forEach(function(field){var labels=document.querySelectorAll('label.o_form_label');var matchedLabel=null;for(var i=0;i<labels.length;i++){var label=labels[i];var fieldRect=field.getBoundingClientRect();var labelRect=label.getBoundingClientRect();if(Math.abs(labelRect.top-fieldRect.top)<10&&labelRect.left<fieldRect.left){if(!matchedLabel||Math.abs(labelRect.left-fieldRect.left)<Math.abs(matchedLabel.getBoundingClientRect().left-fieldRect.left)){matchedLabel=label;}}}if(matchedLabel){var question=matchedLabel.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){d.fields.push({question:question,answer:answer});}}});document.querySelectorAll('.tab-pane').forEach(function(pane){pane.querySelectorAll('tr').forEach(function(row){var label=row.querySelector('label.o_form_label');var field=row.querySelector('span.o_field_widget,div.o_field_widget,a.o_field_widget');if(label&&field&&!field.classList.contains('o_field_empty')){var question=label.textContent.trim().replace(':','');var answer=field.textContent.trim();if(question&&answer&&answer.length>0&&!answer.includes('o_field')&&answer!=='false'&&answer!=='true'&&question!==answer&&!answer.startsWith('--')&&answer!=='Bitte wählen'){var exists=d.fields.some(function(f){return f.question===question;});if(!exists){d.fields.push({question:question,answer:answer});}}}});});}var batchData=localStorage.getItem('swaf_batch_profiles');var batch=batchData?JSON.parse(batchData):{profiles:[],started:Date.now()};batch.profiles.push(d);localStorage.setItem('swaf_batch_profiles',JSON.stringify(batch));var personCount=0;var profileNames={};batch.profiles.forEach(function(p){var baseName=p.name.replace(/\s*\(.*?\)\s*/g,'').trim();if(!profileNames[baseName]){profileNames[baseName]=0;personCount++;}profileNames[baseName]++;});var msg='✅ Profil gesammelt!\n\n📊 Batch-Status:\n• '+personCount+' Person(en) ('+batch.profiles.length+' Dokumente)\n• Gestartet: '+new Date(batch.started).toLocaleTimeString('de-DE')+'\n\nWähle eine Option:';if(confirm(msg+'\n\nOK = Weiter sammeln\nAbbrechen = Batch jetzt übertragen')){console.log('👍 Weitersammeln gewählt');}else{var clipboardData='SWAF_BATCH_START'+JSON.stringify(batch.profiles)+'SWAF_BATCH_END';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(clipboardData).then(function(){alert('✅ '+batch.profiles.length+' Profile in Zwischenablage kopiert!\n\n🔄 Wechsle zur App - Daten werden automatisch erkannt!');localStorage.removeItem('swaf_batch_profiles');}).catch(function(){alert('✅ Batch bereit!\n\nBitte zur App wechseln für automatischen Import.');});}else{alert('✅ Batch bereit!\n\nBitte zur App wechseln für automatischen Import.');}}}catch(e){alert('❌ Fehler: '+e.message);console.error('❌ SwaF Sammler Fehler:',e);}})()" class="simple-bookmarklet" draggable="true">
+                                📋 SwaF Sammler (Batch)
                             </a>
 
                             <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--swaf-dark-gray);">
@@ -1214,6 +1214,13 @@
                         </button>
                         <button class="btn btn-outline btn-small" onclick="checkForBookmarkletData()">
                             🔍 Nach localStorage-Daten suchen
+                        </button>
+                        <button class="btn btn-outline btn-small" onclick="resetBatch()" style="background: #ff6b6b; color: white;">
+                            🗑️ Batch leeren
+                        </button>
+
+                        <button class="btn btn-outline btn-small" onclick="showBatchStatus()" style="background: var(--swaf-primary); color: white;">
+                            📦 Batch-Status
                         </button>
                         <button class="btn btn-outline btn-small" onclick="showDebugInfo()">
                             📊 Debug-Info anzeigen
@@ -2412,6 +2419,9 @@
         // ===============================
         function startDataChecker() {
             console.log('🔍 Starte Daten-Checker...');
+            
+            // Prüfe sofort beim Start auf Batch-Daten
+            checkForBatchData();
 
             // Prüfe localStorage für Batch-Daten (weniger häufig)
             setInterval(() => {
@@ -2435,6 +2445,238 @@
                     // Ignoriere Fehler
                 }
             }, 3000); // Reduziert von 1000ms auf 3000ms
+        }
+
+        function checkForBatchData() {
+            try {
+                const batchData = localStorage.getItem('swaf_batch_profiles');
+                if (batchData) {
+                    const batch = JSON.parse(batchData);
+                    
+                    // Prüfe Alter des Batches (24h Auto-Reset)
+                    const batchAge = Date.now() - batch.started;
+                    if (batchAge > 24 * 60 * 60 * 1000) {
+                        console.log('⏰ Batch älter als 24h - wird geleert');
+                        localStorage.removeItem('swaf_batch_profiles');
+                        return;
+                    }
+                    
+                    console.log('📦 Batch-Daten gefunden:', batch.profiles.length, 'Profile');
+                    
+                    // Zeige Bestätigung
+                    const personCount = countUniquePersons(batch.profiles);
+                    const importNow = confirm(
+                        `📦 Batch gefunden!\n\n` +
+                        `${personCount} Person(en) (${batch.profiles.length} Dokumente)\n` +
+                        `Gestartet: ${new Date(batch.started).toLocaleString('de-DE')}\n\n` +
+                        `Jetzt importieren?`
+                    );
+                    
+                    if (importNow) {
+                        importBatchProfiles(batch.profiles);
+                        localStorage.removeItem('swaf_batch_profiles');
+                    }
+                }
+            } catch (e) {
+                console.error('❌ Fehler beim Prüfen der Batch-Daten:', e);
+            }
+        }
+        
+        function resetBatch() {
+            const batchData = localStorage.getItem('swaf_batch_profiles');
+            if (!batchData) {
+                showNotification('ℹ️ Kein aktiver Batch vorhanden', 'info');
+                return;
+            }
+            
+            const batch = JSON.parse(batchData);
+            const personCount = countUniquePersons(batch.profiles);
+            
+            if (confirm(
+                `🗑️ Batch löschen?\n\n` +
+                `${personCount} Person(en) (${batch.profiles.length} Dokumente) gehen verloren!`
+            )) {
+                localStorage.removeItem('swaf_batch_profiles');
+                showNotification('✅ Batch geleert', 'success');
+            }
+        }
+
+        function showBatchStatus() {
+            const batchData = localStorage.getItem('swaf_batch_profiles');
+            
+            if (!batchData) {
+                createModal('📦 Batch-Status', `
+                    <div style="text-align: center; padding: 2rem;">
+                        <p style="font-size: 1.2rem;">ℹ️ Kein aktiver Batch</p>
+                        <p style="color: #666; margin-top: 1rem;">
+                            Verwende das Bookmarklet im Portal, um Profile zu sammeln.
+                        </p>
+                    </div>
+                `, [
+                    { text: 'OK', class: 'btn-primary', action: 'closeModal' }
+                ]);
+                return;
+            }
+            
+            const batch = JSON.parse(batchData);
+            const personCount = countUniquePersons(batch.profiles);
+            const startTime = new Date(batch.started).toLocaleString('de-DE');
+            const age = Math.round((Date.now() - batch.started) / (1000 * 60));
+            
+            // Gruppiere Profile für detaillierte Ansicht
+            const personGroups = {};
+            batch.profiles.forEach(profile => {
+                const baseName = profile.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+                if (!personGroups[baseName]) {
+                    personGroups[baseName] = [];
+                }
+                personGroups[baseName].push(profile);
+            });
+            
+            let detailHTML = '';
+            Object.entries(personGroups).forEach(([name, profiles]) => {
+                detailHTML += `
+                    <div style="background: var(--swaf-lightest-teal); padding: 0.5rem; margin: 0.5rem 0; border-radius: 4px;">
+                        <strong>${name}</strong>
+                        <span style="color: #666; margin-left: 0.5rem;">
+                            ${profiles.map(p => p.pageType).join(' + ')}
+                        </span>
+                    </div>
+                `;
+            });
+            
+            createModal('📦 Batch-Status', `
+                <div style="text-align: left;">
+                    <h3 style="margin-bottom: 1rem;">Aktueller Batch</h3>
+                    
+                    <div style="background: var(--swaf-lightest-teal); padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+                        <p><strong>👥 Personen:</strong> ${personCount}</p>
+                        <p><strong>📄 Dokumente:</strong> ${batch.profiles.length}</p>
+                        <p><strong>⏰ Gestartet:</strong> ${startTime}</p>
+                        <p><strong>🕐 Alter:</strong> ${age} Minuten</p>
+                    </div>
+                    
+                    <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Gesammelte Profile:</h4>
+                    ${detailHTML}
+                    
+                    <div style="background: #fff3cd; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                        <small>💡 <strong>Tipp:</strong> Der Batch wird automatisch beim Öffnen der App importiert oder nach 24h gelöscht.</small>
+                    </div>
+                </div>
+            `, [
+                { text: 'Batch jetzt importieren', class: 'btn-primary', action: 'importCurrentBatch' },
+                { text: 'Batch löschen', class: 'btn-outline', action: 'resetBatch' },
+                { text: 'Schließen', class: 'btn-outline', action: 'closeModal' }
+            ]);
+        }
+
+        function importCurrentBatch() {
+            const batchData = localStorage.getItem('swaf_batch_profiles');
+            if (batchData) {
+                const batch = JSON.parse(batchData);
+                importBatchProfiles(batch.profiles);
+                localStorage.removeItem('swaf_batch_profiles');
+                closeModal();
+            }
+        }
+        
+        function countUniquePersons(profiles) {
+            const names = new Set();
+            profiles.forEach(p => {
+                const baseName = p.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+                names.add(baseName);
+            });
+            return names.size;
+        }
+
+        function importBatchProfiles(batchProfiles) {
+            console.log('📥 Importiere Batch:', batchProfiles.length, 'Profile');
+            
+            let imported = 0;
+            let merged = 0;
+            let skipped = 0;
+            
+            // Gruppiere Profile nach Person (Name ohne Klammern)
+            const personGroups = {};
+            batchProfiles.forEach(profile => {
+                const baseName = profile.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+                if (!personGroups[baseName]) {
+                    personGroups[baseName] = [];
+                }
+                personGroups[baseName].push(profile);
+            });
+            
+            console.log('👥 Gruppiert in', Object.keys(personGroups).length, 'Personen');
+            
+            // Verarbeite jede Person
+            Object.entries(personGroups).forEach(([baseName, personProfiles]) => {
+                console.log('🔄 Verarbeite Person:', baseName, '(', personProfiles.length, 'Profile)');
+                
+                if (personProfiles.length === 1) {
+                    // Nur ein Profil - direkt importieren
+                    receiveProfileData(personProfiles[0]);
+                    imported++;
+                } else {
+                    // Mehrere Profile - merge Hauptprofil + Interview
+                    const hauptprofil = personProfiles.find(p => p.pageType === 'Hauptprofil');
+                    const interview = personProfiles.find(p => p.pageType === 'Interview');
+                    
+                    if (hauptprofil && interview) {
+                        // Merge beide Profile
+                        const mergedProfile = {
+                            url: hauptprofil.url,
+                            name: baseName,
+                            pageType: 'Merged',
+                            timestamp: Date.now(),
+                            fields: []
+                        };
+                        
+                        // Sammle alle Felder (ohne Duplikate)
+                        const fieldMap = new Map();
+                        
+                        hauptprofil.fields.forEach(f => {
+                            fieldMap.set(f.question, f.answer);
+                        });
+                        
+                        interview.fields.forEach(f => {
+                            if (!fieldMap.has(f.question)) {
+                                fieldMap.set(f.question, f.answer);
+                            } else {
+                                // Wenn beide Antworten haben, kombiniere sie
+                                const existing = fieldMap.get(f.question);
+                                if (existing !== f.answer) {
+                                    fieldMap.set(f.question, existing + ', ' + f.answer);
+                                }
+                            }
+                        });
+                        
+                        fieldMap.forEach((answer, question) => {
+                            mergedProfile.fields.push({ question, answer });
+                        });
+                        
+                        console.log('🔗 Merged:', hauptprofil.name, '+', interview.name, '→', mergedProfile.fields.length, 'Felder');
+                        receiveProfileData(mergedProfile);
+                        merged++;
+                    } else {
+                        // Keine vollständige Paarung - importiere einzeln
+                        personProfiles.forEach(p => {
+                            receiveProfileData(p);
+                            imported++;
+                        });
+                    }
+                }
+            });
+            
+            showNotification(
+                `✅ Batch importiert!\n\n` +
+                `📊 ${Object.keys(personGroups).length} Person(en)\n` +
+                `🔗 ${merged} zusammengeführt\n` +
+                `📄 ${imported} einzeln importiert`,
+                'success',
+                5000
+            );
+            
+            renderProfiles();
         }
 
         function receiveProfileData(data) {
