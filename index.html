@@ -5293,18 +5293,39 @@
         }
 
         function selectAllFields(select) {
-            const checkboxes = document.querySelectorAll('#field-selection input[type="checkbox"]');
-            selectedFields = [];
-
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = select;
-                if (select) {
-                    const field = checkbox.id.replace('field-', '');
-                    selectedFields.push(field);
-                }
-            });
+            const checkboxes = document.querySelectorAll('#field-selection input[type="checkbox"]:not([disabled])');
+            
+            if (select) {
+                // Alle aktivieren - hole Feldnamen aus dem Label-Text
+                selectedFields = [];
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                    // Finde das Label und extrahiere den Feldnamen (ohne "Automatisch ausgeschlossen")
+                    const labelDiv = checkbox.parentElement.querySelector('label strong');
+                    if (labelDiv) {
+                        const fieldName = labelDiv.textContent.trim();
+                        if (fieldName && !selectedFields.includes(fieldName)) {
+                            selectedFields.push(fieldName);
+                        }
+                    }
+                });
+            } else {
+                // Alle deaktivieren
+                selectedFields = [];
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
 
             localStorage.setItem('swaf_selected_fields', JSON.stringify(selectedFields));
+            
+            // Update Counter
+            const counter = document.getElementById('selected-fields-count');
+            if (counter) {
+                counter.textContent = selectedFields.length;
+            }
+            
+            console.log(`✅ ${select ? 'Alle' : 'Keine'} Felder ausgewählt:`, selectedFields.length, 'Felder');
         }
 
         // ===============================
