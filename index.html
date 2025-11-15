@@ -5292,15 +5292,6 @@
             console.log('✅ Neue Auswahl:', selectedFields.length, 'Felder');
         }
 
-        function toggleField(field) {
-            if (selectedFields.includes(field)) {
-                selectedFields = selectedFields.filter(f => f !== field);
-            } else {
-                selectedFields.push(field);
-            }
-            localStorage.setItem('swaf_selected_fields', JSON.stringify(selectedFields));
-        }
-
         function selectAllFields(select) {
             const checkboxes = document.querySelectorAll('#field-selection input[type="checkbox"]');
             selectedFields = [];
@@ -11232,4 +11223,3 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 </body>
 
 </html>
-
