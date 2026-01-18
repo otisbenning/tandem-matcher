@@ -3806,11 +3806,19 @@
                 // Erstelle Marker
                 const marker = L.marker(coords, { icon: customIcon }).addTo(profileMap);
         
-                // Popup-Inhalt
+                // Erstelle vollständige Profil-Details für das Popup
+                const allFieldsHTML = profile.fields.map(field => `
+                    <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #f5f5f5; border-radius: 4px;">
+                        <strong style="color: var(--swaf-teal); font-size: 0.85rem;">${field.question}</strong>
+                        <div style="margin-top: 0.25rem; font-size: 0.9rem;">${field.answer}</div>
+                    </div>
+                `).join('');
+
+                // Popup-Inhalt mit aufklappbaren Details
                 const popupContent = `
-                    <div style="min-width: 200px;">
+                    <div style="min-width: 250px; max-width: 400px;">
                         <h4 style="margin: 0 0 0.5rem 0; color: var(--swaf-red);">${profile.name}</h4>
-                        <table style="width: 100%; font-size: 0.9rem;">
+                        <table style="width: 100%; font-size: 0.9rem; margin-bottom: 0.5rem;">
                             <tr><td><strong>Alter:</strong></td><td>${alter}</td></tr>
                             <tr><td><strong>Geschlecht:</strong></td><td>${geschlecht}</td></tr>
                             <tr><td><strong>Gruppe:</strong></td><td>${gruppe}</td></tr>
@@ -3818,13 +3826,25 @@
                             <tr><td><strong>Max. Altersdiff.:</strong></td><td>${maxAltersdiff}</td></tr>
                             <tr><td><strong>Geschlecht Tandem:</strong></td><td>${geschlechtTandem}</td></tr>
                         </table>
-                        <button class="btn btn-primary" onclick="toggleProfileSelectionFromMap('${profile.id}')" style="width: 100%; margin-top: 0.5rem;">
+
+                        <button class="btn btn-outline btn-small"
+                            onclick="toggleMapPopupDetails('${profile.id}')"
+                            id="toggle-details-${profile.id}"
+                            style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                            📋 Alle Felder anzeigen
+                        </button>
+
+                        <div id="popup-details-${profile.id}" style="display: none; max-height: 400px; overflow-y: auto; margin-bottom: 0.5rem; padding: 0.5rem; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                            ${allFieldsHTML}
+                        </div>
+
+                        <button class="btn btn-primary" onclick="toggleProfileSelectionFromMap('${profile.id}')" style="width: 100%;">
                             ${isSelected ? '✓ Ausgewählt' : 'Auswählen'}
                         </button>
                     </div>
                 `;
-        
-                marker.bindPopup(popupContent);
+
+                marker.bindPopup(popupContent, { maxWidth: 450 });
                 profileMarkers.push(marker);
                 bounds.push(coords);
             }
@@ -3837,15 +3857,30 @@
             console.log(`✅ ${profileMarkers.length} Profile auf Karte angezeigt`);
         }
         
+        function toggleMapPopupDetails(profileId) {
+            const detailsDiv = document.getElementById(`popup-details-${profileId}`);
+            const toggleBtn = document.getElementById(`toggle-details-${profileId}`);
+
+            if (detailsDiv && toggleBtn) {
+                if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
+                    detailsDiv.style.display = 'block';
+                    toggleBtn.textContent = '📋 Alle Felder verbergen';
+                } else {
+                    detailsDiv.style.display = 'none';
+                    toggleBtn.textContent = '📋 Alle Felder anzeigen';
+                }
+            }
+        }
+
         function toggleProfileSelectionFromMap(profileId) {
             // Konvertiere zu Number für konsistenten Vergleich
             const numericId = typeof profileId === 'string' ? parseFloat(profileId) : profileId;
-            
+
             const index = selectedProfiles.findIndex(id => {
                 const numericSelectedId = typeof id === 'string' ? parseFloat(id) : id;
                 return numericSelectedId === numericId;
             });
-        
+
             if (index > -1) {
                 selectedProfiles.splice(index, 1);
             } else {
@@ -3855,12 +3890,12 @@
                 }
                 selectedProfiles.push(numericId);
             }
-        
+
             updateMatchingStatus();
-            
+
             // Aktualisiere Karte
             loadProfileMap();
-            
+
             console.log('📊 Ausgewählte Profile nach Karten-Toggle:', selectedProfiles);
         }
         
