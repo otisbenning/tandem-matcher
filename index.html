@@ -5340,7 +5340,7 @@
             showNotification('✅ Alle Filter zurückgesetzt', 'success', 2000);
         }
 
-        async function createMatchFromFullScreen() {
+        function createMatchFromFullScreen() {
             if (fullScreenSelectedProfiles.length !== 2) {
                 showNotification('Bitte wähle genau 2 Profile aus', 'warning');
                 return;
@@ -5354,7 +5354,7 @@
             const wasOpen = modal.style.display === 'block';
 
             // Rufe die normale Matching-Funktion auf
-            await performMatching();
+            matchSelectedProfiles();
 
             // Lösche Auswahl und lade Karte neu
             fullScreenSelectedProfiles = [];
