@@ -3793,7 +3793,9 @@
 
                 // 2. Geschlecht-Filter
                 const genderField = profile.fields.find(f =>
-                    f.question.toLowerCase().includes('geschlecht')
+                    f.question.toLowerCase().includes('geschlecht') &&
+                    !f.question.toLowerCase().includes('tandem') &&
+                    !f.question.toLowerCase().includes('partner')
                 );
                 const profileGender = genderField ? genderField.answer.toLowerCase() : '';
                 const matchesGender = !genderFilter || profileGender.includes(genderFilter);
@@ -3865,11 +3867,16 @@
         
                 // Extrahiere Profilinformationen
                 const alter = profile.fields.find(f => f.question.toLowerCase().includes('alter'))?.answer || 'N/A';
-                const geschlecht = profile.fields.find(f => f.question.toLowerCase().includes('geschlecht'))?.answer || 'N/A';
-                const gruppe = profile.fields.find(f => 
-                    f.question.toLowerCase().includes('gruppe') || 
-                    f.question.toLowerCase().includes('local') || 
-                    f.question.toLowerCase().includes('einwander')
+                const geschlecht = profile.fields.find(f =>
+                    f.question.toLowerCase().includes('geschlecht') &&
+                    !f.question.toLowerCase().includes('tandem') &&
+                    !f.question.toLowerCase().includes('partner')
+                )?.answer || 'N/A';
+                const gruppe = profile.fields.find(f =>
+                    f.question.toLowerCase().includes('gruppe') ||
+                    f.question.toLowerCase().includes('local') ||
+                    f.question.toLowerCase().includes('einwander') ||
+                    f.question.toLowerCase().includes('newcom')
                 )?.answer || 'N/A';
                 const maxAltersdiff = profile.fields.find(f => 
                     f.question.toLowerCase().includes('maximale altersdifferenz') ||
@@ -4171,17 +4178,41 @@
 
             // 4. Interkulturell (max 1 Punkt - Bonus!)
             maxScore += 1;
-            const gruppe1Field = profile1.fields.find(f => f.question.toLowerCase().includes('gruppe'));
-            const gruppe2Field = profile2.fields.find(f => f.question.toLowerCase().includes('gruppe'));
+            const gruppe1Field = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('gruppe') ||
+                f.question.toLowerCase().includes('local') ||
+                f.question.toLowerCase().includes('einwander') ||
+                f.question.toLowerCase().includes('newcom')
+            );
+            const gruppe2Field = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('gruppe') ||
+                f.question.toLowerCase().includes('local') ||
+                f.question.toLowerCase().includes('einwander') ||
+                f.question.toLowerCase().includes('newcom')
+            );
             if (gruppe1Field && gruppe2Field) {
                 const g1 = gruppe1Field.answer.toLowerCase();
                 const g2 = gruppe2Field.answer.toLowerCase();
-                const isIntercultural = (g1.includes('local') && g2.includes('einwander')) || (g1.includes('einwander') && g2.includes('local'));
+                details.gruppe1 = gruppe1Field.answer;
+                details.gruppe2 = gruppe2Field.answer;
+                const isIntercultural =
+                    (g1.includes('local') && (g2.includes('einwander') || g2.includes('newcom'))) ||
+                    ((g1.includes('einwander') || g1.includes('newcom')) && g2.includes('local'));
                 if (isIntercultural) {
                     score += 1;
                     details.intercultural = true;
                     details.reasons.push('Interkulturell');
                 }
+            }
+
+            // Speichere Geschlechter in Details für Anzeige
+            if (gender1 && gender2) {
+                details.gender1 = gender1.answer;
+                details.gender2 = gender2.answer;
+            }
+            if (genderPref1 && genderPref2) {
+                details.genderPref1 = genderPref1.answer;
+                details.genderPref2 = genderPref2.answer;
             }
 
             // Normalisiere auf 5 Sterne
@@ -4248,40 +4279,61 @@
                 const stars = '⭐'.repeat(suggestion.quality);
                 const reasons = suggestion.details.reasons || [];
 
-                // Erstelle Profil-Vergleich
+                // Erstelle Profil-Vergleich mit vollständigen Informationen
                 const comparisonHTML = `
                     <div style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;" id="comparison-${suggestion.id}">
-                        <table style="width: 100%; font-size: 0.85rem;">
+                        <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
                             <tr style="background: #f8fafc;">
-                                <th style="padding: 0.5rem; text-align: left; width: 30%;">Kriterium</th>
-                                <th style="padding: 0.5rem; text-align: left;">${suggestion.profile1.name}</th>
-                                <th style="padding: 0.5rem; text-align: left;">${suggestion.profile2.name}</th>
+                                <th style="padding: 0.5rem; text-align: left; width: 30%; border-bottom: 2px solid #cbd5e1;">Kriterium</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #cbd5e1;">${suggestion.profile1.name}</th>
+                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #cbd5e1;">${suggestion.profile2.name}</th>
                             </tr>
-                            ${suggestion.details.age ? `
+                            ${suggestion.details.gruppe1 && suggestion.details.gruppe2 ? `
+                            <tr style="background: ${suggestion.details.intercultural ? '#f0fdf4' : '#ffffff'};">
+                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Gruppe</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.gruppe1} ${suggestion.details.intercultural ? '🌍' : ''}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.gruppe2} ${suggestion.details.intercultural ? '🌍' : ''}</td>
+                            </tr>` : ''}
+                            ${suggestion.details.gender1 && suggestion.details.gender2 ? `
                             <tr>
-                                <td style="padding: 0.5rem; font-weight: 500;">Alter</td>
-                                <td style="padding: 0.5rem;">${suggestion.details.age.age1} Jahre</td>
-                                <td style="padding: 0.5rem;">${suggestion.details.age.age2} Jahre</td>
+                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Geschlecht</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.gender1}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.gender2}</td>
+                            </tr>` : ''}
+                            ${suggestion.details.age ? `
+                            <tr style="background: ${suggestion.details.ageDiff && suggestion.details.ageDiff <= 5 ? '#f0fdf4' : '#ffffff'};">
+                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Alter</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.age.age1} Jahre</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.age.age2} Jahre ${suggestion.details.ageDiff ? `<span style="color: #64748b;">(±${suggestion.details.ageDiff} Jahre)</span>` : ''}</td>
                             </tr>` : ''}
                             ${suggestion.details.plz1 && suggestion.details.plz2 ? `
-                            <tr>
-                                <td style="padding: 0.5rem; font-weight: 500;">PLZ / Distanz</td>
-                                <td style="padding: 0.5rem;">${suggestion.details.plz1}</td>
-                                <td style="padding: 0.5rem;">${suggestion.details.plz2} ${suggestion.details.plzDistance !== null ? `(~${suggestion.details.plzDistance} km)` : ''}</td>
+                            <tr style="background: ${suggestion.details.plzDistance !== null && suggestion.details.plzDistance < 50 ? '#f0fdf4' : '#ffffff'};">
+                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">PLZ / Distanz</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.plz1}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.plz2}${suggestion.details.plzDistance !== null ? ` <span style="color: #64748b;">(~${suggestion.details.plzDistance} km)</span>` : ''}</td>
                             </tr>` : ''}
-                            ${suggestion.details.genderPreference ? `
+                            ${suggestion.details.genderPref1 || suggestion.details.genderPref2 ? `
                             <tr>
-                                <td style="padding: 0.5rem; font-weight: 500;">Geschlechtspräferenz</td>
-                                <td colspan="2" style="padding: 0.5rem;">
-                                    ${suggestion.details.genderPreference === 'match' ? '✅ Erfüllt' : suggestion.details.genderPreference === 'partial' ? '⚠️ Teilweise' : '❌ Nicht erfüllt'}
+                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Geschlechtspräferenz</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.genderPref1 || 'Keine Angabe'}</td>
+                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.genderPref2 || 'Keine Angabe'}</td>
+                            </tr>
+                            <tr style="background: ${suggestion.details.genderPreference === 'match' ? '#f0fdf4' : suggestion.details.genderPreference === 'partial' ? '#fffbeb' : '#ffffff'};">
+                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Präferenz erfüllt?</td>
+                                <td colspan="2" style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">
+                                    ${suggestion.details.genderPreference === 'match' ? '✅ Voll erfüllt' : suggestion.details.genderPreference === 'partial' ? '⚠️ Teilweise erfüllt' : '❌ Nicht erfüllt'}
                                 </td>
                             </tr>` : ''}
-                            ${suggestion.details.intercultural ? `
-                            <tr>
-                                <td style="padding: 0.5rem; font-weight: 500;">Interkulturell</td>
-                                <td colspan="2" style="padding: 0.5rem;">✅ Ja (Local ↔ Eingewanderte*r)</td>
-                            </tr>` : ''}
                         </table>
+                        ${reasons.length > 0 ? `
+                        <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; border: 1px solid #bae6fd;">
+                            <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                                🎯 Match-Gründe:
+                            </div>
+                            <ul style="margin: 0; padding-left: 1.5rem; color: #0369a1;">
+                                ${reasons.map(reason => `<li style="margin: 0.25rem 0;">${reason}</li>`).join('')}
+                            </ul>
+                        </div>` : ''}
                     </div>
                 `;
 
@@ -4782,7 +4834,11 @@
             // Geschlecht-Filter - ROBUSTER
             let matchesGender = true;
             if (genderFilter) {
-                const genderField = profile.fields.find(f => f.question.toLowerCase().includes('geschlecht'));
+                const genderField = profile.fields.find(f =>
+                    f.question.toLowerCase().includes('geschlecht') &&
+                    !f.question.toLowerCase().includes('tandem') &&
+                    !f.question.toLowerCase().includes('partner')
+                );
                 if (genderField) {
                     const profileGender = genderField.answer.toLowerCase().trim();
                     matchesGender = profileGender.includes(genderFilter);
@@ -4796,11 +4852,17 @@
                 const gruppeField = profile.fields.find(f =>
                     f.question.toLowerCase().includes('gruppe') ||
                     f.question.toLowerCase().includes('local') ||
-                    f.question.toLowerCase().includes('einwander')
+                    f.question.toLowerCase().includes('einwander') ||
+                    f.question.toLowerCase().includes('newcom')
                 );
                 if (gruppeField) {
                     const profileGruppe = gruppeField.answer.toLowerCase().trim();
-                    matchesGruppe = profileGruppe.includes(gruppeFilter);
+                    // Erweiterte Matching-Logik für Eingewanderte/Newcomer
+                    if (gruppeFilter === 'einwander') {
+                        matchesGruppe = profileGruppe.includes('einwander') || profileGruppe.includes('newcom');
+                    } else {
+                        matchesGruppe = profileGruppe.includes(gruppeFilter);
+                    }
                 }
                 // Kein Feld → trotzdem anzeigen
             }
@@ -4867,11 +4929,16 @@
         async function renderProfileMarker(profile, coords, isMatched, tandemId = null) {
             // Extrahiere Profilinformationen
             const alter = profile.fields.find(f => f.question.toLowerCase().includes('alter'))?.answer || 'N/A';
-            const geschlecht = profile.fields.find(f => f.question.toLowerCase().includes('geschlecht'))?.answer || 'N/A';
+            const geschlecht = profile.fields.find(f =>
+                f.question.toLowerCase().includes('geschlecht') &&
+                !f.question.toLowerCase().includes('tandem') &&
+                !f.question.toLowerCase().includes('partner')
+            )?.answer || 'N/A';
             const gruppe = profile.fields.find(f =>
                 f.question.toLowerCase().includes('gruppe') ||
                 f.question.toLowerCase().includes('local') ||
-                f.question.toLowerCase().includes('einwander')
+                f.question.toLowerCase().includes('einwander') ||
+                f.question.toLowerCase().includes('newcom')
             )?.answer || 'N/A';
             const plzField = profile.fields.find(f =>
                 f.question.toLowerCase().includes('postleitzahl') ||
@@ -5137,12 +5204,15 @@
                         f.question.toLowerCase().includes('geburtstag')
                     );
                     const genderField = profile.fields.find(f =>
-                        f.question.toLowerCase().includes('geschlecht')
+                        f.question.toLowerCase().includes('geschlecht') &&
+                        !f.question.toLowerCase().includes('tandem') &&
+                        !f.question.toLowerCase().includes('partner')
                     );
                     const gruppeField = profile.fields.find(f =>
                         f.question.toLowerCase().includes('gruppe') ||
                         f.question.toLowerCase().includes('local') ||
-                        f.question.toLowerCase().includes('einwander')
+                        f.question.toLowerCase().includes('einwander') ||
+                        f.question.toLowerCase().includes('newcom')
                     );
 
                     const ageText = ageField ? ` • ${ageField.answer}` : '';
@@ -5156,7 +5226,7 @@
                         if (gruppe.includes('local')) {
                             gruppeColor = '#FFB000'; // Gelb/Gold für Locals
                             gruppeLabel = 'Local';
-                        } else if (gruppe.includes('einwander')) {
+                        } else if (gruppe.includes('einwander') || gruppe.includes('newcom')) {
                             gruppeColor = '#009892'; // Teal für Einwanderer*innen
                             gruppeLabel = 'Eingewanderte*r';
                         }
@@ -6231,7 +6301,9 @@
                 let matchesGender = true;
                 if (genderFilter) {
                     const genderField = profile.fields.find(f =>
-                        f.question.toLowerCase().includes('geschlecht')
+                        f.question.toLowerCase().includes('geschlecht') &&
+                        !f.question.toLowerCase().includes('tandem') &&
+                        !f.question.toLowerCase().includes('partner')
                     );
                     if (genderField) {
                         const profileGender = genderField.answer.toLowerCase().trim();
@@ -6248,11 +6320,17 @@
                     const gruppeField = profile.fields.find(f =>
                         f.question.toLowerCase().includes('gruppe') ||
                         f.question.toLowerCase().includes('local') ||
-                        f.question.toLowerCase().includes('einwander')
+                        f.question.toLowerCase().includes('einwander') ||
+                        f.question.toLowerCase().includes('newcom')
                     );
                     if (gruppeField) {
                         const profileGruppe = gruppeField.answer.toLowerCase().trim();
-                        matchesGruppe = profileGruppe.includes(gruppeFilter);
+                        // Erweiterte Matching-Logik für Eingewanderte/Newcomer
+                        if (gruppeFilter === 'einwander') {
+                            matchesGruppe = profileGruppe.includes('einwander') || profileGruppe.includes('newcom');
+                        } else {
+                            matchesGruppe = profileGruppe.includes(gruppeFilter);
+                        }
                     } else {
                         // Kein Gruppenfeld → zeige Profil trotzdem an
                         matchesGruppe = true;
