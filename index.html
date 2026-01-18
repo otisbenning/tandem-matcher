@@ -1920,6 +1920,7 @@
         let gamificationStats = JSON.parse(localStorage.getItem('swaf_gamification_stats') || '{"totalMatches":0,"todayMatches":0,"lastMatchDate":"","streak":0,"qualityScores":[],"achievements":[]}');
         let undoStack = [];
         let undoTimer = null;
+        let dismissedSuggestions = new Set(); // IDs von abgelehnten Vorschlägen
 
         // Achievement Definitionen
         const ACHIEVEMENTS = [
@@ -4043,8 +4044,66 @@
         function calculateMatchQuality(profile1, profile2) {
             let score = 0;
             let maxScore = 0;
+            const details = {
+                age: null,
+                ageDiff: null,
+                plz1: null,
+                plz2: null,
+                plzDistance: null,
+                intercultural: false,
+                genderPreference: null,
+                reasons: []
+            };
 
-            // 1. Altersdifferenz (max 2 Punkte)
+            // 1. PLZ-Distanz (max 3 Punkte - HÖCHSTE PRIORITÄT!)
+            maxScore += 3;
+            const plz1Field = profile1.fields.find(f => f.question.toLowerCase().includes('plz') || f.question.toLowerCase().includes('postleitzahl'));
+            const plz2Field = profile2.fields.find(f => f.question.toLowerCase().includes('plz') || f.question.toLowerCase().includes('postleitzahl'));
+            if (plz1Field && plz2Field) {
+                const plz1 = plz1Field.answer.match(/\d{5}/)?.[0] || '';
+                const plz2 = plz2Field.answer.match(/\d{5}/)?.[0] || '';
+                if (plz1 && plz2) {
+                    details.plz1 = plz1;
+                    details.plz2 = plz2;
+
+                    // Berechne geschätzte Distanz basierend auf PLZ
+                    const plz1First2 = parseInt(plz1.substring(0, 2));
+                    const plz2First2 = parseInt(plz2.substring(0, 2));
+                    const plzDiff = Math.abs(plz1First2 - plz2First2);
+
+                    // Schätze Distanz (sehr grob)
+                    let estimatedKm = plzDiff * 50; // Ca. 50km pro PLZ-Region-Differenz
+
+                    if (plz1 === plz2) {
+                        score += 3;
+                        details.plzDistance = 0;
+                        details.reasons.push('Gleiche PLZ');
+                    } else if (plzDiff === 0) {
+                        score += 2.5;
+                        estimatedKm = 10;
+                        details.plzDistance = estimatedKm;
+                        details.reasons.push('Gleiche Region (< 10 km)');
+                    } else if (plzDiff === 1) {
+                        score += 2;
+                        details.plzDistance = estimatedKm;
+                        details.reasons.push(`Benachbarte Region (~${estimatedKm} km)`);
+                    } else if (plzDiff <= 3) {
+                        score += 1.5;
+                        details.plzDistance = estimatedKm;
+                        details.reasons.push(`Nahe Region (~${estimatedKm} km)`);
+                    } else if (plzDiff <= 5) {
+                        score += 1;
+                        details.plzDistance = estimatedKm;
+                        details.reasons.push(`Mittlere Distanz (~${estimatedKm} km)`);
+                    } else {
+                        score += 0.5;
+                        details.plzDistance = estimatedKm;
+                        details.reasons.push(`Weite Distanz (~${estimatedKm} km)`);
+                    }
+                }
+            }
+
+            // 2. Altersdifferenz (max 2 Punkte)
             maxScore += 2;
             const age1Field = profile1.fields.find(f => f.question.toLowerCase().includes('alter'));
             const age2Field = profile2.fields.find(f => f.question.toLowerCase().includes('alter'));
@@ -4052,29 +4111,65 @@
                 const age1 = parseInt(age1Field.answer) || 0;
                 const age2 = parseInt(age2Field.answer) || 0;
                 const ageDiff = Math.abs(age1 - age2);
-                if (ageDiff <= 5) score += 2;
-                else if (ageDiff <= 10) score += 1.5;
-                else if (ageDiff <= 15) score += 1;
-                else if (ageDiff <= 20) score += 0.5;
-            }
+                details.age = { age1, age2 };
+                details.ageDiff = ageDiff;
 
-            // 2. PLZ-Nähe (max 2 Punkte)
-            maxScore += 2;
-            const plz1Field = profile1.fields.find(f => f.question.toLowerCase().includes('plz') || f.question.toLowerCase().includes('postleitzahl'));
-            const plz2Field = profile2.fields.find(f => f.question.toLowerCase().includes('plz') || f.question.toLowerCase().includes('postleitzahl'));
-            if (plz1Field && plz2Field) {
-                const plz1 = plz1Field.answer.match(/\d{5}/)?.[0] || '';
-                const plz2 = plz2Field.answer.match(/\d{5}/)?.[0] || '';
-                if (plz1 && plz2) {
-                    const plzDiff = Math.abs(parseInt(plz1.substring(0, 2)) - parseInt(plz2.substring(0, 2)));
-                    if (plz1 === plz2) score += 2;
-                    else if (plzDiff === 0) score += 1.5; // Gleiche Region
-                    else if (plzDiff <= 2) score += 1;
-                    else if (plzDiff <= 5) score += 0.5;
+                if (ageDiff <= 3) {
+                    score += 2;
+                    details.reasons.push(`Sehr ähnliches Alter (±${ageDiff} Jahre)`);
+                } else if (ageDiff <= 5) {
+                    score += 1.8;
+                    details.reasons.push(`Ähnliches Alter (±${ageDiff} Jahre)`);
+                } else if (ageDiff <= 10) {
+                    score += 1.5;
+                    details.reasons.push(`Nahes Alter (±${ageDiff} Jahre)`);
+                } else if (ageDiff <= 15) {
+                    score += 1;
+                    details.reasons.push(`Moderate Altersdifferenz (±${ageDiff} Jahre)`);
+                } else if (ageDiff <= 20) {
+                    score += 0.5;
+                } else {
+                    details.reasons.push(`Große Altersdifferenz (±${ageDiff} Jahre)`);
                 }
             }
 
-            // 3. Interkulturell (max 1 Punkt - Bonus!)
+            // 3. Geschlechtspräferenz (max 1 Punkt)
+            maxScore += 1;
+            const genderPref1 = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('geschlecht') &&
+                (f.question.toLowerCase().includes('tandem') || f.question.toLowerCase().includes('partner'))
+            );
+            const genderPref2 = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('geschlecht') &&
+                (f.question.toLowerCase().includes('tandem') || f.question.toLowerCase().includes('partner'))
+            );
+
+            const gender1 = profile1.fields.find(f => f.question.toLowerCase().includes('geschlecht') && !f.question.toLowerCase().includes('tandem') && !f.question.toLowerCase().includes('partner'));
+            const gender2 = profile2.fields.find(f => f.question.toLowerCase().includes('geschlecht') && !f.question.toLowerCase().includes('tandem') && !f.question.toLowerCase().includes('partner'));
+
+            if (gender1 && gender2 && (genderPref1 || genderPref2)) {
+                const g1 = gender1.answer.toLowerCase();
+                const g2 = gender2.answer.toLowerCase();
+                const pref1 = genderPref1 ? genderPref1.answer.toLowerCase() : 'egal';
+                const pref2 = genderPref2 ? genderPref2.answer.toLowerCase() : 'egal';
+
+                // Prüfe ob Präferenzen erfüllt sind
+                const pref1Match = pref1.includes('egal') || pref1.includes('keine') || pref1.includes(g2);
+                const pref2Match = pref2.includes('egal') || pref2.includes('keine') || pref2.includes(g1);
+
+                if (pref1Match && pref2Match) {
+                    score += 1;
+                    details.genderPreference = 'match';
+                    details.reasons.push('Geschlechtspräferenz erfüllt');
+                } else if (pref1Match || pref2Match) {
+                    score += 0.5;
+                    details.genderPreference = 'partial';
+                } else {
+                    details.genderPreference = 'mismatch';
+                }
+            }
+
+            // 4. Interkulturell (max 1 Punkt - Bonus!)
             maxScore += 1;
             const gruppe1Field = profile1.fields.find(f => f.question.toLowerCase().includes('gruppe'));
             const gruppe2Field = profile2.fields.find(f => f.question.toLowerCase().includes('gruppe'));
@@ -4082,18 +4177,18 @@
                 const g1 = gruppe1Field.answer.toLowerCase();
                 const g2 = gruppe2Field.answer.toLowerCase();
                 const isIntercultural = (g1.includes('local') && g2.includes('einwander')) || (g1.includes('einwander') && g2.includes('local'));
-                if (isIntercultural) score += 1; // Bonus für interkulturelle Tandems
+                if (isIntercultural) {
+                    score += 1;
+                    details.intercultural = true;
+                    details.reasons.push('Interkulturell');
+                }
             }
 
             // Normalisiere auf 5 Sterne
             const normalizedScore = Math.min(5, Math.round((score / maxScore) * 5));
             return {
                 score: normalizedScore,
-                details: {
-                    age: age1Field && age2Field ? Math.abs((parseInt(age1Field.answer) || 0) - (parseInt(age2Field.answer) || 0)) : null,
-                    plzMatch: plz1Field && plz2Field,
-                    intercultural: gruppe1Field && gruppe2Field ? ((gruppe1Field.answer.toLowerCase().includes('local') && gruppe2Field.answer.toLowerCase().includes('einwander')) || (gruppe1Field.answer.toLowerCase().includes('einwander') && gruppe2Field.answer.toLowerCase().includes('local'))) : false
-                }
+                details: details
             };
         }
 
@@ -4123,8 +4218,14 @@
                 for (let j = i + 1; j < availableProfiles.length; j++) {
                     const p1 = availableProfiles[i];
                     const p2 = availableProfiles[j];
+                    const suggestionId = `${p1.id}-${p2.id}`;
+
+                    // Skip dismissed suggestions
+                    if (dismissedSuggestions.has(suggestionId)) continue;
+
                     const quality = calculateMatchQuality(p1, p2);
                     suggestions.push({
+                        id: suggestionId,
                         profile1: p1,
                         profile2: p2,
                         quality: quality.score,
@@ -4145,27 +4246,111 @@
             panel.style.display = 'block';
             container.innerHTML = top3.map((suggestion, index) => {
                 const stars = '⭐'.repeat(suggestion.quality);
-                const reasons = [];
-                if (suggestion.details.age !== null && suggestion.details.age <= 10) reasons.push(`Ähnliches Alter (±${suggestion.details.age} Jahre)`);
-                if (suggestion.details.plzMatch) reasons.push('Gleiche Region');
-                if (suggestion.details.intercultural) reasons.push('Interkulturell');
+                const reasons = suggestion.details.reasons || [];
+
+                // Erstelle Profil-Vergleich
+                const comparisonHTML = `
+                    <div style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;" id="comparison-${suggestion.id}">
+                        <table style="width: 100%; font-size: 0.85rem;">
+                            <tr style="background: #f8fafc;">
+                                <th style="padding: 0.5rem; text-align: left; width: 30%;">Kriterium</th>
+                                <th style="padding: 0.5rem; text-align: left;">${suggestion.profile1.name}</th>
+                                <th style="padding: 0.5rem; text-align: left;">${suggestion.profile2.name}</th>
+                            </tr>
+                            ${suggestion.details.age ? `
+                            <tr>
+                                <td style="padding: 0.5rem; font-weight: 500;">Alter</td>
+                                <td style="padding: 0.5rem;">${suggestion.details.age.age1} Jahre</td>
+                                <td style="padding: 0.5rem;">${suggestion.details.age.age2} Jahre</td>
+                            </tr>` : ''}
+                            ${suggestion.details.plz1 && suggestion.details.plz2 ? `
+                            <tr>
+                                <td style="padding: 0.5rem; font-weight: 500;">PLZ / Distanz</td>
+                                <td style="padding: 0.5rem;">${suggestion.details.plz1}</td>
+                                <td style="padding: 0.5rem;">${suggestion.details.plz2} ${suggestion.details.plzDistance !== null ? `(~${suggestion.details.plzDistance} km)` : ''}</td>
+                            </tr>` : ''}
+                            ${suggestion.details.genderPreference ? `
+                            <tr>
+                                <td style="padding: 0.5rem; font-weight: 500;">Geschlechtspräferenz</td>
+                                <td colspan="2" style="padding: 0.5rem;">
+                                    ${suggestion.details.genderPreference === 'match' ? '✅ Erfüllt' : suggestion.details.genderPreference === 'partial' ? '⚠️ Teilweise' : '❌ Nicht erfüllt'}
+                                </td>
+                            </tr>` : ''}
+                            ${suggestion.details.intercultural ? `
+                            <tr>
+                                <td style="padding: 0.5rem; font-weight: 500;">Interkulturell</td>
+                                <td colspan="2" style="padding: 0.5rem;">✅ Ja (Local ↔ Eingewanderte*r)</td>
+                            </tr>` : ''}
+                        </table>
+                    </div>
+                `;
 
                 return `
-                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-                        <div style="flex: 1;">
-                            <div style="font-weight: bold; color: #1e293b; margin-bottom: 0.25rem;">
-                                ${suggestion.profile1.name} ↔ ${suggestion.profile2.name}
+                    <div id="suggestion-${suggestion.id}" style="background: white; border: 2px solid #cbd5e1; border-radius: 8px; padding: 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold; color: #1e293b; margin-bottom: 0.25rem; font-size: 1rem;">
+                                    ${suggestion.profile1.name} ↔ ${suggestion.profile2.name}
+                                </div>
+                                <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem;">
+                                    ${stars} • ${reasons.slice(0, 2).join(' • ')}${reasons.length > 2 ? '...' : ''}
+                                </div>
+                                <button class="btn btn-outline btn-small" onclick="toggleComparisonDetails('${suggestion.id}')" style="font-size: 0.8rem;">
+                                    📊 Vergleich anzeigen
+                                </button>
                             </div>
-                            <div style="font-size: 0.85rem; color: #64748b;">
-                                ${stars} • ${reasons.join(' • ')}
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <button class="btn btn-primary btn-small" onclick="quickMatch('${suggestion.profile1.id}', '${suggestion.profile2.id}')" style="white-space: nowrap;">
+                                    ✨ Quick Match
+                                </button>
+                                <button class="btn btn-outline btn-small" onclick="dismissSuggestion('${suggestion.id}')" style="white-space: nowrap; color: #64748b;">
+                                    ✕ Ablehnen
+                                </button>
                             </div>
                         </div>
-                        <button class="btn btn-primary btn-small" onclick="quickMatch('${suggestion.profile1.id}', '${suggestion.profile2.id}')" style="white-space: nowrap;">
-                            ✨ Quick Match
-                        </button>
+                        ${comparisonHTML}
                     </div>
                 `;
             }).join('');
+        }
+
+        function toggleComparisonDetails(suggestionId) {
+            const comparison = document.getElementById(`comparison-${suggestionId}`);
+            const button = event.target;
+
+            if (comparison.style.display === 'none' || comparison.style.display === '') {
+                comparison.style.display = 'block';
+                button.textContent = '📊 Vergleich verbergen';
+            } else {
+                comparison.style.display = 'none';
+                button.textContent = '📊 Vergleich anzeigen';
+            }
+        }
+
+        function dismissSuggestion(suggestionId) {
+            dismissedSuggestions.add(suggestionId);
+            const suggestionEl = document.getElementById(`suggestion-${suggestionId}`);
+            if (suggestionEl) {
+                suggestionEl.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    updateSmartMatches();
+                }, 300);
+            }
+
+            // Füge CSS-Animation hinzu falls noch nicht vorhanden
+            if (!document.getElementById('fadeout-style')) {
+                const style = document.createElement('style');
+                style.id = 'fadeout-style';
+                style.textContent = `
+                    @keyframes fadeOut {
+                        to {
+                            opacity: 0;
+                            transform: translateX(-20px);
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
         }
 
         async function quickMatch(profileId1, profileId2) {
@@ -4594,38 +4779,55 @@
             // Name/Text-Suche
             const matchesSearch = !search || profile.name.toLowerCase().includes(search);
 
-            // Geschlecht-Filter
-            const genderField = profile.fields.find(f => f.question.toLowerCase().includes('geschlecht'));
-            const profileGender = genderField ? genderField.answer.toLowerCase() : '';
-            const matchesGender = !genderFilter || profileGender.includes(genderFilter);
+            // Geschlecht-Filter - ROBUSTER
+            let matchesGender = true;
+            if (genderFilter) {
+                const genderField = profile.fields.find(f => f.question.toLowerCase().includes('geschlecht'));
+                if (genderField) {
+                    const profileGender = genderField.answer.toLowerCase().trim();
+                    matchesGender = profileGender.includes(genderFilter);
+                }
+                // Kein Feld → trotzdem anzeigen
+            }
 
-            // Gruppen-Filter
-            const gruppeField = profile.fields.find(f =>
-                f.question.toLowerCase().includes('gruppe') ||
-                f.question.toLowerCase().includes('local') ||
-                f.question.toLowerCase().includes('einwander')
-            );
-            const profileGruppe = gruppeField ? gruppeField.answer.toLowerCase() : '';
-            const matchesGruppe = !gruppeFilter || profileGruppe.includes(gruppeFilter);
+            // Gruppen-Filter - ROBUSTER
+            let matchesGruppe = true;
+            if (gruppeFilter) {
+                const gruppeField = profile.fields.find(f =>
+                    f.question.toLowerCase().includes('gruppe') ||
+                    f.question.toLowerCase().includes('local') ||
+                    f.question.toLowerCase().includes('einwander')
+                );
+                if (gruppeField) {
+                    const profileGruppe = gruppeField.answer.toLowerCase().trim();
+                    matchesGruppe = profileGruppe.includes(gruppeFilter);
+                }
+                // Kein Feld → trotzdem anzeigen
+            }
 
             // Alter-Filter
-            const ageField = profile.fields.find(f =>
-                f.question.toLowerCase() === 'alter' ||
-                f.question.toLowerCase().includes('geburtstag')
-            );
-            let profileAge = 0;
-            if (ageField) {
-                profileAge = parseInt(ageField.answer) || 0;
-                if (profileAge === 0 && ageField.answer.includes('/')) {
-                    const parts = ageField.answer.split(/[\/\.]/);
-                    if (parts.length === 3) {
-                        const year = parseInt(parts[2]);
-                        const currentYear = new Date().getFullYear();
-                        profileAge = currentYear - year;
+            let matchesAge = true;
+            if (ageMin > 0 || ageMax < 999) {
+                const ageField = profile.fields.find(f =>
+                    f.question.toLowerCase() === 'alter' ||
+                    f.question.toLowerCase().includes('geburtstag')
+                );
+                if (ageField) {
+                    let profileAge = parseInt(ageField.answer) || 0;
+                    if (profileAge === 0 && ageField.answer.includes('/')) {
+                        const parts = ageField.answer.split(/[\/\.]/);
+                        if (parts.length === 3) {
+                            const year = parseInt(parts[2]);
+                            const currentYear = new Date().getFullYear();
+                            profileAge = currentYear - year;
+                        }
+                    }
+                    if (profileAge > 0) {
+                        matchesAge = profileAge >= ageMin && profileAge <= ageMax;
                     }
                 }
+                // Kein Altersfeld → trotzdem anzeigen
             }
-            const matchesAge = (profileAge === 0) || (profileAge >= ageMin && profileAge <= ageMax);
 
             return matchesSearch && matchesGender && matchesGruppe && matchesAge;
         }
@@ -5992,11 +6194,13 @@
         }
 
         function filterProfiles() {
-            const search = document.getElementById('profile-search').value.toLowerCase();
-            const genderFilter = document.getElementById('filter-gender').value.toLowerCase();
-            const gruppeFilter = document.getElementById('filter-gruppe').value.toLowerCase();
+            const search = document.getElementById('profile-search').value.toLowerCase().trim();
+            const genderFilter = document.getElementById('filter-gender').value.toLowerCase().trim();
+            const gruppeFilter = document.getElementById('filter-gruppe').value.toLowerCase().trim();
             const ageMin = parseInt(document.getElementById('filter-age-min').value) || 0;
             const ageMax = parseInt(document.getElementById('filter-age-max').value) || 999;
+
+            console.log('🔍 Filter-Werte:', { search, genderFilter, gruppeFilter, ageMin, ageMax });
 
             // Prüfe welche Ansicht aktiv ist
             if (currentView === 'map') {
@@ -6007,6 +6211,9 @@
 
             // Listenansicht: Filtere .profile-item Elemente
             const profileItems = document.querySelectorAll('.profile-item');
+            console.log(`📋 Filtere ${profileItems.length} Profile...`);
+
+            let matchCount = 0;
 
             profileItems.forEach(item => {
                 const profileId = item.getAttribute('data-profile-id');
@@ -6018,62 +6225,88 @@
                 }
 
                 // Name/Text-Suche
-                const name = item.textContent.toLowerCase();
-                const matchesSearch = name.includes(search);
+                const matchesSearch = !search || item.textContent.toLowerCase().includes(search);
 
-                // Geschlecht-Filter
-                const genderField = profile.fields.find(f =>
-                    f.question.toLowerCase().includes('geschlecht')
-                );
-                const profileGender = genderField ? genderField.answer.toLowerCase() : '';
-                const matchesGender = !genderFilter || profileGender.includes(genderFilter);
-
-                // Gruppen-Filter
-                const gruppeField = profile.fields.find(f =>
-                    f.question.toLowerCase().includes('gruppe') ||
-                    f.question.toLowerCase().includes('local') ||
-                    f.question.toLowerCase().includes('einwander')
-                );
-                const profileGruppe = gruppeField ? gruppeField.answer.toLowerCase() : '';
-                const matchesGruppe = !gruppeFilter || profileGruppe.includes(gruppeFilter);
-
-                // Alter-Filter
-                const ageField = profile.fields.find(f =>
-                    f.question.toLowerCase() === 'alter' ||
-                    f.question.toLowerCase().includes('geburtstag')
-                );
-                let profileAge = 0;
-                if (ageField) {
-                    // Versuche Alter direkt zu parsen oder aus Geburtstag zu berechnen
-                    profileAge = parseInt(ageField.answer) || 0;
-                    if (profileAge === 0 && ageField.answer.includes('/')) {
-                        // Geburtsdatum Format: DD/MM/YYYY oder DD.MM.YYYY
-                        const parts = ageField.answer.split(/[\/\.]/);
-                        if (parts.length === 3) {
-                            const year = parseInt(parts[2]);
-                            const currentYear = new Date().getFullYear();
-                            profileAge = currentYear - year;
-                        }
+                // Geschlecht-Filter - ROBUSTER
+                let matchesGender = true;
+                if (genderFilter) {
+                    const genderField = profile.fields.find(f =>
+                        f.question.toLowerCase().includes('geschlecht')
+                    );
+                    if (genderField) {
+                        const profileGender = genderField.answer.toLowerCase().trim();
+                        matchesGender = profileGender.includes(genderFilter);
+                    } else {
+                        // Kein Geschlechtsfeld → zeige Profil trotzdem an (nicht ausfiltern)
+                        matchesGender = true;
                     }
                 }
-                const matchesAge = (profileAge === 0) || (profileAge >= ageMin && profileAge <= ageMax);
 
-                // WICHTIG: Zeige/Verstecke Profile, aber behalte das Grid-Layout bei
-                // Verwende '' statt 'block', damit das Grid-Layout funktioniert
-                item.style.display = (matchesSearch && matchesGender && matchesGruppe && matchesAge) ? '' : 'none';
+                // Gruppen-Filter - ROBUSTER
+                let matchesGruppe = true;
+                if (gruppeFilter) {
+                    const gruppeField = profile.fields.find(f =>
+                        f.question.toLowerCase().includes('gruppe') ||
+                        f.question.toLowerCase().includes('local') ||
+                        f.question.toLowerCase().includes('einwander')
+                    );
+                    if (gruppeField) {
+                        const profileGruppe = gruppeField.answer.toLowerCase().trim();
+                        matchesGruppe = profileGruppe.includes(gruppeFilter);
+                    } else {
+                        // Kein Gruppenfeld → zeige Profil trotzdem an
+                        matchesGruppe = true;
+                    }
+                }
+
+                // Alter-Filter
+                let matchesAge = true;
+                if (ageMin > 0 || ageMax < 999) {
+                    const ageField = profile.fields.find(f =>
+                        f.question.toLowerCase() === 'alter' ||
+                        f.question.toLowerCase().includes('geburtstag')
+                    );
+                    if (ageField) {
+                        let profileAge = parseInt(ageField.answer) || 0;
+                        if (profileAge === 0 && ageField.answer.includes('/')) {
+                            const parts = ageField.answer.split(/[\/\.]/);
+                            if (parts.length === 3) {
+                                const year = parseInt(parts[2]);
+                                const currentYear = new Date().getFullYear();
+                                profileAge = currentYear - year;
+                            }
+                        }
+                        if (profileAge > 0) {
+                            matchesAge = profileAge >= ageMin && profileAge <= ageMax;
+                        }
+                    }
+                    // Kein Altersfeld → zeige trotzdem an
+                }
+
+                const shouldShow = matchesSearch && matchesGender && matchesGruppe && matchesAge;
+
+                // Debug-Log für erste 3 Profile
+                if (matchCount < 3) {
+                    console.log(`Profile "${profile.name}":`, {
+                        matchesSearch,
+                        matchesGender,
+                        matchesGruppe,
+                        matchesAge,
+                        shouldShow
+                    });
+                }
+
+                item.style.display = shouldShow ? '' : 'none';
+                if (shouldShow) matchCount++;
             });
 
-            // Zeige Anzahl gefilterter Profile
-            const visibleCount = Array.from(profileItems).filter(item =>
-                item.style.display !== 'none'
-            ).length;
-            console.log(`🔍 ${visibleCount} von ${profileItems.length} Profilen sichtbar nach Filterung`);
+            console.log(`✅ ${matchCount} von ${profileItems.length} Profilen sichtbar`);
 
             // Zeige Feedback
-            if (visibleCount === 0 && profileItems.length > 0) {
+            if (matchCount === 0 && profileItems.length > 0) {
                 showNotification('⚠️ Keine Profile entsprechen den Filtern', 'warning', 3000);
-            } else if (visibleCount < profileItems.length) {
-                showNotification(`🔍 ${visibleCount} von ${profileItems.length} Profilen gefunden`, 'info', 2000);
+            } else if (matchCount < profileItems.length) {
+                showNotification(`🔍 ${matchCount} von ${profileItems.length} Profilen gefunden`, 'info', 2000);
             }
         }
 
