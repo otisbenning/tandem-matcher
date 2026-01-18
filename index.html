@@ -2008,124 +2008,101 @@
 
         // Vordefinierte Textbausteine
         const predefinedTemplates = [
-            // Sport & Bewegung
-            { title: 'Sport allgemein', text: 'Ihr habt beide Interesse an Sport und Bewegung' },
-            { title: 'Fußball', text: 'Ihr interessiert euch beide für Fußball' },
-            { title: 'Fitnessstudio', text: 'Ihr geht beide gerne ins Fitnessstudio' },
-            { title: 'Wandern', text: 'Ihr wandert beide gerne und mögt die Natur' },
-            { title: 'Laufen', text: 'Ihr lauft beide gerne und haltet euch fit' },
+            // Sport & Bewegung - GENERISCHER
+            { title: 'Sport & Bewegung', text: 'Ihr habt beide Interesse an sportlichen Aktivitäten' },
+            { title: 'Outdoor-Aktivitäten', text: 'Ihr seid beide gerne draußen aktiv' },
+            { title: 'Fitness & Gesundheit', text: 'Euch ist beiden ein aktiver Lebensstil wichtig' },
 
-            // Kultur & Freizeit
-            { title: 'Kultur allgemein', text: 'Ihr interessiert euch beide für kulturelle Veranstaltungen' },
-            { title: 'Kino/Filme', text: 'Ihr schaut beide gerne Filme und geht ins Kino' },
-            { title: 'Theater/Museum', text: 'Ihr mögt beide Theateraufführungen und Museumsbesuche' },
-            { title: 'Konzerte', text: 'Ihr geht beide gerne zu Konzerten und Livemusik' },
-            { title: 'Festivals', text: 'Ihr mögt beide Festivals und Veranstaltungen' },
+            // Kultur & Freizeit - GENERISCHER
+            { title: 'Kulturelle Interessen', text: 'Ihr interessiert euch beide für Kultur und kulturelle Veranstaltungen' },
+            { title: 'Unterhaltung & Medien', text: 'Ihr teilt Interessen im Bereich Unterhaltung' },
+            { title: 'Veranstaltungen', text: 'Ihr geht beide gerne zu Events und Veranstaltungen' },
 
-            // Musik & Kunst  
-            { title: 'Musik allgemein', text: 'Ihr habt beide eine Leidenschaft für Musik' },
-            { title: 'Musikinstrument', text: 'Ihr spielt beide ein Musikinstrument' },
-            { title: 'Tanzen', text: 'Ihr tanzt beide gerne' },
-            { title: 'Singen', text: 'Ihr singt beide gerne' },
+            // Musik & Kunst - GENERISCHER
+            { title: 'Musik', text: 'Musik spielt für euch beide eine Rolle' },
+            { title: 'Kreative Tätigkeiten', text: 'Ihr habt beide kreative Interessen' },
+            { title: 'Künstlerische Ausdrucksformen', text: 'Euch interessieren beide verschiedene Formen der Kunst' },
 
-            // Essen & Kochen
-            { title: 'Kochen allgemein', text: 'Ihr kocht beide gerne und probiert neue Rezepte aus' },
-            { title: 'Restaurants', text: 'Ihr geht beide gerne in Restaurants und probiert neues Essen' },
-            { title: 'Backen', text: 'Ihr backt beide gerne' },
-            { title: 'Vegetarisch/Vegan', text: 'Ihr ernährt euch beide vegetarisch/vegan' },
+            // Essen & Kochen - GENERISCHER
+            { title: 'Kulinarisches', text: 'Ihr interessiert euch beide fürs Essen und Kulinarisches' },
+            { title: 'Gemeinsam kochen', text: 'Ihr kocht beide gerne' },
 
             // Sprachen & Kommunikation
-            { title: 'Sprachen lernen', text: 'Ihr lernt beide gerne neue Sprachen' },
-            { title: 'Deutsch üben', text: 'Ihr möchtet beide euer Deutsch verbessern' },
-            { title: 'Englisch sprechen', text: 'Ihr sprecht beide gerne Englisch' },
-            { title: 'Mehrsprachig', text: 'Ihr seid beide mehrsprachig und sprachbegeistert' },
+            { title: 'Sprachen & Sprachenlernen', text: 'Sprachen sind für euch beide wichtig' },
+            { title: 'Sprachpraxis', text: 'Ihr möchtet beide eure Sprachkenntnisse üben' },
+            { title: 'Mehrsprachigkeit', text: 'Ihr bringt beide mehrsprachige Erfahrungen mit' },
 
-            // Soziales & Persönlichkeit
-            { title: 'Freunde treffen', text: 'Ihr trefft beide gerne Freunde und seid gesellig' },
-            { title: 'Neue Leute kennenlernen', text: 'Ihr lernt beide gerne neue Menschen kennen' },
-            { title: 'Hilfsbereit', text: 'Ihr helft beide gerne anderen Menschen' },
-            { title: 'Aufgeschlossen', text: 'Ihr seid beide aufgeschlossen und neugierig' },
+            // Soziales & Persönlichkeit - GENERISCHER
+            { title: 'Soziale Aktivitäten', text: 'Ihr seid beide gesellig und trefft gerne Leute' },
+            { title: 'Aufgeschlossenheit', text: 'Ihr seid beide offen für neue Begegnungen' },
+            { title: 'Persönliche Eigenschaften', text: 'Eure Persönlichkeiten passen gut zusammen' },
 
-            // Alter & Lebenssituation
-            { title: 'Ähnliches Alter', text: 'Ihr seid etwa gleich alt' },
-            { title: 'Junge Erwachsene', text: 'Ihr seid beide junge Erwachsene' },
-            { title: 'Studium/Ausbildung', text: 'Ihr studiert oder macht beide eine Ausbildung' },
-            { title: 'Berufstätig', text: 'Ihr arbeitet beide und seid berufstätig' },
-            { title: 'Hochschulerfahrung', text: 'Ihr habt beide Hochschulerfahrung' },
+            // Alter & Lebenssituation - GENERISCHER
+            { title: 'Ähnliche Lebensphase', text: 'Ihr befindet euch in ähnlichen Lebensphasen' },
+            { title: 'Bildung & Beruf', text: 'Ihr habt ähnliche Bildungs- oder Berufshintergründe' },
 
             // Wohnen & Region
-            { title: 'Gleiche PLZ', text: 'Ihr wohnt in derselben PLZ' },
-            { title: 'Gleicher Bezirk', text: 'Ihr wohnt im gleichen Bezirk' },
-            { title: 'Gleiche Stadt', text: 'Ihr wohnt in derselben Stadt' },
-            { title: 'Nah beieinander', text: 'Ihr wohnt nah beieinander' },
-            { title: 'Gut erreichbar', text: 'Ihr könnt euch gut mit öffentlichen Verkehrsmitteln erreichen' },
+            { title: 'Nähe & Erreichbarkeit', text: 'Ihr wohnt gut erreichbar zueinander' },
+            { title: 'Gleiche Region', text: 'Ihr kommt aus der gleichen Gegend' },
+            { title: 'Kurze Wege', text: 'Ihr könnt euch unkompliziert treffen' },
 
-            // Interessen & Hobbys
-            { title: 'Lesen', text: 'Ihr lest beide gerne Bücher' },
-            { title: 'Reisen', text: 'Ihr reist beide gerne und entdeckt neue Orte' },
-            { title: 'Fotografie', text: 'Ihr fotografiert beide gerne' },
-            { title: 'Gaming', text: 'Ihr spielt beide gerne Computerspiele' },
-            { title: 'Handwerk/DIY', text: 'Ihr bastelt und werkt beide gerne' },
-            { title: 'Gärtnern', text: 'Ihr mögt beide Pflanzen und Gärtnern' },
+            // Interessen & Hobbys - GENERISCHER
+            { title: 'Gemeinsame Hobbys', text: 'Ihr habt ähnliche Freizeitinteressen' },
+            { title: 'Vielfältige Interessen', text: 'Ihr habt beide vielfältige Interessen' },
+            { title: 'Entdeckungsfreude', text: 'Ihr seid beide offen, Neues auszuprobieren' },
 
-            // Mobilität & Verkehr
-            { title: 'Fahrrad fahren', text: 'Ihr fahrt beide gerne Fahrrad' },
-            { title: 'Öffentliche Verkehrsmittel', text: 'Ihr nutzt beide gerne öffentliche Verkehrsmittel' },
-            { title: 'Zu Fuß gehen', text: 'Ihr geht beide gerne zu Fuß und seid gut zu Fuß erreichbar' },
+            // Mobilität & Verkehr - GENERISCHER
+            { title: 'Mobilität', text: 'Ihr seid beide mobil und flexibel' },
 
-            // Zeitplanung
-            { title: 'Wochenende', text: 'Ihr habt beide am Wochenende Zeit' },
-            { title: 'Abends', text: 'Ihr könnt euch beide abends treffen' },
-            { title: 'Flexibel', text: 'Ihr seid beide zeitlich flexibel' },
+            // Zeitplanung - GENERISCHER
+            { title: 'Zeitliche Flexibilität', text: 'Eure zeitlichen Möglichkeiten passen gut zusammen' },
 
             // Unterstützend/Positiv
-            { title: 'Ergänzende Unterschiede', text: 'Eure unterschiedlichen Interessen können euch gegenseitig bereichern' },
+            { title: 'Ergänzende Unterschiede', text: 'Eure unterschiedlichen Hintergründe können euch gegenseitig bereichern' },
             { title: 'Voneinander lernen', text: 'Ihr könnt viel voneinander lernen' },
             { title: 'Neue Erfahrungen', text: 'Ihr könnt zusammen neue Erfahrungen machen' },
-            { title: 'Gegenseitige Unterstützung', text: 'Ihr könnt euch gegenseitig unterstützen und motivieren' }
+            { title: 'Gegenseitige Unterstützung', text: 'Ihr könnt euch gegenseitig unterstützen' },
+            { title: 'Interkultureller Austausch', text: 'Ihr könnt euch kulturell bereichern' }
         ];
 
-        // Kontextspezifische Template-Kategorien
+        // Kontextspezifische Template-Kategorien - GENERISCHER
         let contextualTemplates = {
             'alter': [
-                { text: 'Ihr seid etwa gleich alt', priority: true },
-                { text: 'Ihr seid beide junge Erwachsene', priority: false },
-                { text: 'Generationsunterschied kann bereichernd sein', priority: false }
+                { text: 'Ihr befindet euch in ähnlichen Lebensphasen', priority: true },
+                { text: 'Unterschiedliche Perspektiven können bereichernd sein', priority: false }
             ],
             'hobby': [
-                { text: 'Ihr habt ähnliche Hobbys', priority: true },
-                { text: 'Ihr interessiert euch beide für Sport', priority: true },
-                { text: 'Ihr könnt euch gegenseitig neue Hobbys zeigen', priority: false }
+                { text: 'Ihr habt gemeinsame Freizeitinteressen', priority: true },
+                { text: 'Eure Interessen ergänzen sich gut', priority: false }
             ],
             'sprache': [
-                { text: 'Ihr sprecht beide mehrere Sprachen', priority: true },
-                { text: 'Ihr könnt euch beim Deutschlernen helfen', priority: true },
-                { text: 'Ihr habt eine gemeinsame Sprache', priority: false }
+                { text: 'Sprachen sind für euch beide wichtig', priority: true },
+                { text: 'Ihr könnt euch beim Sprachenlernen unterstützen', priority: true },
+                { text: 'Ihr bringt mehrsprachige Erfahrungen mit', priority: false }
             ],
             'postleitzahl': [
-                { text: 'Ihr wohnt nah beieinander', priority: true },
-                { text: 'Ihr könnt euch gut erreichen', priority: true },
-                { text: 'Kurze Wege für Treffen', priority: false }
+                { text: 'Ihr wohnt gut erreichbar zueinander', priority: true },
+                { text: 'Kurze Wege erleichtern regelmäßige Treffen', priority: false }
             ],
             'wohnort': [
-                { text: 'Ihr wohnt in der gleichen Gegend', priority: true },
-                { text: 'Ihr kennt die gleichen Orte', priority: false }
+                { text: 'Ihr kommt aus der gleichen Gegend', priority: true },
+                { text: 'Ihr habt einen gemeinsamen lokalen Bezug', priority: false }
             ],
             'beruf': [
-                { text: 'Ihr arbeitet in ähnlichen Bereichen', priority: true },
-                { text: 'Ihr könnt euch beruflich austauschen', priority: false }
+                { text: 'Eure beruflichen Hintergründe passen zusammen', priority: true },
+                { text: 'Ihr könnt euch zu euren Tätigkeiten austauschen', priority: false }
             ],
             'studium': [
-                { text: 'Ihr habt beide studiert', priority: true },
-                { text: 'Ihr habt Hochschulerfahrung', priority: false }
+                { text: 'Ihr habt ähnliche Bildungshintergründe', priority: true },
+                { text: 'Akademische Erfahrungen verbinden euch', priority: false }
             ],
             'zeit': [
-                { text: 'Ihr habt zur gleichen Zeit frei', priority: true },
-                { text: 'Eure Zeitpläne passen gut zusammen', priority: false }
+                { text: 'Eure zeitlichen Möglichkeiten passen zusammen', priority: true },
+                { text: 'Ihr seid beide zeitlich flexibel', priority: false }
             ],
             'verkehr': [
-                { text: 'Ihr nutzt die gleichen Verkehrsmittel', priority: true },
-                { text: 'Ihr kommt gut zueinander', priority: false }
+                { text: 'Ihr seid beide mobil', priority: true },
+                { text: 'Gute Verkehrsanbindung zueinander', priority: false }
             ]
         };
 
@@ -4048,6 +4025,87 @@
             saveGamificationStats();
         }
 
+        // Hobby- und Interessens-Normalisierung für besseres Matching
+        function normalizeHobbyInterest(text) {
+            if (!text) return [];
+
+            const normalized = text.toLowerCase()
+                .replace(/ß/g, 'ss')
+                .replace(/ä/g, 'ae')
+                .replace(/ö/g, 'oe')
+                .replace(/ü/g, 'ue');
+
+            // Mapping von Varianten zu Hauptkategorien
+            const hobbyMapping = {
+                // Sport allgemein
+                'sport': ['sport', 'sportlich', 'bewegung', 'fitness', 'training', 'trainieren'],
+                'fussball': ['fussball', 'fußball', 'soccer', 'kicken'],
+                'laufen': ['laufen', 'joggen', 'jogging', 'rennen', 'running'],
+                'wandern': ['wandern', 'hiking', 'spazieren', 'spaziergang', 'walken'],
+                'schwimmen': ['schwimmen', 'swimming', 'baden'],
+                'radfahren': ['radfahren', 'fahrrad', 'cycling', 'biken', 'radeln'],
+                'yoga': ['yoga', 'meditation', 'entspannung'],
+                'tanzen': ['tanzen', 'dancing', 'tanz'],
+                'kraftsport': ['kraftsport', 'fitnessstudio', 'gym', 'krafttraining', 'bodybuilding'],
+
+                // Kultur & Unterhaltung
+                'kino': ['kino', 'film', 'filme', 'movie', 'movies', 'serien'],
+                'theater': ['theater', 'schauspiel', 'buehne'],
+                'museum': ['museum', 'ausstellung', 'galerie', 'kunst'],
+                'konzert': ['konzert', 'konzerte', 'livemusik', 'live-musik'],
+                'festival': ['festival', 'festivals', 'veranstaltung', 'events'],
+
+                // Musik
+                'musik': ['musik', 'music', 'musikhoeren', 'musik hoeren'],
+                'instrument': ['instrument', 'gitarre', 'klavier', 'schlagzeug', 'geige', 'spielen'],
+                'singen': ['singen', 'gesang', 'chor'],
+
+                // Essen & Kochen
+                'kochen': ['kochen', 'cooking', 'rezepte', 'kueche'],
+                'backen': ['backen', 'baking', 'kuchen'],
+                'restaurant': ['restaurant', 'essen gehen', 'ausgehen'],
+                'essen': ['essen', 'food', 'kulinarisch', 'gourmet'],
+
+                // Soziales
+                'freunde': ['freunde', 'freunde treffen', 'leute treffen', 'socializing', 'gesellig'],
+                'reisen': ['reisen', 'travel', 'urlaub', 'reise', 'entdecken'],
+                'fotografie': ['fotografie', 'fotografieren', 'photo', 'foto', 'camera'],
+
+                // Natur
+                'natur': ['natur', 'nature', 'draussen', 'outdoor', 'umwelt'],
+                'gaertnern': ['gaertnern', 'garten', 'pflanzen', 'gardening'],
+
+                // Kreatives
+                'lesen': ['lesen', 'buch', 'buecher', 'reading', 'literatur'],
+                'schreiben': ['schreiben', 'writing', 'blog', 'texte'],
+                'malen': ['malen', 'zeichnen', 'painting', 'drawing', 'kunst'],
+                'handwerk': ['handwerk', 'basteln', 'diy', 'werken', 'handarbeit'],
+
+                // Technologie
+                'gaming': ['gaming', 'games', 'computerspiele', 'videospiele', 'zocken'],
+                'technologie': ['technologie', 'tech', 'computer', 'programmieren', 'coding'],
+
+                // Lernen
+                'sprachen': ['sprachen', 'language', 'languages', 'sprachenlernen']
+            };
+
+            const foundCategories = [];
+
+            // Finde alle passenden Kategorien
+            for (const [category, variants] of Object.entries(hobbyMapping)) {
+                for (const variant of variants) {
+                    if (normalized.includes(variant)) {
+                        if (!foundCategories.includes(category)) {
+                            foundCategories.push(category);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            return foundCategories;
+        }
+
         function calculateMatchQuality(profile1, profile2) {
             let score = 0;
             let maxScore = 0;
@@ -4215,25 +4273,29 @@
                 details.genderPref2 = genderPref2.answer;
             }
 
-            // 5. Hobbys (max 2 Punkte)
+            // 5. Hobbys (max 2 Punkte) - MIT NORMALISIERUNG
             maxScore += 2;
             const hobbies1Field = profile1.fields.find(f => f.question.toLowerCase().includes('hobby'));
             const hobbies2Field = profile2.fields.find(f => f.question.toLowerCase().includes('hobby'));
             if (hobbies1Field && hobbies2Field) {
-                // Parse comma-separated hobby lists
-                const hobbies1 = hobbies1Field.answer.split(',').map(h => h.trim().toLowerCase()).filter(h => h.length > 0);
-                const hobbies2 = hobbies2Field.answer.split(',').map(h => h.trim().toLowerCase()).filter(h => h.length > 0);
+                // Normalisiere beide Hobby-Listen
+                const normalized1 = normalizeHobbyInterest(hobbies1Field.answer);
+                const normalized2 = normalizeHobbyInterest(hobbies2Field.answer);
 
-                // Find overlapping hobbies
-                const commonHobbies = hobbies1.filter(h1 =>
-                    hobbies2.some(h2 => h1 === h2 || h1.includes(h2) || h2.includes(h1))
-                );
+                // Finde gemeinsame normalisierte Kategorien
+                const commonHobbies = normalized1.filter(h => normalized2.includes(h));
 
                 if (commonHobbies.length > 0) {
                     const hobbyScore = Math.min(2, commonHobbies.length * 0.4);
                     score += hobbyScore;
-                    const hobbyNames = commonHobbies.map(h => h.charAt(0).toUpperCase() + h.slice(1)).join(', ');
-                    details.reasons.push(`Gemeinsame Hobbys: ${hobbyNames}`);
+                    // Generische Formulierung statt spezifischer Hobbys
+                    if (commonHobbies.length >= 3) {
+                        details.reasons.push('Viele gemeinsame Hobbys und Interessen');
+                    } else if (commonHobbies.length === 2) {
+                        details.reasons.push('Mehrere gemeinsame Hobbys');
+                    } else {
+                        details.reasons.push('Gemeinsame Hobby-Interessen');
+                    }
                 }
             }
 
@@ -4276,12 +4338,10 @@
 
                 if (commonInterests.length >= 2) {
                     score += 1.5;
-                    const interestNames = commonInterests.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ');
-                    details.reasons.push(`Gemeinsame Interessen: ${interestNames}`);
+                    details.reasons.push('Mehrere gemeinsame Interessensgebiete');
                 } else if (commonInterests.length === 1) {
                     score += 0.75;
-                    const interestName = commonInterests[0].charAt(0).toUpperCase() + commonInterests[0].slice(1);
-                    details.reasons.push(`Gemeinsames Interesse: ${interestName}`);
+                    details.reasons.push('Gemeinsame Interessensgebiete');
                 }
             }
 
@@ -4303,10 +4363,10 @@
 
                 if (commonValues.length >= 2) {
                     score += 1.5;
-                    const valueNames = commonValues.map(v => v.charAt(0).toUpperCase() + v.slice(1)).join(', ');
-                    details.reasons.push(`Gemeinsame Werte: ${valueNames}`);
+                    details.reasons.push('Ähnliche Wertvorstellungen in Freundschaften');
                 } else if (commonValues.length === 1) {
                     score += 0.75;
+                    details.reasons.push('Gemeinsame Wertvorstellungen');
                 }
             }
 
