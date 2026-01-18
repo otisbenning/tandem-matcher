@@ -1396,14 +1396,20 @@
                                 <option value="divers">Divers</option>
                                 <option value="keine angabe">Keine Angabe</option>
                             </select>
-                            
-                            <input type="number" id="filter-age-min" placeholder="Alter von" 
+
+                            <select id="filter-gruppe" onchange="filterProfiles()" style="flex: 1; min-width: 150px;">
+                                <option value="">Alle Gruppen</option>
+                                <option value="local">Locals</option>
+                                <option value="einwander">Eingewanderte</option>
+                            </select>
+
+                            <input type="number" id="filter-age-min" placeholder="Alter von"
                                 onchange="filterProfiles()" style="flex: 1; min-width: 100px;" min="0" max="120">
-                            
-                            <input type="number" id="filter-age-max" placeholder="Alter bis" 
+
+                            <input type="number" id="filter-age-max" placeholder="Alter bis"
                                 onchange="filterProfiles()" style="flex: 1; min-width: 100px;" min="0" max="120">
-                            
-                            <button class="btn btn-outline btn-small" onclick="clearFilters()" 
+
+                            <button class="btn btn-outline btn-small" onclick="clearFilters()"
                                 style="white-space: nowrap;">🔄 Filter zurücksetzen</button>
                         </div>
                         <div id="matching-status"
@@ -1437,7 +1443,7 @@
                             </div>
                             
                             <div class="alert alert-info" style="font-size: 0.9rem;">
-                                <strong>💡 Tipp:</strong> Klicke auf die Markierungen um Profile anzuzeigen und auszuwählen. Profile mit derselben PLZ werden nebeneinander angezeigt.
+                                <strong>💡 Tipp:</strong> Klicke auf die Markierungen um Profile anzuzeigen und auszuwählen. Profile mit derselben PLZ werden im Umkreis von ~500m verteilt dargestellt, damit sie nicht übereinander liegen.
                             </div>
                         </div>
 
@@ -3640,10 +3646,11 @@
         
         async function loadProfileMap() {
             console.log('🗺️ Lade Kartenansicht...');
-        
+
             // Hole Filter-Werte
             const search = document.getElementById('profile-search').value.toLowerCase();
             const genderFilter = document.getElementById('filter-gender').value.toLowerCase();
+            const gruppeFilter = document.getElementById('filter-gruppe').value.toLowerCase();
             const ageMin = parseInt(document.getElementById('filter-age-min').value) || 0;
             const ageMax = parseInt(document.getElementById('filter-age-max').value) || 999;
 
@@ -3684,17 +3691,26 @@
                 // Anwenden der Filter
                 // 1. Name/Text-Suche
                 const matchesSearch = !search || profile.name.toLowerCase().includes(search);
-                
+
                 // 2. Geschlecht-Filter
-                const genderField = profile.fields.find(f => 
+                const genderField = profile.fields.find(f =>
                     f.question.toLowerCase().includes('geschlecht')
                 );
                 const profileGender = genderField ? genderField.answer.toLowerCase() : '';
                 const matchesGender = !genderFilter || profileGender.includes(genderFilter);
-                
-                // 3. Alter-Filter
-                const ageField = profile.fields.find(f => 
-                    f.question.toLowerCase() === 'alter' || 
+
+                // 3. Gruppen-Filter
+                const gruppeField = profile.fields.find(f =>
+                    f.question.toLowerCase().includes('gruppe') ||
+                    f.question.toLowerCase().includes('local') ||
+                    f.question.toLowerCase().includes('einwander')
+                );
+                const profileGruppe = gruppeField ? gruppeField.answer.toLowerCase() : '';
+                const matchesGruppe = !gruppeFilter || profileGruppe.includes(gruppeFilter);
+
+                // 4. Alter-Filter
+                const ageField = profile.fields.find(f =>
+                    f.question.toLowerCase() === 'alter' ||
                     f.question.toLowerCase().includes('geburtstag')
                 );
                 let profileAge = 0;
@@ -3710,9 +3726,9 @@
                     }
                 }
                 const matchesAge = (profileAge === 0) || (profileAge >= ageMin && profileAge <= ageMax);
-                
+
                 // Überspringe Profile, die nicht den Filtern entsprechen
-                if (!matchesSearch || !matchesGender || !matchesAge) {
+                if (!matchesSearch || !matchesGender || !matchesGruppe || !matchesAge) {
                     continue;
                 }
 
@@ -3730,21 +3746,21 @@
                 let coords = await getPLZCoordinates(plz);
                 if (!coords) continue;
 
-                // Behandle PLZ-Duplikate: Verschiebe Marker leicht
+                // Behandle PLZ-Duplikate: Verschiebe Marker deutlich sichtbar
                 if (!plzOffsets[plz]) {
                     plzOffsets[plz] = 0;
                 } else {
-                    // Verschiebe jeden weiteren Marker um ~100 Meter in verschiedene Richtungen
+                    // Verschiebe jeden weiteren Marker um ~500 Meter in verschiedene Richtungen (8 Richtungen)
                     const offsetCount = plzOffsets[plz];
-                    const angle = (offsetCount * 90) % 360; // 0°, 90°, 180°, 270°
-                    const distance = 0.001; // ~100 Meter
-                    
+                    const angle = (offsetCount * 45) % 360; // 0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°
+                    const distance = 0.005; // ~500 Meter (deutlich sichtbarer)
+
                     const latOffset = distance * Math.cos(angle * Math.PI / 180);
                     const lngOffset = distance * Math.sin(angle * Math.PI / 180);
-                    
+
                     coords = [coords[0] + latOffset, coords[1] + lngOffset];
-                    
-                    console.log(`📍 PLZ ${plz} Duplikat #${offsetCount + 1} - verschoben um ${angle}°`);
+
+                    console.log(`📍 PLZ ${plz} Duplikat #${offsetCount + 1} - verschoben um ${angle}° (~500m)`);
                 }
                 plzOffsets[plz]++;
         
@@ -3901,25 +3917,48 @@
 
                     console.log(`  -> Ist ausgewählt: ${isSelected} (${selectedClass})`);
 
-                    // Extrahiere Alter und Geschlecht für die Anzeige
-                    const ageField = profile.fields.find(f => 
-                        f.question.toLowerCase() === 'alter' || 
+                    // Extrahiere Alter, Geschlecht und Gruppe für die Anzeige
+                    const ageField = profile.fields.find(f =>
+                        f.question.toLowerCase() === 'alter' ||
                         f.question.toLowerCase().includes('geburtstag')
                     );
-                    const genderField = profile.fields.find(f => 
+                    const genderField = profile.fields.find(f =>
                         f.question.toLowerCase().includes('geschlecht')
+                    );
+                    const gruppeField = profile.fields.find(f =>
+                        f.question.toLowerCase().includes('gruppe') ||
+                        f.question.toLowerCase().includes('local') ||
+                        f.question.toLowerCase().includes('einwander')
                     );
 
                     const ageText = ageField ? ` • ${ageField.answer}` : '';
                     const genderText = genderField ? ` • ${genderField.answer}` : '';
 
+                    // Bestimme Gruppenfarbe und Badge
+                    let gruppeColor = '#009892'; // Standard: Teal (Eingewanderte)
+                    let gruppeLabel = 'Eingewanderte*r';
+                    if (gruppeField) {
+                        const gruppe = gruppeField.answer.toLowerCase();
+                        if (gruppe.includes('local')) {
+                            gruppeColor = '#FFB000'; // Gelb/Gold für Locals
+                            gruppeLabel = 'Local';
+                        } else if (gruppe.includes('einwander')) {
+                            gruppeColor = '#009892'; // Teal für Einwanderer*innen
+                            gruppeLabel = 'Eingewanderte*r';
+                        }
+                    }
+                    const gruppeBadge = gruppeField ? `<span style="display: inline-block; padding: 2px 8px; background: ${gruppeColor}; color: white; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">${gruppeLabel}</span>` : '';
+
                     // Erstelle Detailansicht mit allen relevanten Feldern
                     const detailsHTML = createProfileDetailsHTML(profile);
 
                     return `
-                        <div class="profile-item ${selectedClass}" data-profile-id="${profile.id}">
+                        <div class="profile-item ${selectedClass}" data-profile-id="${profile.id}" data-gruppe="${gruppeField ? gruppeField.answer : ''}">
                             <div onclick="selectProfile('${profile.id}')">
-                                <strong>${profile.name}</strong>
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <strong>${profile.name}</strong>
+                                    ${gruppeBadge}
+                                </div>
                                 <p><small>${profile.fields.length} Felder${ageText}${genderText}</small></p>
                                 <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--swaf-dark-gray);">
                                     ${profile.fields.slice(0, 3).map(f => f.question).join(', ')}
@@ -4820,6 +4859,7 @@
         function clearFilters() {
             document.getElementById('profile-search').value = '';
             document.getElementById('filter-gender').value = '';
+            document.getElementById('filter-gruppe').value = '';
             document.getElementById('filter-age-min').value = '';
             document.getElementById('filter-age-max').value = '';
             filterProfiles();
@@ -4931,23 +4971,24 @@
         function filterProfiles() {
             const search = document.getElementById('profile-search').value.toLowerCase();
             const genderFilter = document.getElementById('filter-gender').value.toLowerCase();
+            const gruppeFilter = document.getElementById('filter-gruppe').value.toLowerCase();
             const ageMin = parseInt(document.getElementById('filter-age-min').value) || 0;
             const ageMax = parseInt(document.getElementById('filter-age-max').value) || 999;
-            
+
             // Prüfe welche Ansicht aktiv ist
             if (currentView === 'map') {
                 // Kartenansicht: Lade Karte neu mit gefilterten Profilen
                 loadProfileMap();
                 return;
             }
-            
+
             // Listenansicht: Filtere .profile-item Elemente
             const profileItems = document.querySelectorAll('.profile-item');
 
             profileItems.forEach(item => {
                 const profileId = item.getAttribute('data-profile-id');
                 const profile = profiles.find(p => p.id == profileId);
-                
+
                 if (!profile) {
                     item.style.display = 'none';
                     return;
@@ -4956,17 +4997,26 @@
                 // Name/Text-Suche
                 const name = item.textContent.toLowerCase();
                 const matchesSearch = name.includes(search);
-                
+
                 // Geschlecht-Filter
-                const genderField = profile.fields.find(f => 
+                const genderField = profile.fields.find(f =>
                     f.question.toLowerCase().includes('geschlecht')
                 );
                 const profileGender = genderField ? genderField.answer.toLowerCase() : '';
                 const matchesGender = !genderFilter || profileGender.includes(genderFilter);
-                
+
+                // Gruppen-Filter
+                const gruppeField = profile.fields.find(f =>
+                    f.question.toLowerCase().includes('gruppe') ||
+                    f.question.toLowerCase().includes('local') ||
+                    f.question.toLowerCase().includes('einwander')
+                );
+                const profileGruppe = gruppeField ? gruppeField.answer.toLowerCase() : '';
+                const matchesGruppe = !gruppeFilter || profileGruppe.includes(gruppeFilter);
+
                 // Alter-Filter
-                const ageField = profile.fields.find(f => 
-                    f.question.toLowerCase() === 'alter' || 
+                const ageField = profile.fields.find(f =>
+                    f.question.toLowerCase() === 'alter' ||
                     f.question.toLowerCase().includes('geburtstag')
                 );
                 let profileAge = 0;
@@ -4984,18 +5034,18 @@
                     }
                 }
                 const matchesAge = (profileAge === 0) || (profileAge >= ageMin && profileAge <= ageMax);
-                
+
                 // WICHTIG: Zeige/Verstecke Profile, aber behalte das Grid-Layout bei
                 // Verwende '' statt 'block', damit das Grid-Layout funktioniert
-                item.style.display = (matchesSearch && matchesGender && matchesAge) ? '' : 'none';
+                item.style.display = (matchesSearch && matchesGender && matchesGruppe && matchesAge) ? '' : 'none';
             });
-            
+
             // Zeige Anzahl gefilterter Profile
-            const visibleCount = Array.from(profileItems).filter(item => 
+            const visibleCount = Array.from(profileItems).filter(item =>
                 item.style.display !== 'none'
             ).length;
             console.log(`🔍 ${visibleCount} von ${profileItems.length} Profilen sichtbar nach Filterung`);
-            
+
             // Zeige Feedback
             if (visibleCount === 0 && profileItems.length > 0) {
                 showNotification('⚠️ Keine Profile entsprechen den Filtern', 'warning', 3000);
