@@ -4215,6 +4215,146 @@
                 details.genderPref2 = genderPref2.answer;
             }
 
+            // 5. Hobbys (max 2 Punkte)
+            maxScore += 2;
+            const hobbies1Field = profile1.fields.find(f => f.question.toLowerCase().includes('hobby'));
+            const hobbies2Field = profile2.fields.find(f => f.question.toLowerCase().includes('hobby'));
+            if (hobbies1Field && hobbies2Field) {
+                // Parse comma-separated hobby lists
+                const hobbies1 = hobbies1Field.answer.split(',').map(h => h.trim().toLowerCase()).filter(h => h.length > 0);
+                const hobbies2 = hobbies2Field.answer.split(',').map(h => h.trim().toLowerCase()).filter(h => h.length > 0);
+
+                // Find overlapping hobbies
+                const commonHobbies = hobbies1.filter(h1 =>
+                    hobbies2.some(h2 => h1 === h2 || h1.includes(h2) || h2.includes(h1))
+                );
+
+                if (commonHobbies.length > 0) {
+                    const hobbyScore = Math.min(2, commonHobbies.length * 0.4);
+                    score += hobbyScore;
+                    const hobbyNames = commonHobbies.map(h => h.charAt(0).toUpperCase() + h.slice(1)).join(', ');
+                    details.reasons.push(`Gemeinsame Hobbys: ${hobbyNames}`);
+                }
+            }
+
+            // 6. Freizeit-Interessen (max 1.5 Punkte)
+            maxScore += 1.5;
+            const freetime1Field = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('freizeit') && !f.question.toLowerCase().includes('vermittler')
+            );
+            const freetime2Field = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('freizeit') && !f.question.toLowerCase().includes('vermittler')
+            );
+            if (freetime1Field && freetime2Field) {
+                const ft1Words = freetime1Field.answer.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+                const ft2Words = freetime2Field.answer.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+                const commonWords = ft1Words.filter(w => ft2Words.includes(w));
+
+                if (commonWords.length >= 3) {
+                    score += 1.5;
+                    details.reasons.push('Ähnliche Freizeitinteressen');
+                } else if (commonWords.length >= 1) {
+                    score += 0.75;
+                }
+            }
+
+            // 7. Besondere Themeninteressen (max 1.5 Punkte)
+            maxScore += 1.5;
+            const interests1Field = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('themen') && f.question.toLowerCase().includes('interessieren')
+            );
+            const interests2Field = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('themen') && f.question.toLowerCase().includes('interessieren')
+            );
+            if (interests1Field && interests2Field) {
+                const int1 = interests1Field.answer.toLowerCase();
+                const int2 = interests2Field.answer.toLowerCase();
+
+                // Check for common interest keywords
+                const interestKeywords = ['politik', 'kunst', 'kultur', 'technologie', 'sport', 'musik', 'natur', 'reisen', 'essen', 'kochen', 'wissenschaft', 'geschichte', 'literatur'];
+                const commonInterests = interestKeywords.filter(kw => int1.includes(kw) && int2.includes(kw));
+
+                if (commonInterests.length >= 2) {
+                    score += 1.5;
+                    const interestNames = commonInterests.map(i => i.charAt(0).toUpperCase() + i.slice(1)).join(', ');
+                    details.reasons.push(`Gemeinsame Interessen: ${interestNames}`);
+                } else if (commonInterests.length === 1) {
+                    score += 0.75;
+                    const interestName = commonInterests[0].charAt(0).toUpperCase() + commonInterests[0].slice(1);
+                    details.reasons.push(`Gemeinsames Interesse: ${interestName}`);
+                }
+            }
+
+            // 8. Freundschafts-Werte (max 1.5 Punkte)
+            maxScore += 1.5;
+            const values1Field = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('freundschaft') && f.question.toLowerCase().includes('wichtig')
+            );
+            const values2Field = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('freundschaft') && f.question.toLowerCase().includes('wichtig')
+            );
+            if (values1Field && values2Field) {
+                const val1 = values1Field.answer.toLowerCase();
+                const val2 = values2Field.answer.toLowerCase();
+
+                // Check for common values
+                const valueKeywords = ['ehrlichkeit', 'vertrauen', 'respekt', 'toleranz', 'humor', 'offenheit', 'zuverlässigkeit', 'loyalität', 'treue'];
+                const commonValues = valueKeywords.filter(kw => val1.includes(kw) && val2.includes(kw));
+
+                if (commonValues.length >= 2) {
+                    score += 1.5;
+                    const valueNames = commonValues.map(v => v.charAt(0).toUpperCase() + v.slice(1)).join(', ');
+                    details.reasons.push(`Gemeinsame Werte: ${valueNames}`);
+                } else if (commonValues.length === 1) {
+                    score += 0.75;
+                }
+            }
+
+            // 9. Tandem-Vorstellung (max 1 Punkt)
+            maxScore += 1;
+            const tandemVision1 = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('tandem') &&
+                f.question.toLowerCase().includes('vorstellung') &&
+                !f.question.toLowerCase().includes('geschlecht')
+            );
+            const tandemVision2 = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('tandem') &&
+                f.question.toLowerCase().includes('vorstellung') &&
+                !f.question.toLowerCase().includes('geschlecht')
+            );
+            if (tandemVision1 && tandemVision2) {
+                const tv1Words = tandemVision1.answer.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+                const tv2Words = tandemVision2.answer.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+                const commonWords = tv1Words.filter(w => tv2Words.includes(w));
+
+                if (commonWords.length >= 2) {
+                    score += 1;
+                    details.reasons.push('Ähnliche Tandem-Vorstellungen');
+                } else if (commonWords.length >= 1) {
+                    score += 0.5;
+                }
+            }
+
+            // 10. Community-Event Interessen (max 0.5 Punkte)
+            maxScore += 0.5;
+            const event1Field = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('community-event') ||
+                (f.question.toLowerCase().includes('event') && f.question.toLowerCase().includes('unternehmen'))
+            );
+            const event2Field = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('community-event') ||
+                (f.question.toLowerCase().includes('event') && f.question.toLowerCase().includes('unternehmen'))
+            );
+            if (event1Field && event2Field) {
+                const ev1Words = event1Field.answer.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+                const ev2Words = event2Field.answer.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+                const commonWords = ev1Words.filter(w => ev2Words.includes(w));
+
+                if (commonWords.length >= 1) {
+                    score += 0.5;
+                }
+            }
+
             // Normalisiere auf 5 Sterne
             const normalizedScore = Math.min(5, Math.round((score / maxScore) * 5));
             return {
