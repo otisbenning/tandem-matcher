@@ -4660,14 +4660,14 @@
             }
         }
 
-        async function quickMatch(profileId1, profileId2) {
+        function quickMatch(profileId1, profileId2) {
             console.log('⚡ Quick Match:', profileId1, profileId2);
 
             // Setze selectedProfiles
             selectedProfiles = [parseFloat(profileId1), parseFloat(profileId2)];
 
             // Rufe normale Matching-Funktion auf
-            await performMatching();
+            matchSelectedProfiles();
 
             // Aktualisiere UI
             loadAvailableProfiles();
