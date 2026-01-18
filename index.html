@@ -4244,6 +4244,7 @@
             }
 
             // Berechne alle möglichen Paare und deren Qualität
+            // NUR interkulturelle Paare (Local ↔ Eingewanderte/Newcomer)
             const suggestions = [];
             for (let i = 0; i < availableProfiles.length; i++) {
                 for (let j = i + 1; j < availableProfiles.length; j++) {
@@ -4253,6 +4254,37 @@
 
                     // Skip dismissed suggestions
                     if (dismissedSuggestions.has(suggestionId)) continue;
+
+                    // Prüfe ob es ein interkulturelles Paar ist
+                    const gruppe1Field = p1.fields.find(f =>
+                        f.question.toLowerCase().includes('gruppe') ||
+                        f.question.toLowerCase().includes('local') ||
+                        f.question.toLowerCase().includes('einwander') ||
+                        f.question.toLowerCase().includes('newcom')
+                    );
+                    const gruppe2Field = p2.fields.find(f =>
+                        f.question.toLowerCase().includes('gruppe') ||
+                        f.question.toLowerCase().includes('local') ||
+                        f.question.toLowerCase().includes('einwander') ||
+                        f.question.toLowerCase().includes('newcom')
+                    );
+
+                    // Nur wenn beide ein Gruppenfeld haben
+                    if (gruppe1Field && gruppe2Field) {
+                        const g1 = gruppe1Field.answer.toLowerCase();
+                        const g2 = gruppe2Field.answer.toLowerCase();
+
+                        // Prüfe ob es interkulturell ist (Local ↔ Eingewanderte/Newcomer)
+                        const isIntercultural =
+                            (g1.includes('local') && (g2.includes('einwander') || g2.includes('newcom'))) ||
+                            ((g1.includes('einwander') || g1.includes('newcom')) && g2.includes('local'));
+
+                        // Skip wenn NICHT interkulturell
+                        if (!isIntercultural) continue;
+                    } else {
+                        // Skip wenn Gruppe nicht bestimmt werden kann
+                        continue;
+                    }
 
                     const quality = calculateMatchQuality(p1, p2);
                     suggestions.push({
@@ -4279,61 +4311,69 @@
                 const stars = '⭐'.repeat(suggestion.quality);
                 const reasons = suggestion.details.reasons || [];
 
-                // Erstelle Profil-Vergleich mit vollständigen Informationen
+                // Erstelle vollständigen Profil-Vergleich mit ALLEN Feldern
+                // Sammle alle eindeutigen Fragen aus beiden Profilen
+                const allQuestions = new Map();
+                suggestion.profile1.fields.forEach(field => {
+                    if (!allQuestions.has(field.question)) {
+                        allQuestions.set(field.question, { p1: field.answer, p2: null });
+                    }
+                });
+                suggestion.profile2.fields.forEach(field => {
+                    if (allQuestions.has(field.question)) {
+                        allQuestions.get(field.question).p2 = field.answer;
+                    } else {
+                        allQuestions.set(field.question, { p1: null, p2: field.answer });
+                    }
+                });
+
+                // Erstelle Vergleichstabelle mit ALLEN Feldern
+                const tableRows = Array.from(allQuestions.entries()).map(([question, answers], idx) => {
+                    // Prüfe ob es eine Gemeinsamkeit oder Unterschied ist
+                    const isSame = answers.p1 && answers.p2 &&
+                        answers.p1.toLowerCase().trim() === answers.p2.toLowerCase().trim();
+                    const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+                    const highlightBg = isSame ? '#f0fdf4' : rowBg;
+
+                    return `
+                        <tr style="background: ${highlightBg};">
+                            <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
+                                ${question} ${isSame ? '✅' : ''}
+                            </td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
+                                ${answers.p1 || '<span style="color: #94a3b8;">-</span>'}
+                            </td>
+                            <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0; vertical-align: top;">
+                                ${answers.p2 || '<span style="color: #94a3b8;">-</span>'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
                 const comparisonHTML = `
                     <div style="display: none; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #e2e8f0;" id="comparison-${suggestion.id}">
-                        <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
-                            <tr style="background: #f8fafc;">
-                                <th style="padding: 0.5rem; text-align: left; width: 30%; border-bottom: 2px solid #cbd5e1;">Kriterium</th>
-                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #cbd5e1;">${suggestion.profile1.name}</th>
-                                <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #cbd5e1;">${suggestion.profile2.name}</th>
-                            </tr>
-                            ${suggestion.details.gruppe1 && suggestion.details.gruppe2 ? `
-                            <tr style="background: ${suggestion.details.intercultural ? '#f0fdf4' : '#ffffff'};">
-                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Gruppe</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.gruppe1} ${suggestion.details.intercultural ? '🌍' : ''}</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.gruppe2} ${suggestion.details.intercultural ? '🌍' : ''}</td>
-                            </tr>` : ''}
-                            ${suggestion.details.gender1 && suggestion.details.gender2 ? `
-                            <tr>
-                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Geschlecht</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.gender1}</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.gender2}</td>
-                            </tr>` : ''}
-                            ${suggestion.details.age ? `
-                            <tr style="background: ${suggestion.details.ageDiff && suggestion.details.ageDiff <= 5 ? '#f0fdf4' : '#ffffff'};">
-                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Alter</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.age.age1} Jahre</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.age.age2} Jahre ${suggestion.details.ageDiff ? `<span style="color: #64748b;">(±${suggestion.details.ageDiff} Jahre)</span>` : ''}</td>
-                            </tr>` : ''}
-                            ${suggestion.details.plz1 && suggestion.details.plz2 ? `
-                            <tr style="background: ${suggestion.details.plzDistance !== null && suggestion.details.plzDistance < 50 ? '#f0fdf4' : '#ffffff'};">
-                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">PLZ / Distanz</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.plz1}</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.plz2}${suggestion.details.plzDistance !== null ? ` <span style="color: #64748b;">(~${suggestion.details.plzDistance} km)</span>` : ''}</td>
-                            </tr>` : ''}
-                            ${suggestion.details.genderPref1 || suggestion.details.genderPref2 ? `
-                            <tr>
-                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Geschlechtspräferenz</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.genderPref1 || 'Keine Angabe'}</td>
-                                <td style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">${suggestion.details.genderPref2 || 'Keine Angabe'}</td>
-                            </tr>
-                            <tr style="background: ${suggestion.details.genderPreference === 'match' ? '#f0fdf4' : suggestion.details.genderPreference === 'partial' ? '#fffbeb' : '#ffffff'};">
-                                <td style="padding: 0.5rem; font-weight: 500; border-bottom: 1px solid #e2e8f0;">Präferenz erfüllt?</td>
-                                <td colspan="2" style="padding: 0.5rem; border-bottom: 1px solid #e2e8f0;">
-                                    ${suggestion.details.genderPreference === 'match' ? '✅ Voll erfüllt' : suggestion.details.genderPreference === 'partial' ? '⚠️ Teilweise erfüllt' : '❌ Nicht erfüllt'}
-                                </td>
-                            </tr>` : ''}
-                        </table>
-                        ${reasons.length > 0 ? `
-                        <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; border: 1px solid #bae6fd;">
+                        <div style="margin-bottom: 0.75rem; padding: 0.75rem; background: #f0f9ff; border-radius: 6px; border: 1px solid #bae6fd;">
                             <div style="font-weight: 600; color: #0c4a6e; margin-bottom: 0.5rem; font-size: 0.9rem;">
                                 🎯 Match-Gründe:
                             </div>
                             <ul style="margin: 0; padding-left: 1.5rem; color: #0369a1;">
                                 ${reasons.map(reason => `<li style="margin: 0.25rem 0;">${reason}</li>`).join('')}
                             </ul>
-                        </div>` : ''}
+                        </div>
+                        <div style="max-height: 600px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+                            <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+                                <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 1;">
+                                    <tr>
+                                        <th style="padding: 0.5rem; text-align: left; width: 30%; border-bottom: 2px solid #cbd5e1;">Frage</th>
+                                        <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #cbd5e1;">${suggestion.profile1.name}</th>
+                                        <th style="padding: 0.5rem; text-align: left; border-bottom: 2px solid #cbd5e1;">${suggestion.profile2.name}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 `;
 
