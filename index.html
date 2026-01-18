@@ -5127,6 +5127,9 @@
             if (ageMin > 0 || ageMax < 999) {
                 const ageField = profile.fields.find(f =>
                     f.question.toLowerCase() === 'alter' ||
+                    (f.question.toLowerCase().includes('alter') &&
+                     !f.question.toLowerCase().includes('unterschied') &&
+                     !f.question.toLowerCase().includes('groß')) ||
                     f.question.toLowerCase().includes('geburtstag')
                 );
                 if (ageField) {
@@ -5461,6 +5464,9 @@
                     // Extrahiere Alter, Geschlecht und Gruppe für die Anzeige
                     const ageField = profile.fields.find(f =>
                         f.question.toLowerCase() === 'alter' ||
+                        (f.question.toLowerCase().includes('alter') &&
+                         !f.question.toLowerCase().includes('unterschied') &&
+                         !f.question.toLowerCase().includes('groß')) ||
                         f.question.toLowerCase().includes('geburtstag')
                     );
                     const genderField = profile.fields.find(f =>
