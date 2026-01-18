@@ -3843,7 +3843,12 @@
                 plzOffsets[plz]++;
         
                 // Extrahiere Profilinformationen
-                const alter = profile.fields.find(f => f.question.toLowerCase().includes('alter'))?.answer || 'N/A';
+                const alter = profile.fields.find(f =>
+                    f.question.toLowerCase() === 'alter' ||
+                    (f.question.toLowerCase().includes('alter') &&
+                     !f.question.toLowerCase().includes('unterschied') &&
+                     !f.question.toLowerCase().includes('groß'))
+                )?.answer || 'N/A';
                 const geschlecht = profile.fields.find(f =>
                     f.question.toLowerCase().includes('geschlecht') &&
                     !f.question.toLowerCase().includes('tandem') &&
@@ -4170,8 +4175,18 @@
 
             // 2. Altersdifferenz (max 2 Punkte)
             maxScore += 2;
-            const age1Field = profile1.fields.find(f => f.question.toLowerCase().includes('alter'));
-            const age2Field = profile2.fields.find(f => f.question.toLowerCase().includes('alter'));
+            const age1Field = profile1.fields.find(f =>
+                f.question.toLowerCase() === 'alter' ||
+                (f.question.toLowerCase().includes('alter') &&
+                 !f.question.toLowerCase().includes('unterschied') &&
+                 !f.question.toLowerCase().includes('groß'))
+            );
+            const age2Field = profile2.fields.find(f =>
+                f.question.toLowerCase() === 'alter' ||
+                (f.question.toLowerCase().includes('alter') &&
+                 !f.question.toLowerCase().includes('unterschied') &&
+                 !f.question.toLowerCase().includes('groß'))
+            );
             if (age1Field && age2Field) {
                 const age1 = parseInt(age1Field.answer) || 0;
                 const age2 = parseInt(age2Field.answer) || 0;
@@ -5168,7 +5183,12 @@
 
         async function renderProfileMarker(profile, coords, isMatched, tandemId = null) {
             // Extrahiere Profilinformationen
-            const alter = profile.fields.find(f => f.question.toLowerCase().includes('alter'))?.answer || 'N/A';
+            const alter = profile.fields.find(f =>
+                f.question.toLowerCase() === 'alter' ||
+                (f.question.toLowerCase().includes('alter') &&
+                 !f.question.toLowerCase().includes('unterschied') &&
+                 !f.question.toLowerCase().includes('groß'))
+            )?.answer || 'N/A';
             const geschlecht = profile.fields.find(f =>
                 f.question.toLowerCase().includes('geschlecht') &&
                 !f.question.toLowerCase().includes('tandem') &&
