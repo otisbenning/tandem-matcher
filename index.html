@@ -1383,6 +1383,9 @@
                             <button class="btn btn-outline btn-small" id="map-view-btn" onclick="switchProfileView('map')" style="flex: 1;">
                                 🗺️ Kartenansicht
                             </button>
+                            <button class="btn btn-primary btn-small" onclick="openFullScreenMap()" style="flex: 1;">
+                                🖥️ Full-Screen Karte
+                            </button>
                         </div>
                         <div class="form-group">
                             <input type="text" id="profile-search" placeholder="Profile suchen..."
@@ -3898,7 +3901,438 @@
 
             console.log('📊 Ausgewählte Profile nach Karten-Toggle:', selectedProfiles);
         }
-        
+
+        // ===============================
+        // FULL-SCREEN KARTEN FUNKTIONEN
+        // ===============================
+        let fullScreenMap = null;
+        let fullScreenMarkers = [];
+        let fullScreenLines = [];
+        let fullScreenSelectedProfiles = [];
+
+        function openFullScreenMap() {
+            console.log('🖥️ Öffne Full-Screen Kartenansicht...');
+
+            const modal = document.getElementById('fullscreen-map-modal');
+            modal.style.display = 'block';
+
+            // Warte einen Moment, damit das Modal gerendert wird
+            setTimeout(() => {
+                loadFullScreenMap();
+            }, 100);
+        }
+
+        function closeFullScreenMap() {
+            console.log('✕ Schließe Full-Screen Kartenansicht...');
+
+            const modal = document.getElementById('fullscreen-map-modal');
+            modal.style.display = 'none';
+
+            // Cleanup
+            if (fullScreenMap) {
+                fullScreenMap.remove();
+                fullScreenMap = null;
+            }
+            fullScreenMarkers = [];
+            fullScreenLines = [];
+            fullScreenSelectedProfiles = [];
+        }
+
+        async function loadFullScreenMap() {
+            console.log('🗺️ Lade Full-Screen Karte...');
+
+            // Hole Filter-Werte
+            const search = document.getElementById('fs-profile-search').value.toLowerCase();
+            const genderFilter = document.getElementById('fs-filter-gender').value.toLowerCase();
+            const gruppeFilter = document.getElementById('fs-filter-gruppe').value.toLowerCase();
+            const ageMin = parseInt(document.getElementById('fs-filter-age-min').value) || 0;
+            const ageMax = parseInt(document.getElementById('fs-filter-age-max').value) || 999;
+
+            // Initialisiere Karte wenn noch nicht vorhanden
+            if (!fullScreenMap) {
+                fullScreenMap = L.map('fullscreen-map-container').setView([51.1657, 10.4515], 6);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
+                }).addTo(fullScreenMap);
+            }
+
+            // Lösche alte Marker und Linien
+            fullScreenMarkers.forEach(marker => fullScreenMap.removeLayer(marker));
+            fullScreenLines.forEach(line => fullScreenMap.removeLayer(line));
+            fullScreenMarkers = [];
+            fullScreenLines = [];
+
+            // Sammle gematche Profile IDs
+            const matchedProfileIds = new Set();
+            tandems.forEach(tandem => {
+                matchedProfileIds.add(tandem.profile1.id);
+                matchedProfileIds.add(tandem.profile2.id);
+            });
+
+            // Verfügbare Profile (noch nicht gematcht)
+            const availableProfiles = profiles.filter(profile => !matchedProfileIds.has(profile.id));
+
+            const bounds = [];
+            const plzOffsets = {}; // Tracking für PLZ-Duplikate
+
+            // 1. Zeichne VERFÜGBARE Profile
+            for (const profile of availableProfiles) {
+                // Anwenden der Filter
+                if (!matchesFilters(profile, search, genderFilter, gruppeFilter, ageMin, ageMax)) {
+                    continue;
+                }
+
+                const coords = await getProfileCoordinates(profile, plzOffsets);
+                if (!coords) continue;
+
+                await renderProfileMarker(profile, coords, false);
+                bounds.push(coords);
+            }
+
+            // 2. Zeichne GEMATCHTE Tandems
+            for (const tandem of tandems) {
+                const profile1 = tandem.profile1;
+                const profile2 = tandem.profile2;
+
+                // Filter anwenden
+                const match1 = matchesFilters(profile1, search, genderFilter, gruppeFilter, ageMin, ageMax);
+                const match2 = matchesFilters(profile2, search, genderFilter, gruppeFilter, ageMin, ageMax);
+
+                if (!match1 && !match2) continue; // Beide passen nicht
+
+                const coords1 = await getProfileCoordinates(profile1, plzOffsets);
+                const coords2 = await getProfileCoordinates(profile2, plzOffsets);
+
+                if (coords1 && match1) {
+                    await renderProfileMarker(profile1, coords1, true, tandem.id);
+                    bounds.push(coords1);
+                }
+
+                if (coords2 && match2) {
+                    await renderProfileMarker(profile2, coords2, true, tandem.id);
+                    bounds.push(coords2);
+                }
+
+                // Zeichne Verbindungslinie wenn beide sichtbar sind
+                if (coords1 && coords2 && match1 && match2) {
+                    const line = L.polyline([coords1, coords2], {
+                        color: '#6B46C1',
+                        weight: 3,
+                        opacity: 0.7,
+                        dashArray: '10, 10'
+                    }).addTo(fullScreenMap);
+
+                    line.bindPopup(`
+                        <div style="text-align: center;">
+                            <strong style="color: #6B46C1;">Tandem: ${tandem.name}</strong><br>
+                            <small>${profile1.name} ↔ ${profile2.name}</small><br>
+                            <button class="btn btn-outline btn-small" onclick="dissolveTandemFromFullScreen('${tandem.id}')" style="margin-top: 0.5rem;">
+                                🗑️ Tandem auflösen
+                            </button>
+                        </div>
+                    `);
+
+                    fullScreenLines.push(line);
+                }
+            }
+
+            // Passe Kartenansicht an alle Marker an
+            if (bounds.length > 0) {
+                fullScreenMap.fitBounds(bounds, { padding: [50, 50] });
+            }
+
+            updateFullScreenSelectionStatus();
+            console.log(`✅ ${fullScreenMarkers.length} Profile auf Full-Screen Karte angezeigt`);
+        }
+
+        function matchesFilters(profile, search, genderFilter, gruppeFilter, ageMin, ageMax) {
+            // Name/Text-Suche
+            const matchesSearch = !search || profile.name.toLowerCase().includes(search);
+
+            // Geschlecht-Filter
+            const genderField = profile.fields.find(f => f.question.toLowerCase().includes('geschlecht'));
+            const profileGender = genderField ? genderField.answer.toLowerCase() : '';
+            const matchesGender = !genderFilter || profileGender.includes(genderFilter);
+
+            // Gruppen-Filter
+            const gruppeField = profile.fields.find(f =>
+                f.question.toLowerCase().includes('gruppe') ||
+                f.question.toLowerCase().includes('local') ||
+                f.question.toLowerCase().includes('einwander')
+            );
+            const profileGruppe = gruppeField ? gruppeField.answer.toLowerCase() : '';
+            const matchesGruppe = !gruppeFilter || profileGruppe.includes(gruppeFilter);
+
+            // Alter-Filter
+            const ageField = profile.fields.find(f =>
+                f.question.toLowerCase() === 'alter' ||
+                f.question.toLowerCase().includes('geburtstag')
+            );
+            let profileAge = 0;
+            if (ageField) {
+                profileAge = parseInt(ageField.answer) || 0;
+                if (profileAge === 0 && ageField.answer.includes('/')) {
+                    const parts = ageField.answer.split(/[\/\.]/);
+                    if (parts.length === 3) {
+                        const year = parseInt(parts[2]);
+                        const currentYear = new Date().getFullYear();
+                        profileAge = currentYear - year;
+                    }
+                }
+            }
+            const matchesAge = (profileAge === 0) || (profileAge >= ageMin && profileAge <= ageMax);
+
+            return matchesSearch && matchesGender && matchesGruppe && matchesAge;
+        }
+
+        async function getProfileCoordinates(profile, plzOffsets) {
+            const plzField = profile.fields.find(f =>
+                f.question.toLowerCase().includes('postleitzahl') ||
+                f.question.toLowerCase().includes('plz')
+            );
+
+            if (!plzField) return null;
+
+            const plz = extractPLZ(plzField.answer);
+            if (!plz) return null;
+
+            let coords = await getPLZCoordinates(plz);
+            if (!coords) return null;
+
+            // Behandle PLZ-Duplikate
+            if (!plzOffsets[plz]) {
+                plzOffsets[plz] = 0;
+            } else {
+                const offsetCount = plzOffsets[plz];
+                const angle = (offsetCount * 45) % 360;
+                const distance = 0.005;
+
+                const latOffset = distance * Math.cos(angle * Math.PI / 180);
+                const lngOffset = distance * Math.sin(angle * Math.PI / 180);
+
+                coords = [coords[0] + latOffset, coords[1] + lngOffset];
+            }
+            plzOffsets[plz]++;
+
+            return coords;
+        }
+
+        async function renderProfileMarker(profile, coords, isMatched, tandemId = null) {
+            // Extrahiere Profilinformationen
+            const alter = profile.fields.find(f => f.question.toLowerCase().includes('alter'))?.answer || 'N/A';
+            const geschlecht = profile.fields.find(f => f.question.toLowerCase().includes('geschlecht'))?.answer || 'N/A';
+            const gruppe = profile.fields.find(f =>
+                f.question.toLowerCase().includes('gruppe') ||
+                f.question.toLowerCase().includes('local') ||
+                f.question.toLowerCase().includes('einwander')
+            )?.answer || 'N/A';
+            const plzField = profile.fields.find(f =>
+                f.question.toLowerCase().includes('postleitzahl') ||
+                f.question.toLowerCase().includes('plz')
+            );
+            const plz = plzField ? extractPLZ(plzField.answer) : 'N/A';
+
+            // Bestimme Marker-Farbe
+            const isSelected = fullScreenSelectedProfiles.some(id => id == profile.id);
+
+            let markerColor;
+            if (isMatched) {
+                markerColor = '#6B46C1'; // Lila für gematchte Profile
+            } else if (isSelected) {
+                markerColor = '#C30045'; // Rot für ausgewählte Profile
+            } else {
+                // Grundfarbe nach Gruppe
+                if (gruppe.toLowerCase().includes('local')) {
+                    markerColor = '#FFB000'; // Gold für Locals
+                } else if (gruppe.toLowerCase().includes('einwander')) {
+                    markerColor = '#009892'; // Teal für Einwanderer*innen
+                } else {
+                    markerColor = '#009892'; // Standard: Teal
+                }
+            }
+
+            // Erstelle Custom Icon
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="background-color: ${markerColor}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">${profile.name.substring(0, 1).toUpperCase()}</div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+
+            // Erstelle vollständige Profil-Details
+            const allFieldsHTML = profile.fields.map(field => `
+                <div style="margin-bottom: 0.5rem; padding: 0.5rem; background: #f5f5f5; border-radius: 4px;">
+                    <strong style="color: var(--swaf-teal); font-size: 0.85rem;">${field.question}</strong>
+                    <div style="margin-top: 0.25rem; font-size: 0.9rem;">${field.answer}</div>
+                </div>
+            `).join('');
+
+            // Popup-Inhalt
+            let popupContent = `
+                <div style="min-width: 250px; max-width: 400px;">
+                    <h4 style="margin: 0 0 0.5rem 0; color: ${markerColor};">${profile.name}</h4>
+                    <table style="width: 100%; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        <tr><td><strong>Alter:</strong></td><td>${alter}</td></tr>
+                        <tr><td><strong>Geschlecht:</strong></td><td>${geschlecht}</td></tr>
+                        <tr><td><strong>Gruppe:</strong></td><td>${gruppe}</td></tr>
+                        <tr><td><strong>PLZ:</strong></td><td>${plz}</td></tr>
+                    </table>
+
+                    <button class="btn btn-outline btn-small"
+                        onclick="toggleFSPopupDetails('${profile.id}')"
+                        id="fs-toggle-details-${profile.id}"
+                        style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem;">
+                        📋 Alle Felder anzeigen
+                    </button>
+
+                    <div id="fs-popup-details-${profile.id}" style="display: none; max-height: 300px; overflow-y: auto; margin-bottom: 0.5rem; padding: 0.5rem; background: white; border: 1px solid #ddd; border-radius: 4px;">
+                        ${allFieldsHTML}
+                    </div>
+            `;
+
+            if (isMatched) {
+                // Für gematchte Profile: Tandem auflösen Button
+                const tandem = tandems.find(t => t.id == tandemId);
+                popupContent += `
+                    <div style="background: #f0e6ff; padding: 0.5rem; border-radius: 4px; margin-bottom: 0.5rem;">
+                        <strong style="color: #6B46C1;">✓ Bereits gematcht</strong><br>
+                        <small>Tandem: ${tandem ? tandem.name : 'N/A'}</small>
+                    </div>
+                    <button class="btn btn-outline" onclick="dissolveTandemFromFullScreen('${tandemId}')" style="width: 100%;">
+                        🗑️ Tandem auflösen
+                    </button>
+                `;
+            } else {
+                // Für verfügbare Profile: Auswahl Button
+                popupContent += `
+                    <button class="btn btn-primary" onclick="toggleFSProfileSelection('${profile.id}')" style="width: 100%;">
+                        ${isSelected ? '✓ Ausgewählt' : 'Auswählen'}
+                    </button>
+                `;
+            }
+
+            popupContent += `</div>`;
+
+            // Erstelle Marker
+            const marker = L.marker(coords, { icon: customIcon }).addTo(fullScreenMap);
+            marker.bindPopup(popupContent, { maxWidth: 450 });
+            fullScreenMarkers.push(marker);
+        }
+
+        function toggleFSPopupDetails(profileId) {
+            const detailsDiv = document.getElementById(`fs-popup-details-${profileId}`);
+            const toggleBtn = document.getElementById(`fs-toggle-details-${profileId}`);
+
+            if (detailsDiv && toggleBtn) {
+                if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
+                    detailsDiv.style.display = 'block';
+                    toggleBtn.textContent = '📋 Alle Felder verbergen';
+                } else {
+                    detailsDiv.style.display = 'none';
+                    toggleBtn.textContent = '📋 Alle Felder anzeigen';
+                }
+            }
+        }
+
+        function toggleFSProfileSelection(profileId) {
+            const numericId = typeof profileId === 'string' ? parseFloat(profileId) : profileId;
+            const index = fullScreenSelectedProfiles.findIndex(id => {
+                const numericSelectedId = typeof id === 'string' ? parseFloat(id) : id;
+                return numericSelectedId === numericId;
+            });
+
+            if (index > -1) {
+                fullScreenSelectedProfiles.splice(index, 1);
+            } else {
+                if (fullScreenSelectedProfiles.length >= 2) {
+                    showNotification('Maximal 2 Profile können ausgewählt werden', 'warning');
+                    return;
+                }
+                fullScreenSelectedProfiles.push(numericId);
+            }
+
+            loadFullScreenMap();
+        }
+
+        function clearFullScreenSelection() {
+            fullScreenSelectedProfiles = [];
+            loadFullScreenMap();
+        }
+
+        function updateFullScreenSelectionStatus() {
+            const statusSpan = document.getElementById('fs-selection-status');
+            const matchBtn = document.getElementById('fs-create-match-btn');
+
+            statusSpan.textContent = `${fullScreenSelectedProfiles.length} von 2 Profilen ausgewählt`;
+
+            if (fullScreenSelectedProfiles.length === 2) {
+                matchBtn.disabled = false;
+            } else {
+                matchBtn.disabled = true;
+            }
+        }
+
+        function filterFullScreenMap() {
+            loadFullScreenMap();
+        }
+
+        function clearFullScreenFilters() {
+            document.getElementById('fs-profile-search').value = '';
+            document.getElementById('fs-filter-gender').value = '';
+            document.getElementById('fs-filter-gruppe').value = '';
+            document.getElementById('fs-filter-age-min').value = '';
+            document.getElementById('fs-filter-age-max').value = '';
+            filterFullScreenMap();
+            showNotification('✅ Alle Filter zurückgesetzt', 'success', 2000);
+        }
+
+        async function createMatchFromFullScreen() {
+            if (fullScreenSelectedProfiles.length !== 2) {
+                showNotification('Bitte wähle genau 2 Profile aus', 'warning');
+                return;
+            }
+
+            // Setze die globalen selectedProfiles
+            selectedProfiles = [...fullScreenSelectedProfiles];
+
+            // Schließe das Modal temporär
+            const modal = document.getElementById('fullscreen-map-modal');
+            const wasOpen = modal.style.display === 'block';
+
+            // Rufe die normale Matching-Funktion auf
+            await performMatching();
+
+            // Lösche Auswahl und lade Karte neu
+            fullScreenSelectedProfiles = [];
+
+            if (wasOpen) {
+                loadFullScreenMap();
+            }
+        }
+
+        function dissolveTandemFromFullScreen(tandemId) {
+            const tandem = tandems.find(t => t.id == tandemId);
+
+            if (!tandem) {
+                showNotification('Tandem nicht gefunden', 'error');
+                return;
+            }
+
+            if (confirm(`Tandem "${tandem.name}" wirklich auflösen?`)) {
+                tandems = tandems.filter(t => t.id != tandemId);
+                saveTandems();
+                updateMatchedPairs();
+                updateStatistics();
+                loadAvailableProfiles();
+
+                showNotification(`✅ Tandem "${tandem.name}" aufgelöst`, 'success');
+                loadFullScreenMap();
+            }
+        }
+
+
         // ===============================
         // MATCHING-FUNKTIONEN
         // ===============================
@@ -11320,12 +11754,98 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         }
         
     </script>
+
+    <!-- Full-Screen Karten Modal -->
+    <div id="fullscreen-map-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 10000;">
+        <div style="display: flex; flex-direction: column; height: 100%;">
+            <!-- Header mit Filtern und Schließen-Button -->
+            <div style="background: var(--swaf-teal); color: white; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="margin: 0;">🗺️ Full-Screen Kartenansicht</h2>
+                    <button class="btn btn-outline" onclick="closeFullScreenMap()" style="background: white; color: var(--swaf-teal); font-weight: bold;">
+                        ✕ Schließen
+                    </button>
+                </div>
+
+                <!-- Filter -->
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <input type="text" id="fs-profile-search" placeholder="Profile suchen..."
+                        onkeyup="filterFullScreenMap()" style="flex: 1; min-width: 200px; padding: 0.5rem; border-radius: 4px; border: none;">
+
+                    <select id="fs-filter-gender" onchange="filterFullScreenMap()" style="flex: 1; min-width: 150px; padding: 0.5rem; border-radius: 4px; border: none;">
+                        <option value="">Alle Geschlechter</option>
+                        <option value="weiblich">Weiblich</option>
+                        <option value="männlich">Männlich</option>
+                        <option value="divers">Divers</option>
+                        <option value="keine angabe">Keine Angabe</option>
+                    </select>
+
+                    <select id="fs-filter-gruppe" onchange="filterFullScreenMap()" style="flex: 1; min-width: 150px; padding: 0.5rem; border-radius: 4px; border: none;">
+                        <option value="">Alle Gruppen</option>
+                        <option value="local">Locals</option>
+                        <option value="einwander">Eingewanderte</option>
+                    </select>
+
+                    <input type="number" id="fs-filter-age-min" placeholder="Alter von"
+                        onchange="filterFullScreenMap()" style="flex: 1; min-width: 100px; padding: 0.5rem; border-radius: 4px; border: none;" min="0" max="120">
+
+                    <input type="number" id="fs-filter-age-max" placeholder="Alter bis"
+                        onchange="filterFullScreenMap()" style="flex: 1; min-width: 100px; padding: 0.5rem; border-radius: 4px; border: none;" min="0" max="120">
+
+                    <button class="btn btn-outline" onclick="clearFullScreenFilters()"
+                        style="white-space: nowrap; background: white; color: var(--swaf-teal); font-weight: bold;">🔄 Filter zurücksetzen</button>
+                </div>
+            </div>
+
+            <!-- Karte -->
+            <div id="fullscreen-map-container" style="flex: 1; position: relative;">
+                <!-- Die Leaflet-Karte wird hier eingefügt -->
+            </div>
+
+            <!-- Footer mit Legende und Matching-Controls -->
+            <div style="background: #f5f5f5; padding: 1rem; border-top: 2px solid var(--swaf-teal);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <!-- Legende -->
+                    <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; background: #FFB000; border-radius: 50%; border: 2px solid white;"></div>
+                            <span>Locals (verfügbar)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; background: #009892; border-radius: 50%; border: 2px solid white;"></div>
+                            <span>Eingewanderte (verfügbar)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; background: #C30045; border-radius: 50%; border: 2px solid white;"></div>
+                            <span>Ausgewählt (für Matching)</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 20px; height: 20px; background: #6B46C1; border-radius: 50%; border: 2px solid white;"></div>
+                            <span>Gematcht (bestehende Tandems)</span>
+                        </div>
+                    </div>
+
+                    <!-- Matching Controls -->
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span id="fs-selection-status" style="font-weight: bold; color: var(--swaf-teal);">0 von 2 Profilen ausgewählt</span>
+                        <button id="fs-create-match-btn" class="btn btn-primary" onclick="createMatchFromFullScreen()" disabled>
+                            ✨ Tandem erstellen
+                        </button>
+                        <button class="btn btn-outline" onclick="clearFullScreenSelection()">
+                            🗑️ Auswahl löschen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
             <!-- Leaflet JS für Karten -->
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
                 integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
                 crossorigin=""></script>
         <!-- SheetJS für Excel-Export -->
-        <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>        
+        <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </body>
 
 </html>
