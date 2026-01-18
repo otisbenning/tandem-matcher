@@ -1359,12 +1359,68 @@
 
             <!-- Tab 2: Tandems matchen -->
             <div class="tab-panel" id="tab-1">
+                <!-- Gamification Panel -->
+                <div id="gamification-panel" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem; flex-wrap: wrap;">
+                        <!-- Progress Section -->
+                        <div style="flex: 1; min-width: 250px;">
+                            <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem;">📊 Dein Fortschritt</h3>
+                            <div style="background: rgba(255,255,255,0.2); border-radius: 20px; height: 30px; overflow: hidden; margin-bottom: 0.5rem;">
+                                <div id="progress-bar" style="background: linear-gradient(90deg, #FFB000, #FF6B6B); height: 100%; width: 0%; transition: width 0.5s ease; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem;">
+                                    0%
+                                </div>
+                            </div>
+                            <div id="progress-text" style="font-size: 0.9rem; opacity: 0.95;">0 von 0 Profilen gematcht</div>
+
+                            <!-- Stats -->
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; margin-top: 1rem;">
+                                <div style="background: rgba(255,255,255,0.15); padding: 0.75rem; border-radius: 6px; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: bold;" id="stat-today">0</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.9;">Heute</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.15); padding: 0.75rem; border-radius: 6px; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: bold;" id="stat-streak">0</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.9;">Streak 🔥</div>
+                                </div>
+                                <div style="background: rgba(255,255,255,0.15); padding: 0.75rem; border-radius: 6px; text-align: center;">
+                                    <div style="font-size: 1.5rem; font-weight: bold;" id="stat-quality">-</div>
+                                    <div style="font-size: 0.75rem; opacity: 0.9;">Ø Qualität</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Achievements Section -->
+                        <div style="flex: 1; min-width: 250px;">
+                            <h3 style="margin: 0 0 1rem 0; font-size: 1.1rem;">🏆 Achievements</h3>
+                            <div id="achievements-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                <!-- Achievements werden hier eingefügt -->
+                            </div>
+
+                            <!-- Undo Button -->
+                            <div style="margin-top: 1rem;">
+                                <button id="undo-button" class="btn btn-outline" onclick="undoLastMatch()" disabled
+                                    style="background: rgba(255,255,255,0.2); border: 2px solid white; color: white; width: 100%; opacity: 0.5;">
+                                    ↩️ Letztes Tandem rückgängig (5s)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <h2>🤝 Profile zu Tandems matchen</h2>
 
                 <div class="alert alert-info">
                     <strong>Anleitung:</strong> Wähle genau 2 Profile aus (durch Anklicken) und erstelle dann ein
                     Tandem.
                     Der Auto-Match analysiert automatisch Gemeinsamkeiten.
+                </div>
+
+                <!-- Smart Match Vorschläge -->
+                <div id="smart-match-panel" style="background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: none;">
+                    <h3 style="margin: 0 0 1rem 0; color: #0c4a6e; font-size: 1rem;">🤖 Smart Match Vorschläge</h3>
+                    <div id="smart-match-suggestions" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <!-- Vorschläge werden hier eingefügt -->
+                    </div>
                 </div>
 
                 <div class="grid grid-2">
@@ -1859,6 +1915,44 @@
         let selectedTandemPairId = null;
 
         // ===============================
+        // GAMIFICATION VARIABLEN & SYSTEM
+        // ===============================
+        let gamificationStats = JSON.parse(localStorage.getItem('swaf_gamification_stats') || '{"totalMatches":0,"todayMatches":0,"lastMatchDate":"","streak":0,"qualityScores":[],"achievements":[]}');
+        let undoStack = [];
+        let undoTimer = null;
+
+        // Achievement Definitionen
+        const ACHIEVEMENTS = [
+            { id: 'first_steps', name: 'Erste Schritte', description: '5 Tandems erstellt', icon: '🎯', threshold: 5, check: (stats) => stats.totalMatches >= 5 },
+            { id: 'local_hero', name: 'Lokale*r Held*in', description: '10 Locals gematcht', icon: '🏠', threshold: 10, check: () => {
+                const localMatches = tandems.filter(t => {
+                    const g1 = t.profile1.fields.find(f => f.question.toLowerCase().includes('gruppe'))?.answer.toLowerCase() || '';
+                    const g2 = t.profile2.fields.find(f => f.question.toLowerCase().includes('gruppe'))?.answer.toLowerCase() || '';
+                    return g1.includes('local') || g2.includes('local');
+                });
+                return localMatches.length >= 10;
+            }},
+            { id: 'bridge_builder', name: 'Brückenbauer*in', description: '10 interkulturelle Tandems', icon: '🌉', threshold: 10, check: () => {
+                const interculturalMatches = tandems.filter(t => {
+                    const g1 = t.profile1.fields.find(f => f.question.toLowerCase().includes('gruppe'))?.answer.toLowerCase() || '';
+                    const g2 = t.profile2.fields.find(f => f.question.toLowerCase().includes('gruppe'))?.answer.toLowerCase() || '';
+                    return (g1.includes('local') && g2.includes('einwander')) || (g1.includes('einwander') && g2.includes('local'));
+                });
+                return interculturalMatches.length >= 10;
+            }},
+            { id: 'speedrunner', name: 'Speedrunner', description: '10 Matches in 10 Minuten', icon: '⚡', threshold: 10, check: (stats) => {
+                // Prüfe ob die letzten 10 Matches innerhalb von 10 Minuten waren
+                return false; // Wird während des Matchings geprüft
+            }},
+            { id: 'perfectionist', name: 'Perfektionist*in', description: '10 Matches mit 5 Sternen', icon: '⭐', threshold: 10, check: (stats) => {
+                const fiveStarMatches = (stats.qualityScores || []).filter(score => score >= 5);
+                return fiveStarMatches.length >= 10;
+            }},
+            { id: 'veteran', name: 'Veteran*in', description: '50 Tandems erstellt', icon: '🏆', threshold: 50, check: (stats) => stats.totalMatches >= 50 },
+            { id: 'master', name: 'Matching-Master', description: '100 Tandems erstellt', icon: '👑', threshold: 100, check: (stats) => stats.totalMatches >= 100 }
+        ];
+
+        // ===============================
         // GLOBALE HILFSFUNKTIONEN FÜR INTELLIGENTE ANALYSE
         // ===============================
 
@@ -2113,6 +2207,7 @@
                         loadAvailableProfiles();
                         updateMatchedPairs();
                         updateMatchingStatus();
+                        initGamification();
                         break;
                     case 2:
                         loadFieldSelection();
@@ -3903,6 +3998,454 @@
         }
 
         // ===============================
+        // GAMIFICATION FUNKTIONEN
+        // ===============================
+
+        function initGamification() {
+            updateGamificationUI();
+            updateSmartMatches();
+            checkAchievements();
+        }
+
+        function updateGamificationUI() {
+            // Aktualisiere Fortschrittsbalken
+            const totalProfiles = profiles.length;
+            const matchedProfiles = tandems.length * 2;
+            const progress = totalProfiles > 0 ? Math.round((matchedProfiles / totalProfiles) * 100) : 0;
+
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+
+            if (progressBar && progressText) {
+                progressBar.style.width = `${progress}%`;
+                progressBar.textContent = `${progress}%`;
+                progressText.textContent = `${matchedProfiles} von ${totalProfiles} Profilen gematcht`;
+            }
+
+            // Aktualisiere Stats
+            const today = new Date().toDateString();
+            if (gamificationStats.lastMatchDate !== today) {
+                gamificationStats.todayMatches = 0;
+                gamificationStats.lastMatchDate = today;
+            }
+
+            document.getElementById('stat-today').textContent = gamificationStats.todayMatches || 0;
+            document.getElementById('stat-streak').textContent = gamificationStats.streak || 0;
+
+            const avgQuality = gamificationStats.qualityScores && gamificationStats.qualityScores.length > 0
+                ? (gamificationStats.qualityScores.reduce((a, b) => a + b, 0) / gamificationStats.qualityScores.length).toFixed(1)
+                : '-';
+            document.getElementById('stat-quality').textContent = avgQuality !== '-' ? `${avgQuality}⭐` : '-';
+
+            saveGamificationStats();
+        }
+
+        function calculateMatchQuality(profile1, profile2) {
+            let score = 0;
+            let maxScore = 0;
+
+            // 1. Altersdifferenz (max 2 Punkte)
+            maxScore += 2;
+            const age1Field = profile1.fields.find(f => f.question.toLowerCase().includes('alter'));
+            const age2Field = profile2.fields.find(f => f.question.toLowerCase().includes('alter'));
+            if (age1Field && age2Field) {
+                const age1 = parseInt(age1Field.answer) || 0;
+                const age2 = parseInt(age2Field.answer) || 0;
+                const ageDiff = Math.abs(age1 - age2);
+                if (ageDiff <= 5) score += 2;
+                else if (ageDiff <= 10) score += 1.5;
+                else if (ageDiff <= 15) score += 1;
+                else if (ageDiff <= 20) score += 0.5;
+            }
+
+            // 2. PLZ-Nähe (max 2 Punkte)
+            maxScore += 2;
+            const plz1Field = profile1.fields.find(f => f.question.toLowerCase().includes('plz') || f.question.toLowerCase().includes('postleitzahl'));
+            const plz2Field = profile2.fields.find(f => f.question.toLowerCase().includes('plz') || f.question.toLowerCase().includes('postleitzahl'));
+            if (plz1Field && plz2Field) {
+                const plz1 = plz1Field.answer.match(/\d{5}/)?.[0] || '';
+                const plz2 = plz2Field.answer.match(/\d{5}/)?.[0] || '';
+                if (plz1 && plz2) {
+                    const plzDiff = Math.abs(parseInt(plz1.substring(0, 2)) - parseInt(plz2.substring(0, 2)));
+                    if (plz1 === plz2) score += 2;
+                    else if (plzDiff === 0) score += 1.5; // Gleiche Region
+                    else if (plzDiff <= 2) score += 1;
+                    else if (plzDiff <= 5) score += 0.5;
+                }
+            }
+
+            // 3. Interkulturell (max 1 Punkt - Bonus!)
+            maxScore += 1;
+            const gruppe1Field = profile1.fields.find(f => f.question.toLowerCase().includes('gruppe'));
+            const gruppe2Field = profile2.fields.find(f => f.question.toLowerCase().includes('gruppe'));
+            if (gruppe1Field && gruppe2Field) {
+                const g1 = gruppe1Field.answer.toLowerCase();
+                const g2 = gruppe2Field.answer.toLowerCase();
+                const isIntercultural = (g1.includes('local') && g2.includes('einwander')) || (g1.includes('einwander') && g2.includes('local'));
+                if (isIntercultural) score += 1; // Bonus für interkulturelle Tandems
+            }
+
+            // Normalisiere auf 5 Sterne
+            const normalizedScore = Math.min(5, Math.round((score / maxScore) * 5));
+            return {
+                score: normalizedScore,
+                details: {
+                    age: age1Field && age2Field ? Math.abs((parseInt(age1Field.answer) || 0) - (parseInt(age2Field.answer) || 0)) : null,
+                    plzMatch: plz1Field && plz2Field,
+                    intercultural: gruppe1Field && gruppe2Field ? ((gruppe1Field.answer.toLowerCase().includes('local') && gruppe2Field.answer.toLowerCase().includes('einwander')) || (gruppe1Field.answer.toLowerCase().includes('einwander') && gruppe2Field.answer.toLowerCase().includes('local'))) : false
+                }
+            };
+        }
+
+        function updateSmartMatches() {
+            const panel = document.getElementById('smart-match-panel');
+            const container = document.getElementById('smart-match-suggestions');
+
+            if (!panel || !container) return;
+
+            // Hole verfügbare Profile
+            const matchedProfileIds = new Set();
+            tandems.forEach(tandem => {
+                matchedProfileIds.add(tandem.profile1.id);
+                matchedProfileIds.add(tandem.profile2.id);
+            });
+
+            const availableProfiles = profiles.filter(profile => !matchedProfileIds.has(profile.id));
+
+            if (availableProfiles.length < 2) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            // Berechne alle möglichen Paare und deren Qualität
+            const suggestions = [];
+            for (let i = 0; i < availableProfiles.length; i++) {
+                for (let j = i + 1; j < availableProfiles.length; j++) {
+                    const p1 = availableProfiles[i];
+                    const p2 = availableProfiles[j];
+                    const quality = calculateMatchQuality(p1, p2);
+                    suggestions.push({
+                        profile1: p1,
+                        profile2: p2,
+                        quality: quality.score,
+                        details: quality.details
+                    });
+                }
+            }
+
+            // Sortiere nach Qualität und nehme Top 3
+            suggestions.sort((a, b) => b.quality - a.quality);
+            const top3 = suggestions.slice(0, 3).filter(s => s.quality >= 3); // Nur Vorschläge mit mind. 3 Sternen
+
+            if (top3.length === 0) {
+                panel.style.display = 'none';
+                return;
+            }
+
+            panel.style.display = 'block';
+            container.innerHTML = top3.map((suggestion, index) => {
+                const stars = '⭐'.repeat(suggestion.quality);
+                const reasons = [];
+                if (suggestion.details.age !== null && suggestion.details.age <= 10) reasons.push(`Ähnliches Alter (±${suggestion.details.age} Jahre)`);
+                if (suggestion.details.plzMatch) reasons.push('Gleiche Region');
+                if (suggestion.details.intercultural) reasons.push('Interkulturell');
+
+                return `
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: bold; color: #1e293b; margin-bottom: 0.25rem;">
+                                ${suggestion.profile1.name} ↔ ${suggestion.profile2.name}
+                            </div>
+                            <div style="font-size: 0.85rem; color: #64748b;">
+                                ${stars} • ${reasons.join(' • ')}
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-small" onclick="quickMatch('${suggestion.profile1.id}', '${suggestion.profile2.id}')" style="white-space: nowrap;">
+                            ✨ Quick Match
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function quickMatch(profileId1, profileId2) {
+            console.log('⚡ Quick Match:', profileId1, profileId2);
+
+            // Setze selectedProfiles
+            selectedProfiles = [parseFloat(profileId1), parseFloat(profileId2)];
+
+            // Rufe normale Matching-Funktion auf
+            await performMatching();
+
+            // Aktualisiere UI
+            loadAvailableProfiles();
+            updateSmartMatches();
+        }
+
+        function checkAchievements() {
+            const container = document.getElementById('achievements-container');
+            if (!container) return;
+
+            const unlockedAchievements = gamificationStats.achievements || [];
+
+            container.innerHTML = ACHIEVEMENTS.map(achievement => {
+                const isUnlocked = unlockedAchievements.includes(achievement.id) || achievement.check(gamificationStats);
+
+                // Unlock Achievement wenn noch nicht unlocked
+                if (isUnlocked && !unlockedAchievements.includes(achievement.id)) {
+                    unlockedAchievements.push(achievement.id);
+                    gamificationStats.achievements = unlockedAchievements;
+                    saveGamificationStats();
+
+                    // Zeige Achievement-Notification
+                    showAchievementUnlock(achievement);
+                }
+
+                return `
+                    <div style="
+                        background: ${isUnlocked ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)'};
+                        border: 2px solid ${isUnlocked ? 'white' : 'rgba(255,255,255,0.3)'};
+                        border-radius: 8px;
+                        padding: 0.5rem;
+                        text-align: center;
+                        min-width: 70px;
+                        ${isUnlocked ? '' : 'opacity: 0.5; filter: grayscale(1);'}
+                    " title="${achievement.description}">
+                        <div style="font-size: 1.5rem;">${achievement.icon}</div>
+                        <div style="font-size: 0.7rem; margin-top: 0.25rem;">${achievement.name}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showAchievementUnlock(achievement) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 2rem;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                z-index: 10001;
+                text-align: center;
+                animation: achievementPop 0.5s ease;
+            `;
+
+            notification.innerHTML = `
+                <div style="font-size: 4rem; margin-bottom: 1rem;">${achievement.icon}</div>
+                <h2 style="margin: 0 0 0.5rem 0;">Achievement Unlocked!</h2>
+                <h3 style="margin: 0 0 0.5rem 0; color: #FFB000;">${achievement.name}</h3>
+                <p style="margin: 0; opacity: 0.9;">${achievement.description}</p>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Entferne nach 3 Sekunden
+            setTimeout(() => {
+                notification.style.animation = 'achievementPop 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        function celebrateMatch(qualityScore) {
+            // Konfetti-Effekt
+            createConfetti(qualityScore >= 4 ? 100 : 50);
+
+            // Motivierende Nachricht
+            const messages = {
+                5: ['🎉 Perfektes Match!', 'Unglaublich! 5 Sterne!', '✨ Absolut perfekt!'],
+                4: ['🌟 Großartig!', 'Super Match!', '💫 Hervorragend!'],
+                3: ['👍 Gutes Match!', 'Passt gut!', '✅ Schönes Tandem!'],
+                2: ['👌 Passt!', 'Solides Match!'],
+                1: ['✓ Match erstellt!']
+            };
+
+            const messageArray = messages[qualityScore] || messages[3];
+            const randomMessage = messageArray[Math.floor(Math.random() * messageArray.length)];
+
+            showNotification(`${randomMessage} Du hast gerade 2 Menschen zusammengebracht!`, 'success', 3000);
+        }
+
+        function createConfetti(count = 50) {
+            for (let i = 0; i < count; i++) {
+                const confetti = document.createElement('div');
+                confetti.style.cssText = `
+                    position: fixed;
+                    width: 10px;
+                    height: 10px;
+                    background: ${['#FFB000', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'][Math.floor(Math.random() * 5)]};
+                    top: -10px;
+                    left: ${Math.random() * 100}%;
+                    opacity: 1;
+                    transform: rotate(${Math.random() * 360}deg);
+                    animation: confettiFall ${2 + Math.random() * 3}s linear;
+                    z-index: 10000;
+                    pointer-events: none;
+                `;
+
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 5000);
+            }
+
+            // Füge CSS-Animation hinzu falls noch nicht vorhanden
+            if (!document.getElementById('confetti-style')) {
+                const style = document.createElement('style');
+                style.id = 'confetti-style';
+                style.textContent = `
+                    @keyframes confettiFall {
+                        to {
+                            top: 100%;
+                            transform: translateY(100vh) rotate(${Math.random() * 720}deg);
+                            opacity: 0;
+                        }
+                    }
+                    @keyframes achievementPop {
+                        0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+                        50% { transform: translate(-50%, -50%) scale(1.1); }
+                        100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        }
+
+        function undoLastMatch() {
+            if (undoStack.length === 0) {
+                showNotification('Nichts zum Rückgängig machen', 'info');
+                return;
+            }
+
+            const lastAction = undoStack.pop();
+
+            // Stelle Tandem wieder her
+            tandems.push(lastAction.tandem);
+            saveTandems();
+
+            // Aktualisiere Stats
+            gamificationStats.totalMatches--;
+            gamificationStats.todayMatches--;
+            if (gamificationStats.qualityScores.length > 0) {
+                gamificationStats.qualityScores.pop();
+            }
+            saveGamificationStats();
+
+            // Aktualisiere UI
+            updateMatchedPairs();
+            updateStatistics();
+            loadAvailableProfiles();
+            updateGamificationUI();
+            updateSmartMatches();
+            checkAchievements();
+
+            showNotification(`↩️ Tandem "${lastAction.tandem.name}" wiederhergestellt`, 'success');
+
+            // Disable Undo-Button
+            const undoBtn = document.getElementById('undo-button');
+            if (undoBtn && undoStack.length === 0) {
+                undoBtn.disabled = true;
+                undoBtn.style.opacity = '0.5';
+            }
+        }
+
+        function enableUndo(tandem) {
+            // Füge zur Undo-Stack hinzu
+            undoStack.push({
+                tandem: { ...tandem },
+                timestamp: Date.now()
+            });
+
+            // Aktiviere Undo-Button
+            const undoBtn = document.getElementById('undo-button');
+            if (undoBtn) {
+                undoBtn.disabled = false;
+                undoBtn.style.opacity = '1';
+
+                // Starte 5-Sekunden Timer
+                let countdown = 5;
+                const originalText = undoBtn.textContent;
+
+                if (undoTimer) clearInterval(undoTimer);
+
+                undoTimer = setInterval(() => {
+                    countdown--;
+                    undoBtn.textContent = `↩️ Rückgängig (${countdown}s)`;
+
+                    if (countdown <= 0) {
+                        clearInterval(undoTimer);
+                        undoBtn.textContent = originalText;
+                        undoBtn.disabled = true;
+                        undoBtn.style.opacity = '0.5';
+                        undoStack = []; // Lösche Undo-Stack
+                    }
+                }, 1000);
+            }
+        }
+
+        function saveGamificationStats() {
+            localStorage.setItem('swaf_gamification_stats', JSON.stringify(gamificationStats));
+        }
+
+        function onMatchCreated(tandem, qualityScore) {
+            // Aktualisiere Stats
+            gamificationStats.totalMatches++;
+            gamificationStats.todayMatches++;
+            gamificationStats.qualityScores = gamificationStats.qualityScores || [];
+            gamificationStats.qualityScores.push(qualityScore);
+
+            // Aktualisiere Streak
+            const today = new Date().toDateString();
+            if (gamificationStats.lastMatchDate !== today) {
+                gamificationStats.streak = 1;
+                gamificationStats.lastMatchDate = today;
+            } else {
+                gamificationStats.streak++;
+            }
+
+            saveGamificationStats();
+
+            // UI Updates
+            updateGamificationUI();
+            checkAchievements();
+            updateSmartMatches();
+            celebrateMatch(qualityScore);
+            enableUndo(tandem);
+        }
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Escape: Schließe Full-Screen
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('fullscreen-map-modal');
+                if (modal && modal.style.display === 'block') {
+                    closeFullScreenMap();
+                }
+            }
+
+            // Space: Öffne Full-Screen (nur wenn nicht in Input)
+            if (e.key === ' ' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
+                const tabPanel = document.getElementById('tab-1');
+                if (tabPanel && tabPanel.style.display !== 'none') {
+                    e.preventDefault();
+                    openFullScreenMap();
+                }
+            }
+
+            // Ctrl+Z: Undo
+            if (e.ctrlKey && e.key === 'z') {
+                const undoBtn = document.getElementById('undo-button');
+                if (undoBtn && !undoBtn.disabled) {
+                    e.preventDefault();
+                    undoLastMatch();
+                }
+            }
+        });
+
+        // ===============================
         // FULL-SCREEN KARTEN FUNKTIONEN
         // ===============================
         let fullScreenMap = null;
@@ -4453,6 +4996,11 @@
                     : `✅ ${availableProfiles.length} Profile für Matching geladen`;
                 showNotification(message, 'success', 3000);
 
+                // Wende Filter an, falls welche gesetzt sind
+                if (currentView === 'list') {
+                    setTimeout(() => filterProfiles(), 100);
+                }
+
             } catch (error) {
                 console.error('❌ Fehler beim Erstellen der Profile-Liste:', error);
                 container.innerHTML = `
@@ -4593,6 +5141,12 @@
 
             // WICHTIG: Profile-Liste aktualisieren
             loadAvailableProfiles();
+
+            // Berechne Match-Quality Score
+            const qualityScore = calculateMatchQuality(profile1, profile2).score;
+
+            // Gamification: Match wurde erstellt
+            onMatchCreated(tandem, qualityScore);
 
             const successMessage = `✅ Tandem "${tandem.name}" erstellt (${commonalities.filter(c => c.commonality).length} Gemeinsamkeiten)`;
             showNotification(successMessage, 'success');
@@ -8217,6 +8771,41 @@
 
         function saveTandems() {
             localStorage.setItem('swaf_tandems', JSON.stringify(tandems));
+            showAutoSaveIndicator();
+        }
+
+        function showAutoSaveIndicator() {
+            // Erstelle oder aktualisiere Save-Indicator
+            let indicator = document.getElementById('auto-save-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'auto-save-indicator';
+                indicator.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: #10b981;
+                    color: white;
+                    padding: 0.5rem 1rem;
+                    border-radius: 6px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    font-size: 0.85rem;
+                    z-index: 9999;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                    pointer-events: none;
+                `;
+                indicator.textContent = '💾 Automatisch gespeichert';
+                document.body.appendChild(indicator);
+            }
+
+            // Zeige Indicator
+            indicator.style.opacity = '1';
+
+            // Verstecke nach 2 Sekunden
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+            }, 2000);
         }
 
         function saveAllData() {
