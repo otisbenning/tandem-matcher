@@ -4227,10 +4227,15 @@
                 const matchesGruppe = !gruppeFilter || profileGruppe.includes(gruppeFilter);
 
                 // 4. Alter-Filter
-                const ageField = profile.fields.find(f =>
-                    f.question.toLowerCase() === 'alter' ||
-                    f.question.toLowerCase().includes('geburtstag')
-                );
+                const ageField = profile.fields.find(f => {
+                    const q = f.question.toLowerCase();
+                    // Suche nach Alter-relevanten Fragen, aber schließe Altersunterschied/Präferenzen aus
+                    return (q === 'alter' ||
+                            (q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz')) ||
+                            q.includes('geburts') || // Geburtstag, Geburtsdatum
+                            q === 'age' ||
+                            q.includes('how old'));
+                });
                 let profileAge = 0;
                 if (ageField) {
                     profileAge = parseInt(ageField.answer) || 0;
@@ -5587,13 +5592,15 @@
             // Alter-Filter
             let matchesAge = true;
             if (ageMin > 0 || ageMax < 999) {
-                const ageField = profile.fields.find(f =>
-                    f.question.toLowerCase() === 'alter' ||
-                    (f.question.toLowerCase().includes('alter') &&
-                     !f.question.toLowerCase().includes('unterschied') &&
-                     !f.question.toLowerCase().includes('groß')) ||
-                    f.question.toLowerCase().includes('geburtstag')
-                );
+                const ageField = profile.fields.find(f => {
+                    const q = f.question.toLowerCase();
+                    // Suche nach Alter-relevanten Fragen, aber schließe Altersunterschied/Präferenzen aus
+                    return (q === 'alter' ||
+                            (q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz')) ||
+                            q.includes('geburts') || // Geburtstag, Geburtsdatum
+                            q === 'age' ||
+                            q.includes('how old'));
+                });
                 if (ageField) {
                     let profileAge = parseInt(ageField.answer) || 0;
                     if (profileAge === 0 && ageField.answer.includes('/')) {
@@ -5606,9 +5613,13 @@
                     }
                     if (profileAge > 0) {
                         matchesAge = profileAge >= ageMin && profileAge <= ageMax;
+                    } else {
+                        // Alter konnte nicht geparst werden → zeige trotzdem an
+                        matchesAge = true;
                     }
+                } else {
+                    // Kein Altersfeld gefunden → zeige trotzdem an
                 }
-                // Kein Altersfeld → trotzdem anzeigen
             }
 
             return matchesSearch && matchesGender && matchesGruppe && matchesAge;
@@ -7152,10 +7163,15 @@
                 // Alter-Filter
                 let matchesAge = true;
                 if (ageMin > 0 || ageMax < 999) {
-                    const ageField = profile.fields.find(f =>
-                        f.question.toLowerCase() === 'alter' ||
-                        f.question.toLowerCase().includes('geburtstag')
-                    );
+                    const ageField = profile.fields.find(f => {
+                        const q = f.question.toLowerCase();
+                        // Suche nach Alter-relevanten Fragen, aber schließe Altersunterschied/Präferenzen aus
+                        return (q === 'alter' ||
+                                (q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz')) ||
+                                q.includes('geburts') || // Geburtstag, Geburtsdatum
+                                q === 'age' ||
+                                q.includes('how old'));
+                    });
                     if (ageField) {
                         let profileAge = parseInt(ageField.answer) || 0;
                         if (profileAge === 0 && ageField.answer.includes('/')) {
@@ -7168,9 +7184,16 @@
                         }
                         if (profileAge > 0) {
                             matchesAge = profileAge >= ageMin && profileAge <= ageMax;
+                            console.log(`🔍 Alter-Check für ${profile.name}: Alter=${profileAge}, Range=${ageMin}-${ageMax}, Match=${matchesAge}`);
+                        } else {
+                            // Alter konnte nicht geparst werden → zeige trotzdem an
+                            console.log(`⚠️ Konnte Alter nicht parsen für ${profile.name}: "${ageField.answer}"`);
+                            matchesAge = true;
                         }
+                    } else {
+                        // Kein Altersfeld gefunden → zeige trotzdem an
+                        console.log(`ℹ️ Kein Altersfeld gefunden für ${profile.name}`);
                     }
-                    // Kein Altersfeld → zeige trotzdem an
                 }
 
                 const shouldShow = matchesSearch && matchesGender && matchesGruppe && matchesAge;
