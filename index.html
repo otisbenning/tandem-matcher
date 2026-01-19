@@ -5369,12 +5369,20 @@
                 }
             }
 
-            // Space: Öffne Full-Screen (nur wenn nicht in Input)
-            if (e.key === ' ' && !['INPUT', 'TEXTAREA'].includes(e.target.tagName)) {
-                const tabPanel = document.getElementById('tab-1');
-                if (tabPanel && tabPanel.style.display !== 'none') {
-                    e.preventDefault();
-                    openFullScreenMap();
+            // Space: Öffne Full-Screen (nur in Tab 1 UND nur wenn nicht in editierbaren Feldern)
+            if (e.key === ' ') {
+                // Prüfe ob wir in einem editierbaren Element sind
+                const isEditable = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) ||
+                                   e.target.isContentEditable ||
+                                   e.target.hasAttribute('contenteditable');
+
+                // Nur wenn nicht in editierbarem Element UND Tab 1 ist aktiv
+                if (!isEditable) {
+                    const tabPanel = document.getElementById('tab-1');
+                    if (tabPanel && tabPanel.classList.contains('active')) {
+                        e.preventDefault();
+                        openFullScreenMap();
+                    }
                 }
             }
 
