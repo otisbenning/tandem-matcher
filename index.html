@@ -1870,7 +1870,6 @@
 
     <!-- Quick Actions für schnelleres Arbeiten -->
     <div class="quick-actions" id="quick-actions" style="display: none;">
-        <button class="quick-action-btn quick-save" onclick="quickSave()" title="Strg+S: Schnell speichern">💾</button>
         <button class="quick-action-btn quick-clear" onclick="clearAllCommonalities()" title="Strg+L: Alle Gemeinsamkeiten löschen">🧹</button>
     </div>
 
@@ -6150,12 +6149,14 @@
                 // ABER: Verwende intelligente Analyse für bessere Texte
                 let finalCommonality = commonality;
 
-                // Intelligente Texterstellung für geeignete Felder
+                // Intelligente Texterstellung für geeignete Felder (verwendet neuen, verbesserten Mechanismus)
                 if (!shouldExcludeFromMatching(question) && answer1 && answer2) {
-                    const intelligentText = generateSmartCommonalityText(question, answer1, answer2, profile1, profile2);
+                    const name1 = extractFirstNameSmart(profile1.name || '');
+                    const name2 = extractFirstNameSmart(profile2.name || '');
+                    const intelligentText = analyzeBothAnswersIntelligently(question, name1, name2, answer1, answer2);
                     if (intelligentText && intelligentText.length > 0) {
                         finalCommonality = intelligentText;
-                        console.log(`🧠 Intelligente Analyse für "${displayQuestion}": "${intelligentText}"`);
+                        console.log(`🧠 Intelligente Analyse (neu) für "${displayQuestion}": "${intelligentText}"`);
                     }
                 }
 
@@ -11699,21 +11700,21 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 }
             }
             
-            // 3. HOBBY-ANALYSE (erweitert)
-            if (q.includes('hobby') || q.includes('freizeit') || q.includes('interesse') || 
-                q.includes('machst du gerne') || q.includes('ausprobieren') || 
+            // 3. SPRACHEN-ANALYSE (Muss VOR Hobby-Analyse kommen!)
+            if (q.includes('sprache') || q.includes('sprichst')) {
+                return analyzeLanguagesIntelligently(answer1, answer2);
+            }
+
+            // 4. HOBBY-ANALYSE (erweitert)
+            if (q.includes('hobby') || q.includes('freizeit') || q.includes('interesse') ||
+                q.includes('machst du gerne') || q.includes('ausprobieren') ||
                 q.includes('was machst du gerne')) {
                 return analyzeHobbysIntelligentlyImproved(answer1, answer2);
             }
-            
-            // 4. FREUNDSCHAFTS-WERTE (verbessert)
+
+            // 5. FREUNDSCHAFTS-WERTE (verbessert)
             if (q.includes('wichtig') || q.includes('freundschaft')) {
                 return analyzeFriendshipValuesImproved(answer1, answer2);
-            }
-            
-            // 5. SPRACHEN-ANALYSE
-            if (q.includes('sprache') || q.includes('sprichst')) {
-                return analyzeLanguagesIntelligently(answer1, answer2);
             }
             
             // 6. ZEIT-ANALYSE (verbessert)
@@ -11755,10 +11756,30 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         }
 
         function analyzeHobbysIntelligentlyImproved(answer1, answer2) {
-            const hobbies1 = answer1.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
-            const hobbies2 = answer2.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
-            
-            console.log(`🎨 Verbesserte Hobby-Analyse: [${hobbies1.join(', ')}] vs [${hobbies2.join(', ')}]`);
+            // Liste bekannter Sprachen, die NICHT als Hobbys gelten
+            const languageKeywords = [
+                'deutsch', 'englisch', 'französisch', 'spanisch', 'italienisch',
+                'türkisch', 'arabisch', 'persisch', 'russisch', 'polnisch',
+                'portugiesisch', 'niederländisch', 'chinesisch', 'japanisch',
+                'koreanisch', 'griechisch', 'kroatisch', 'serbisch', 'ukrainisch',
+                'farsi', 'kurdisch', 'dari', 'paschtu', 'hindi', 'urdu', 'bengali',
+                'tamil', 'vietnamese', 'thai', 'indonesisch', 'filipino', 'tagalog'
+            ];
+
+            // Parse und filtere Sprachen aus
+            const hobbies1 = answer1.toLowerCase()
+                .split(/[,;]/)
+                .map(s => s.trim())
+                .filter(s => s.length > 2)
+                .filter(s => !languageKeywords.some(lang => s === lang || s.includes(lang + 'e') || s.includes(lang + 'es')));
+
+            const hobbies2 = answer2.toLowerCase()
+                .split(/[,;]/)
+                .map(s => s.trim())
+                .filter(s => s.length > 2)
+                .filter(s => !languageKeywords.some(lang => s === lang || s.includes(lang + 'e') || s.includes(lang + 'es')));
+
+            console.log(`🎨 Verbesserte Hobby-Analyse (Sprachen gefiltert): [${hobbies1.join(', ')}] vs [${hobbies2.join(', ')}]`);
             
             // Erweiterte Hobby-Synonyme für intelligente Erkennung
             const synonymGroups = [
@@ -12086,18 +12107,57 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         }
 
         function analyzeLanguagesIntelligently(lang1, lang2) {
-            const l1 = lang1.toLowerCase();
-            const l2 = lang2.toLowerCase();
-            
-            if (l1.includes('deutsch') && l2.includes('deutsch')) {
-                return 'Ihr sprecht beide Deutsch - perfekt für die Kommunikation! 🗣️';
+            // Bekannte Sprachen für bessere Erkennung
+            const knownLanguages = [
+                'deutsch', 'englisch', 'französisch', 'spanisch', 'italienisch',
+                'türkisch', 'arabisch', 'persisch', 'russisch', 'polnisch',
+                'portugiesisch', 'niederländisch', 'chinesisch', 'japanisch',
+                'koreanisch', 'griechisch', 'kroatisch', 'serbisch', 'ukrainisch',
+                'farsi', 'kurdisch', 'dari', 'paschtu', 'hindi', 'urdu', 'bengali',
+                'tamil', 'vietnamese', 'thai', 'indonesisch', 'filipino', 'tagalog'
+            ];
+
+            // Parse Sprachen (durch Komma oder Semikolon getrennt)
+            const languages1 = lang1.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
+            const languages2 = lang2.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
+
+            console.log(`🗣️ Sprachen-Analyse: [${languages1.join(', ')}] vs [${languages2.join(', ')}]`);
+
+            // Finde gemeinsame Sprachen
+            const commonLanguages = [];
+
+            languages1.forEach(lang1 => {
+                languages2.forEach(lang2 => {
+                    // Exakte Übereinstimmung
+                    if (lang1 === lang2 && !commonLanguages.includes(lang1)) {
+                        commonLanguages.push(lang1);
+                    }
+                    // Substring-Match für bekannte Sprachen (z.B. "deutsch" in "ein bisschen deutsch")
+                    else {
+                        knownLanguages.forEach(known => {
+                            if (lang1.includes(known) && lang2.includes(known) && !commonLanguages.includes(known)) {
+                                commonLanguages.push(known);
+                            }
+                        });
+                    }
+                });
+            });
+
+            console.log(`✅ Gemeinsame Sprachen: [${commonLanguages.join(', ')}]`);
+
+            // Generiere passenden Text
+            if (commonLanguages.length === 0) {
+                return 'Verschiedene Sprachen - perfekt zum Voneinander-Lernen! 🌎';
+            } else if (commonLanguages.length === 1) {
+                const langName = commonLanguages[0].charAt(0).toUpperCase() + commonLanguages[0].slice(1);
+                return `Gemeinsame Sprache: ${langName}! Das erleichtert die Kommunikation 🗣️`;
+            } else if (commonLanguages.length === 2) {
+                const langNames = commonLanguages.map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(' und ');
+                return `2 gemeinsame Sprachen: ${langNames}! Ihr könnt euch gut austauschen 🌍`;
+            } else {
+                const langNames = commonLanguages.slice(0, 3).map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(', ');
+                return `${commonLanguages.length} gemeinsame Sprachen: ${langNames}${commonLanguages.length > 3 ? ' und mehr' : ''}! Mehrsprachigkeit verbindet 🌎`;
             }
-            
-            if (l1.includes('deutsch') || l2.includes('deutsch')) {
-                return 'Perfekt für Deutsch-Praxis und kulturellen Austausch! 🌍';
-            }
-            
-            return 'Verschiedene Sprachen - perfekt zum Voneinander-Lernen! 🌎';
         }
 
         function analyzeTimeCompatibility(time1, time2) {
