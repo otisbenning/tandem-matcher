@@ -2108,18 +2108,438 @@
         let questionCategoryMapping = JSON.parse(localStorage.getItem('swaf_question_category_mapping') || '{}');
 
         // ===============================
+        // GAMIFICATION SYSTEM
+        // ===============================
+
+        // Gamification-Datenstruktur
+        let gamificationData = {
+            points: 0,
+            tandemsCreated: 0,
+            emailsSent: 0,
+            smartTextsUsed: 0,
+            profilesImported: 0,
+            perfectMatches: 0,
+            streakDays: 0,
+            lastActiveDate: null,
+            statistics: {
+                tandemsToday: 0,
+                tandemsThisWeek: 0,
+                tandemsThisMonth: 0,
+                lastResetDate: new Date().toDateString()
+            }
+        };
+
+        // Gamification-Daten laden
+        function loadGamificationData() {
+            const stored = localStorage.getItem('swaf_gamification');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    gamificationData = { ...gamificationData, ...parsed };
+                    console.log('📊 Gamification-Daten geladen:', gamificationData);
+                } catch (e) {
+                    console.warn('⚠️ Fehler beim Laden der Gamification-Daten:', e);
+                }
+            }
+        }
+
+        // Gamification-Daten speichern
+        function saveGamificationData() {
+            try {
+                localStorage.setItem('swaf_gamification', JSON.stringify(gamificationData));
+            } catch (e) {
+                console.warn('⚠️ Fehler beim Speichern der Gamification-Daten:', e);
+            }
+        }
+
+        // Aktivität tracken
+        function trackActivity(activityType, bonus = 0) {
+            const pointsMap = {
+                'tandem_created': 10,
+                'email_sent': 5,
+                'profile_imported': 3,
+                'smart_text_used': 2,
+                'data_saved': 1,
+                'perfect_match': 15
+            };
+
+            const points = (pointsMap[activityType] || 0) + bonus;
+
+            // Punkte hinzufügen
+            gamificationData.points += points;
+
+            // Statistiken aktualisieren
+            switch (activityType) {
+                case 'tandem_created':
+                    gamificationData.tandemsCreated++;
+                    gamificationData.statistics.tandemsToday++;
+                    gamificationData.statistics.tandemsThisWeek++;
+                    gamificationData.statistics.tandemsThisMonth++;
+                    break;
+                case 'email_sent':
+                    gamificationData.emailsSent++;
+                    break;
+                case 'smart_text_used':
+                    gamificationData.smartTextsUsed++;
+                    break;
+                case 'profile_imported':
+                    gamificationData.profilesImported++;
+                    break;
+                case 'perfect_match':
+                    gamificationData.perfectMatches++;
+                    break;
+            }
+
+            // Streak aktualisieren
+            updateStreak();
+
+            // Speichern
+            saveGamificationData();
+
+            // UI aktualisieren
+            updateGamificationUI();
+
+            // Animation zeigen
+            if (points > 0) {
+                showPointsAnimation(points);
+            }
+
+            // Motivierende Nachricht bei Meilensteinen
+            checkMilestones(activityType);
+
+            console.log(`✨ Activity tracked: ${activityType} (+${points} Punkte)`);
+        }
+
+        // Streak aktualisieren
+        function updateStreak() {
+            const today = new Date().toDateString();
+            const lastActive = gamificationData.lastActiveDate;
+
+            if (lastActive === today) {
+                // Bereits heute aktiv
+                return;
+            }
+
+            if (lastActive) {
+                const lastDate = new Date(lastActive);
+                const todayDate = new Date(today);
+                const diffDays = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+
+                if (diffDays === 1) {
+                    // Streak fortsetzen
+                    gamificationData.streakDays++;
+                    if (gamificationData.streakDays >= 3) {
+                        const bonus = 5 * gamificationData.streakDays;
+                        gamificationData.points += bonus;
+                        showMotivationalMessage(`🔥 ${gamificationData.streakDays}-Tage-Streak! +${bonus} Bonus-Punkte!`);
+                    }
+                } else if (diffDays > 1) {
+                    // Streak unterbrochen
+                    gamificationData.streakDays = 1;
+                }
+            } else {
+                // Erster Tag
+                gamificationData.streakDays = 1;
+            }
+
+            gamificationData.lastActiveDate = today;
+        }
+
+        // Tägliche/Wöchentliche/Monatliche Statistiken zurücksetzen
+        function resetDailyStats() {
+            const today = new Date().toDateString();
+            if (gamificationData.statistics.lastResetDate !== today) {
+                gamificationData.statistics.tandemsToday = 0;
+                gamificationData.statistics.lastResetDate = today;
+                saveGamificationData();
+            }
+        }
+
+        // Meilensteine prüfen
+        function checkMilestones(activityType) {
+            const { tandemsCreated, emailsSent, perfectMatches, streakDays, statistics } = gamificationData;
+
+            // Erste Schritte
+            if (tandemsCreated === 1) {
+                showMotivationalMessage('🌱 Dein erstes Tandem! Der Anfang einer tollen Reise!');
+                triggerConfetti();
+            }
+
+            // Tages-Meilensteine
+            if (statistics.tandemsToday === 5) {
+                showMotivationalMessage('🔥 5 Tandems heute! Du bist on fire!');
+            }
+            if (statistics.tandemsToday === 10) {
+                showMotivationalMessage('🚀 10 Tandems heute! Unglaublich produktiv!');
+                triggerConfetti();
+            }
+
+            // Gesamt-Meilensteine
+            if (tandemsCreated === 10) {
+                showMotivationalMessage('🎯 10 Tandems geschafft! Du rockst!');
+            }
+            if (tandemsCreated === 50) {
+                showMotivationalMessage('🏆 50 Tandems! Du bist ein Profi!');
+                triggerConfetti();
+            }
+            if (tandemsCreated === 100) {
+                showMotivationalMessage('💯 Century Club! 100 Tandems erstellt!');
+                triggerConfetti();
+            }
+
+            // Perfect Matches
+            if (perfectMatches === 10) {
+                showMotivationalMessage('🌟 10 Perfect Matches! Quality Champion!');
+            }
+
+            // Streak
+            if (streakDays === 7) {
+                showMotivationalMessage('🔥 7-Tage-Streak! Du bist unaufhaltsam!');
+            }
+        }
+
+        // Motivierende Nachricht anzeigen
+        function showMotivationalMessage(message, duration = 5000) {
+            // Erstelle Nachricht nur wenn sie nicht bereits existiert
+            let messageDiv = document.getElementById('motivational-message');
+            if (!messageDiv) {
+                messageDiv = document.createElement('div');
+                messageDiv.id = 'motivational-message';
+                messageDiv.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    left: 50%;
+                    transform: translateX(-50%) translateY(-100px);
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 1rem 2rem;
+                    border-radius: 12px;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                    z-index: 10002;
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    text-align: center;
+                    min-width: 300px;
+                    max-width: 600px;
+                    opacity: 0;
+                    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                `;
+                document.body.appendChild(messageDiv);
+            }
+
+            messageDiv.textContent = message;
+
+            // Animation
+            setTimeout(() => {
+                messageDiv.style.transform = 'translateX(-50%) translateY(0)';
+                messageDiv.style.opacity = '1';
+            }, 10);
+
+            // Ausblenden
+            setTimeout(() => {
+                messageDiv.style.transform = 'translateX(-50%) translateY(-100px)';
+                messageDiv.style.opacity = '0';
+            }, duration);
+        }
+
+        // Punkte-Animation
+        function showPointsAnimation(points) {
+            const statusBar = document.querySelector('.status-bar');
+            if (!statusBar) return;
+
+            const pointsDiv = document.createElement('div');
+            pointsDiv.textContent = `+${points} 💎`;
+            pointsDiv.style.cssText = `
+                position: fixed;
+                right: 20px;
+                bottom: 60px;
+                color: #FFD700;
+                font-size: 1.5rem;
+                font-weight: bold;
+                z-index: 10001;
+                pointer-events: none;
+                text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+                animation: pointsFly 1.5s ease-out forwards;
+            `;
+
+            document.body.appendChild(pointsDiv);
+
+            setTimeout(() => {
+                pointsDiv.remove();
+            }, 1500);
+        }
+
+        // Konfetti-Animation
+        function triggerConfetti() {
+            const colors = ['#FF5252', '#00D1B2', '#FFD700', '#667eea', '#764ba2'];
+            const confettiCount = 50;
+
+            for (let i = 0; i < confettiCount; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.style.cssText = `
+                        position: fixed;
+                        width: 10px;
+                        height: 10px;
+                        background: ${colors[Math.floor(Math.random() * colors.length)]};
+                        top: -10px;
+                        left: ${Math.random() * 100}%;
+                        opacity: 1;
+                        z-index: 10003;
+                        animation: confettiFall ${2 + Math.random() * 2}s linear forwards;
+                        transform: rotate(${Math.random() * 360}deg);
+                    `;
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 30);
+            }
+        }
+
+        // Gamification UI aktualisieren
+        function updateGamificationUI() {
+            // Statistik-Badge in Statusleiste
+            let statsDiv = document.getElementById('gamification-stats');
+            if (!statsDiv) {
+                statsDiv = document.createElement('div');
+                statsDiv.id = 'gamification-stats';
+                statsDiv.style.cssText = `
+                    display: inline-block;
+                    margin-left: 15px;
+                    padding: 0.25rem 0.75rem;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border-radius: 20px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                `;
+                statsDiv.title = 'Klicken für Details';
+                statsDiv.onclick = showStatsModal;
+
+                const statusBar = document.querySelector('.status-bar');
+                if (statusBar && statusBar.firstChild) {
+                    statusBar.firstChild.appendChild(statsDiv);
+                }
+            }
+
+            const { points, statistics, streakDays } = gamificationData;
+            statsDiv.innerHTML = `💎 ${points} Punkte | 📊 ${statistics.tandemsToday} heute${streakDays > 1 ? ` | 🔥 ${streakDays}` : ''}`;
+        }
+
+        // Statistik-Modal anzeigen
+        function showStatsModal() {
+            const { points, tandemsCreated, emailsSent, smartTextsUsed, perfectMatches, streakDays, statistics } = gamificationData;
+
+            const level = Math.floor(points / 100) + 1;
+            const pointsToNextLevel = (level * 100) - points;
+
+            const modalContent = `
+                <div style="text-align: center; padding: 1rem;">
+                    <h2 style="margin: 0 0 1rem 0;">📊 Deine Statistiken</h2>
+
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <div style="font-size: 2rem; font-weight: bold; margin-bottom: 0.5rem;">💎 ${points} Punkte</div>
+                        <div style="font-size: 1.2rem;">Level ${level}</div>
+                        <div style="margin-top: 0.5rem; background: rgba(255,255,255,0.2); border-radius: 10px; height: 20px; overflow: hidden;">
+                            <div style="background: rgba(255,255,255,0.8); height: 100%; width: ${((points % 100) / 100) * 100}%; transition: width 0.5s;"></div>
+                        </div>
+                        <div style="font-size: 0.9rem; margin-top: 0.5rem;">${pointsToNextLevel} Punkte bis Level ${level + 1}</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: left;">
+                        <div style="background: var(--swaf-lightest-teal); padding: 1rem; border-radius: 8px;">
+                            <div style="font-size: 1.5rem;">🤝 ${tandemsCreated}</div>
+                            <div>Tandems erstellt</div>
+                        </div>
+                        <div style="background: var(--swaf-lightest-red); padding: 1rem; border-radius: 8px;">
+                            <div style="font-size: 1.5rem;">📧 ${emailsSent}</div>
+                            <div>E-Mails versendet</div>
+                        </div>
+                        <div style="background: var(--swaf-lightest-yellow); padding: 1rem; border-radius: 8px;">
+                            <div style="font-size: 1.5rem;">🎯 ${perfectMatches}</div>
+                            <div>Perfect Matches</div>
+                        </div>
+                        <div style="background: var(--swaf-lightest-teal); padding: 1rem; border-radius: 8px;">
+                            <div style="font-size: 1.5rem;">🧠 ${smartTextsUsed}</div>
+                            <div>Smart Texts verwendet</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
+                        <h3 style="margin: 0 0 0.5rem 0;">Diese Woche</h3>
+                        <div>📊 ${statistics.tandemsThisWeek} Tandems</div>
+                        ${streakDays > 1 ? `<div style="margin-top: 0.5rem; color: #FF5252; font-weight: bold;">🔥 ${streakDays}-Tage-Streak!</div>` : ''}
+                    </div>
+                </div>
+            `;
+
+            showModal('Statistiken', modalContent, [
+                {
+                    text: 'Schließen',
+                    class: 'btn-secondary',
+                    action: function () { }
+                }
+            ]);
+        }
+
+        // Gamification initialisieren
+        function initializeGamification() {
+            loadGamificationData();
+            resetDailyStats();
+            updateGamificationUI();
+
+            // CSS-Animationen hinzufügen
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pointsFly {
+                    0% {
+                        transform: translateY(0) scale(1);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(-100px) scale(1.5);
+                        opacity: 0;
+                    }
+                }
+
+                @keyframes confettiFall {
+                    0% {
+                        transform: translateY(0) rotate(0deg);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateY(100vh) rotate(720deg);
+                        opacity: 0;
+                    }
+                }
+
+                #gamification-stats:hover {
+                    transform: scale(1.05);
+                }
+            `;
+            document.head.appendChild(style);
+
+            console.log('🎮 Gamification-System initialisiert');
+        }
+
+        // ===============================
         // INITIALISIERUNG
         // ===============================
         document.addEventListener('DOMContentLoaded', function () {
             console.log('🚀 SwaF Tandem Matcher wird initialisiert...');
-            
+
             // Initialisiere UI
             updateUI();
-            
+
             // Starte Background-Services
             startDataChecker();
             setupClipboardDetection();
-            
+
+            // Gamification initialisieren
+            initializeGamification();
+
             // Update Status
             updateStatus('SwaF Tandem Matcher bereit');
             showNotification('✅ Anwendung geladen! Beginne mit dem Sammeln von Profilen.', 'success', 3000);
@@ -2876,6 +3296,13 @@
                 }
             });
             
+            // Gamification: Profile importiert (max 50 Punkte pro Import-Vorgang)
+            const totalPersons = Object.keys(personGroups).length;
+            const pointsToAward = Math.min(totalPersons, 50 / 3); // 3 Punkte pro Person, max 50
+            for (let i = 0; i < pointsToAward; i++) {
+                trackActivity('profile_imported');
+            }
+
             showNotification(
                 `✅ Batch importiert!\n\n` +
                 `📊 ${Object.keys(personGroups).length} Person(en)\n` +
@@ -2884,7 +3311,7 @@
                 'success',
                 5000
             );
-            
+
             renderProfiles();
         }
 
@@ -6734,6 +7161,7 @@
         function applyAutoMatches(suggestions) {
             const checkboxes = document.querySelectorAll('#suggestion-list input[type="checkbox"]:checked');
             let applied = 0;
+            let perfectMatches = 0;
 
             checkboxes.forEach(checkbox => {
                 const index = parseInt(checkbox.value);
@@ -6752,6 +7180,15 @@
 
                     tandems.push(tandem);
                     applied++;
+
+                    // Gamification: Tandem erstellt
+                    trackActivity('tandem_created');
+
+                    // Prüfe auf Perfect Match (8+ Gemeinsamkeiten)
+                    if (suggestion.commonalities && suggestion.commonalities.length >= 8) {
+                        trackActivity('perfect_match');
+                        perfectMatches++;
+                    }
                 }
             });
 
@@ -7123,6 +7560,14 @@
             if (saveTandemSilently()) {
                 showNotification('✅ Tandem gespeichert', 'success');
                 updateStatus('Tandem gespeichert');
+
+                // Gamification: Tandem erstellt
+                trackActivity('tandem_created');
+
+                // Prüfe auf Perfect Match (8+ Gemeinsamkeiten)
+                if (currentTandem && currentTandem.commonalities && currentTandem.commonalities.length >= 8) {
+                    trackActivity('perfect_match');
+                }
             }
         }
 
@@ -7483,10 +7928,13 @@
             // Automatisch Tandem speichern BEVOR E-Mail erstellt wird
             console.log('💾 Auto-Save: Speichere Tandem vor E-Mail-Erstellung...');
             saveTandemSilently();
-            
+
             saveEmailTemplate(); // Aktuelle Eingaben speichern
             previewEmail();
-            
+
+            // Gamification: E-Mail erstellt
+            trackActivity('email_sent');
+
             // Feedback für User
             showNotification('💾 Tandem automatisch gespeichert', 'success', 2000);
         }
@@ -10897,6 +11345,9 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
         // Auto-Restore beim Laden der Seite prüfen
         window.addEventListener('load', function() {
+            // Gamification initialisieren
+            initializeGamification();
+
             // Kurze Verzögerung, damit die UI vollständig geladen ist
             setTimeout(() => {
                 checkForAutoRestore();
@@ -11617,6 +12068,9 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
             if (generated > 0) {
                 showNotification(`🧠 ${generated} intelligente Texte generiert!`, 'success', 4000);
+
+                // Gamification: Smart-Text verwendet
+                trackActivity('smart_text_used');
             } else {
                 showNotification('ℹ️ Alle Zellen sind bereits gefüllt', 'info', 2000);
             }
@@ -11736,22 +12190,28 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             if (q.includes('erreichen') || q.includes('kontakt')) {
                 return analyzeContactMethods(answer1, answer2);
             }
-            
-            // 10. STUDIUM/BILDUNG
+
+            // 10. COMMUNITY-EVENTS & AKTIVITÄTEN
+            if (q.includes('event') || q.includes('community') || q.includes('unternehmen') ||
+                q.includes('aktivität') || q.includes('veranstaltung')) {
+                return analyzeCommunityEventsIntelligently(answer1, answer2);
+            }
+
+            // 11. STUDIUM/BILDUNG
             if (q.includes('studium') || q.includes('schule') || q.includes('ausbildung')) {
                 if (answer1.toLowerCase().trim() === answer2.toLowerCase().trim()) {
                     return `Identisch: ${answer1} - das verbindet! 🎓`;
                 }
                 return 'Verschiedene Bildungswege - viel zu erzählen! 📚';
             }
-            
-            // 11. JA/NEIN Fragen
+
+            // 12. JA/NEIN Fragen
             if ((answer1.toLowerCase().includes('ja') && answer2.toLowerCase().includes('ja')) ||
                 (answer1.toLowerCase().includes('nein') && answer2.toLowerCase().includes('nein'))) {
                 return `Ihr seid euch einig: ${answer1}! ✅`;
             }
-            
-            // 12. STANDARD für alle anderen
+
+            // 13. STANDARD für alle anderen
             return getDifferenceTextImproved(question, name1, name2, answer1, answer2);
         }
 
@@ -11781,47 +12241,188 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
             console.log(`🎨 Verbesserte Hobby-Analyse (Sprachen gefiltert): [${hobbies1.join(', ')}] vs [${hobbies2.join(', ')}]`);
             
-            // Erweiterte Hobby-Synonyme für intelligente Erkennung
+            // Erweiterte Hobby-Synonyme basierend auf realen Daten (SwaF Köln 2024-2026)
             const synonymGroups = [
+                // Sport & Bewegung (sehr häufig)
                 {
-                    keywords: ['feiern', 'feiern gehen', 'party', 'ausgehen', 'clubs'],
-                    name: 'Feiern/Party'
-                },
-                {
-                    keywords: ['kino', 'ins kino gehen', 'filme schauen', 'film', 'serien'],
-                    name: 'Kino/Filme'
-                },
-                {
-                    keywords: ['kochen', 'gemeinsam kochen', 'essen zubereiten', 'kulinarik'],
-                    name: 'Kochen'
-                },
-                {
-                    keywords: ['museum', 'ins museum gehen', 'kultur', 'ausstellungen', 'theater', 'ins theater gehen'],
-                    name: 'Kultur/Museum/Theater'
-                },
-                {
-                    keywords: ['sport', 'fitness', 'training', 'bewegung', 'fitnessstudio'],
+                    keywords: ['sport', 'fitness', 'training', 'bewegung', 'fitnessstudio', 'gym', 'krafttraining'],
                     name: 'Sport/Fitness'
                 },
                 {
-                    keywords: ['musik', 'musikhören', 'konzerte', 'konzert'],
-                    name: 'Musik/Konzerte'
+                    keywords: ['fußball', 'fussball', 'football', 'soccer', 'kicken'],
+                    name: 'Fußball'
                 },
                 {
-                    keywords: ['lesen', 'bücher', 'literatur'],
-                    name: 'Lesen/Literatur'
+                    keywords: ['wandern', 'hiking', 'bergsteigen', 'trekking', 'in die berge'],
+                    name: 'Wandern'
                 },
                 {
-                    keywords: ['spazieren', 'wandern', 'natur', 'draußen sein', 'wald'],
-                    name: 'Natur/Wandern'
+                    keywords: ['spazieren', 'spazieren gehen', 'walks', 'schlendern', 'flanieren'],
+                    name: 'Spazieren'
                 },
                 {
-                    keywords: ['freunde treffen', 'leute treffen', 'soziale kontakte'],
-                    name: 'Soziale Kontakte'
+                    keywords: ['schwimmen', 'schwimmbad', 'pool', 'baden'],
+                    name: 'Schwimmen'
                 },
                 {
-                    keywords: ['gesellschaftsspiele', 'brettspiele', 'spiele', 'gaming'],
-                    name: 'Spiele'
+                    keywords: ['yoga', 'meditation', 'achtsamkeit', 'entspannung'],
+                    name: 'Yoga/Meditation'
+                },
+                {
+                    keywords: ['laufen', 'joggen', 'running', 'rennen'],
+                    name: 'Laufen/Joggen'
+                },
+                {
+                    keywords: ['fahrrad', 'radfahren', 'cycling', 'bike', 'fahrradtouren'],
+                    name: 'Fahrrad fahren'
+                },
+                {
+                    keywords: ['tanzen', 'dance', 'salsa', 'bachata', 'zumba', 'tanzschule'],
+                    name: 'Tanzen'
+                },
+                {
+                    keywords: ['klettern', 'bouldern', 'climbing', 'kletterhalle'],
+                    name: 'Klettern'
+                },
+                {
+                    keywords: ['volleyball', 'basketball', 'badminton', 'tischtennis', 'tennis'],
+                    name: 'Ball-Sport'
+                },
+
+                // Kultur & Unterhaltung (häufig)
+                {
+                    keywords: ['kino', 'ins kino gehen', 'filme schauen', 'film', 'filme', 'movies'],
+                    name: 'Kino/Filme'
+                },
+                {
+                    keywords: ['serien', 'netflix', 'streaming', 'tv', 'fernsehen'],
+                    name: 'Serien'
+                },
+                {
+                    keywords: ['museum', 'ins museum gehen', 'ausstellungen', 'galerie', 'galerien'],
+                    name: 'Museum/Ausstellungen'
+                },
+                {
+                    keywords: ['theater', 'ins theater gehen', 'schauspiel', 'oper', 'musical'],
+                    name: 'Theater'
+                },
+                {
+                    keywords: ['konzerte', 'konzert', 'livemusik', 'gigs', 'shows'],
+                    name: 'Konzerte'
+                },
+                {
+                    keywords: ['musik', 'musik hören', 'musikhören', 'music', 'songs'],
+                    name: 'Musik hören'
+                },
+
+                // Sozial & Ausgehen
+                {
+                    keywords: ['freunde treffen', 'leute treffen', 'soziale kontakte', 'socializing'],
+                    name: 'Freunde treffen'
+                },
+                {
+                    keywords: ['feiern', 'feiern gehen', 'party', 'ausgehen', 'clubs', 'nightlife'],
+                    name: 'Feiern/Party'
+                },
+                {
+                    keywords: ['café', 'cafe', 'kaffee trinken', 'coffee', 'kaffeehäuser'],
+                    name: 'Café/Kaffee'
+                },
+                {
+                    keywords: ['restaurant', 'essen gehen', 'dining', 'restaurants besuchen'],
+                    name: 'Essen gehen'
+                },
+                {
+                    keywords: ['bar', 'bars', 'kneipe', 'kneipen', 'pub', 'drinks'],
+                    name: 'Bars/Kneipen'
+                },
+
+                // Kreativ & Handwerk
+                {
+                    keywords: ['kochen', 'gemeinsam kochen', 'essen zubereiten', 'kulinarik', 'rezepte'],
+                    name: 'Kochen'
+                },
+                {
+                    keywords: ['backen', 'kuchen', 'torten', 'gebäck', 'baking'],
+                    name: 'Backen'
+                },
+                {
+                    keywords: ['zeichnen', 'malen', 'kunst', 'painting', 'drawing', 'skizzieren'],
+                    name: 'Zeichnen/Malen'
+                },
+                {
+                    keywords: ['fotografie', 'fotografieren', 'photos', 'bilder', 'camera'],
+                    name: 'Fotografie'
+                },
+                {
+                    keywords: ['schreiben', 'writing', 'texte', 'geschichten', 'gedichte', 'blog'],
+                    name: 'Schreiben'
+                },
+                {
+                    keywords: ['handwerk', 'basteln', 'diy', 'werken', 'reparieren'],
+                    name: 'Handwerk/Basteln'
+                },
+                {
+                    keywords: ['nähen', 'stricken', 'häkeln', 'sewing', 'knitting'],
+                    name: 'Nähen/Stricken'
+                },
+
+                // Wissen & Lernen
+                {
+                    keywords: ['lesen', 'bücher', 'literatur', 'reading', 'books'],
+                    name: 'Lesen/Bücher'
+                },
+                {
+                    keywords: ['podcast', 'podcasts', 'hörbuch', 'hörbücher', 'audiobooks'],
+                    name: 'Podcasts'
+                },
+                {
+                    keywords: ['lernen', 'weiterbildung', 'kurse', 'learning', 'studieren'],
+                    name: 'Lernen/Weiterbildung'
+                },
+
+                // Natur & Draußen
+                {
+                    keywords: ['natur', 'draußen sein', 'wald', 'nature', 'outdoor'],
+                    name: 'Natur'
+                },
+                {
+                    keywords: ['garten', 'gärtnern', 'pflanzen', 'gardening', 'botanik'],
+                    name: 'Garten/Pflanzen'
+                },
+                {
+                    keywords: ['reisen', 'urlaub', 'travel', 'länder', 'städtetrips'],
+                    name: 'Reisen'
+                },
+                {
+                    keywords: ['camping', 'zelten', 'outdoor', 'wildcamping'],
+                    name: 'Camping'
+                },
+
+                // Spiele & Gaming
+                {
+                    keywords: ['gesellschaftsspiele', 'brettspiele', 'boardgames', 'kartenspiele'],
+                    name: 'Gesellschaftsspiele'
+                },
+                {
+                    keywords: ['gaming', 'videospiele', 'zocken', 'playstation', 'xbox', 'pc games'],
+                    name: 'Gaming/Videospiele'
+                },
+                {
+                    keywords: ['schach', 'chess', 'dame', 'go', 'strategiespiele'],
+                    name: 'Schach'
+                },
+
+                // Technologie & Digital
+                {
+                    keywords: ['it', 'technik', 'technologie', 'computer', 'programmieren', 'coding'],
+                    name: 'IT/Technik'
+                },
+
+                // Diskussion & Austausch
+                {
+                    keywords: ['politik', 'gesellschaft', 'debattieren', 'diskutieren', 'politics'],
+                    name: 'Politik/Gesellschaft'
                 }
             ];
             
@@ -12019,20 +12620,131 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         function analyzeContactMethods(contact1, contact2) {
             const c1 = contact1.toLowerCase();
             const c2 = contact2.toLowerCase();
-            
+
             // Gemeinsame Kontaktmethoden
             const commonMethods = [];
-            
+
             if (c1.includes('email') && c2.includes('email')) commonMethods.push('E-Mail');
             if (c1.includes('sms') && c2.includes('sms')) commonMethods.push('SMS');
             if (c1.includes('whatsapp') && c2.includes('whatsapp')) commonMethods.push('WhatsApp');
             if (c1.includes('telefon') && c2.includes('telefon')) commonMethods.push('Telefon');
-            
+
             if (commonMethods.length > 0) {
                 return `Kommunikation über ${commonMethods.join(' und ')} - perfekt! 📱`;
             }
-            
+
             return 'Verschiedene Kontaktwege - ihr findet bestimmt einen gemeinsamen! 📞';
+        }
+
+        function analyzeCommunityEventsIntelligently(event1, event2) {
+            // Basiert auf realen SwaF-Event-Daten aus Köln
+            const eventCategories = [
+                {
+                    keywords: ['kochabend', 'kochen', 'gemeinsam kochen', 'kulinarisch', 'rezepte'],
+                    name: 'Kochabende',
+                    emoji: '🍳'
+                },
+                {
+                    keywords: ['spaziergang', 'spazieren', 'abendspazierg', 'walk'],
+                    name: 'Spaziergänge',
+                    emoji: '🚶'
+                },
+                {
+                    keywords: ['wandern', 'wanderung', 'hiking', 'bergtouren'],
+                    name: 'Wanderungen',
+                    emoji: '🥾'
+                },
+                {
+                    keywords: ['museum', 'ausstellung', 'galerie', 'kunstmuseum'],
+                    name: 'Museumsbesuche',
+                    emoji: '🏛️'
+                },
+                {
+                    keywords: ['konzert', 'livemusik', 'musik', 'band'],
+                    name: 'Konzerte',
+                    emoji: '🎵'
+                },
+                {
+                    keywords: ['picknick', 'park', 'draußen essen'],
+                    name: 'Picknick',
+                    emoji: '🧺'
+                },
+                {
+                    keywords: ['kulturabend', 'kultur', 'kulturell', 'kulturveranstaltung'],
+                    name: 'Kulturabende',
+                    emoji: '🎭'
+                },
+                {
+                    keywords: ['spieleabend', 'brettspiele', 'gesellschaftsspiele', 'games'],
+                    name: 'Spieleabende',
+                    emoji: '🎲'
+                },
+                {
+                    keywords: ['speedfriending', 'kennenlern', 'meet'],
+                    name: 'Speedfriending',
+                    emoji: '⚡'
+                },
+                {
+                    keywords: ['fahrrad', 'radtour', 'cycling', 'bike'],
+                    name: 'Fahrradtouren',
+                    emoji: '🚴'
+                },
+                {
+                    keywords: ['sport', 'fußball', 'basketball', 'volleyball', 'sportlich'],
+                    name: 'Sport-Events',
+                    emoji: '⚽'
+                },
+                {
+                    keywords: ['café', 'cafe', 'kaffee', 'coffee'],
+                    name: 'Café-Treffen',
+                    emoji: '☕'
+                },
+                {
+                    keywords: ['kino', 'film', 'movie'],
+                    name: 'Kino',
+                    emoji: '🎬'
+                },
+                {
+                    keywords: ['party', 'feiern', 'tanzen'],
+                    name: 'Partys',
+                    emoji: '🎉'
+                }
+            ];
+
+            const events1 = event1.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
+            const events2 = event2.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
+
+            console.log(`🎪 Event-Analyse: [${events1.join(', ')}] vs [${events2.join(', ')}]`);
+
+            const commonEvents = [];
+
+            // Finde gemeinsame Event-Interessen
+            eventCategories.forEach(category => {
+                const event1Matches = events1.some(e =>
+                    category.keywords.some(keyword => e.includes(keyword) || keyword.includes(e))
+                );
+                const event2Matches = events2.some(e =>
+                    category.keywords.some(keyword => e.includes(keyword) || keyword.includes(e))
+                );
+
+                if (event1Matches && event2Matches) {
+                    commonEvents.push({ name: category.name, emoji: category.emoji });
+                    console.log(`✅ Gemeinsames Event-Interesse: ${category.name}`);
+                }
+            });
+
+            // Generiere passende Texte
+            if (commonEvents.length === 0) {
+                return 'Verschiedene Event-Vorlieben - perfekt um Neues kennenzulernen! 🌟';
+            } else if (commonEvents.length === 1) {
+                const event = commonEvents[0];
+                return `Gemeinsames Interesse: ${event.name}! ${event.emoji} Das könnt ihr zusammen besuchen!`;
+            } else if (commonEvents.length === 2) {
+                return `2 gemeinsame Event-Interessen: ${commonEvents.map(e => e.name).join(' und ')}! ${commonEvents[0].emoji} Viel Auswahl für euch!`;
+            } else {
+                const eventNames = commonEvents.slice(0, 3).map(e => e.name).join(', ');
+                return `${commonEvents.length} gemeinsame Interessen: ${eventNames}${commonEvents.length > 3 ? ' und mehr' : ''}! 🎊 Ihr werdet viel zusammen erleben!`;
+            }
         }
 
         function analyzeHobbysIntelligently(answer1, answer2) {
