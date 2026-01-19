@@ -1444,8 +1444,20 @@
                             </button>
                         </div>
                         <div class="form-group">
-                            <input type="text" id="profile-search" placeholder="Profile suchen..."
-                                onkeyup="filterProfiles()">
+                            <div style="display: flex; gap: 0.5rem; align-items: stretch;">
+                                <input type="text" id="profile-search" placeholder="Profile durchsuchen (z.B. 'Studium', 'Fußball', 'Kochen')..."
+                                    onkeyup="filterProfiles()" style="flex: 1;">
+                                <select id="search-scope" onchange="filterProfiles()" style="min-width: 180px;" title="Suchbereich festlegen">
+                                    <option value="all">🔍 Alle Felder</option>
+                                    <option value="name">👤 Nur Name</option>
+                                    <option value="specific">📋 Bestimmtes Feld...</option>
+                                </select>
+                            </div>
+                            <div id="specific-field-container" style="display: none; margin-top: 0.5rem;">
+                                <select id="specific-field-select" onchange="filterProfiles()" style="width: 100%;">
+                                    <option value="">-- Feld auswählen --</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                             <select id="filter-gender" onchange="filterProfiles()" style="flex: 1; min-width: 150px;">
@@ -4150,7 +4162,9 @@
             console.log('🗺️ Lade Kartenansicht...');
 
             // Hole Filter-Werte
-            const search = document.getElementById('profile-search').value.toLowerCase();
+            const search = document.getElementById('profile-search').value.toLowerCase().trim();
+            const searchScope = document.getElementById('search-scope').value;
+            const specificField = document.getElementById('specific-field-select')?.value || '';
             const genderFilter = document.getElementById('filter-gender').value.toLowerCase();
             const gruppeFilter = document.getElementById('filter-gruppe').value.toLowerCase();
             const ageMin = parseInt(document.getElementById('filter-age-min').value) || 0;
@@ -4191,8 +4205,8 @@
             for (const profile of availableProfiles) {
 
                 // Anwenden der Filter
-                // 1. Name/Text-Suche
-                const matchesSearch = !search || profile.name.toLowerCase().includes(search);
+                // 1. Erweiterte Suche durch Profile
+                const matchesSearch = searchInProfile(profile, search, searchScope, specificField);
 
                 // 2. Geschlecht-Filter
                 const genderField = profile.fields.find(f =>
@@ -5403,11 +5417,33 @@
             console.log('🗺️ Lade Full-Screen Karte...');
 
             // Hole Filter-Werte
-            const search = document.getElementById('fs-profile-search').value.toLowerCase();
+            const search = document.getElementById('fs-profile-search').value.toLowerCase().trim();
+            const searchScope = document.getElementById('fs-search-scope')?.value || 'all';
+            const specificField = document.getElementById('fs-specific-field-select')?.value || '';
             const genderFilter = document.getElementById('fs-filter-gender').value.toLowerCase();
             const gruppeFilter = document.getElementById('fs-filter-gruppe').value.toLowerCase();
             const ageMin = parseInt(document.getElementById('fs-filter-age-min').value) || 0;
             const ageMax = parseInt(document.getElementById('fs-filter-age-max').value) || 999;
+
+            // Zeige/Verstecke spezifisches Feld-Dropdown
+            const fsSpecificFieldContainer = document.getElementById('fs-specific-field-container');
+            if (fsSpecificFieldContainer) {
+                if (searchScope === 'specific') {
+                    fsSpecificFieldContainer.style.display = 'block';
+                    // Fülle das Dropdown mit verfügbaren Feldern
+                    const fsSelect = document.getElementById('fs-specific-field-select');
+                    if (fsSelect && fsSelect.options.length <= 1) {
+                        populateFieldDropdown(); // Nutze die bestehende Funktion
+                        // Kopiere Optionen zum Full-Screen Select
+                        const mainSelect = document.getElementById('specific-field-select');
+                        if (mainSelect) {
+                            fsSelect.innerHTML = mainSelect.innerHTML;
+                        }
+                    }
+                } else {
+                    fsSpecificFieldContainer.style.display = 'none';
+                }
+            }
 
             // Initialisiere Karte wenn noch nicht vorhanden
             if (!fullScreenMap) {
@@ -5441,7 +5477,7 @@
             // 1. Zeichne VERFÜGBARE Profile
             for (const profile of availableProfiles) {
                 // Anwenden der Filter
-                if (!matchesFilters(profile, search, genderFilter, gruppeFilter, ageMin, ageMax)) {
+                if (!matchesFilters(profile, search, genderFilter, gruppeFilter, ageMin, ageMax, searchScope, specificField)) {
                     continue;
                 }
 
@@ -5458,8 +5494,8 @@
                 const profile2 = tandem.profile2;
 
                 // Filter anwenden
-                const match1 = matchesFilters(profile1, search, genderFilter, gruppeFilter, ageMin, ageMax);
-                const match2 = matchesFilters(profile2, search, genderFilter, gruppeFilter, ageMin, ageMax);
+                const match1 = matchesFilters(profile1, search, genderFilter, gruppeFilter, ageMin, ageMax, searchScope, specificField);
+                const match2 = matchesFilters(profile2, search, genderFilter, gruppeFilter, ageMin, ageMax, searchScope, specificField);
 
                 if (!match1 && !match2) continue; // Beide passen nicht
 
@@ -5508,9 +5544,9 @@
             console.log(`✅ ${fullScreenMarkers.length} Profile auf Full-Screen Karte angezeigt`);
         }
 
-        function matchesFilters(profile, search, genderFilter, gruppeFilter, ageMin, ageMax) {
-            // Name/Text-Suche
-            const matchesSearch = !search || profile.name.toLowerCase().includes(search);
+        function matchesFilters(profile, search, genderFilter, gruppeFilter, ageMin, ageMax, searchScope = 'all', specificField = '') {
+            // Erweiterte Suche
+            const matchesSearch = searchInProfile(profile, search, searchScope, specificField);
 
             // Geschlecht-Filter - ROBUSTER
             let matchesGender = true;
@@ -5781,6 +5817,12 @@
 
         function clearFullScreenFilters() {
             document.getElementById('fs-profile-search').value = '';
+            if (document.getElementById('fs-search-scope')) {
+                document.getElementById('fs-search-scope').value = 'all';
+            }
+            if (document.getElementById('fs-specific-field-container')) {
+                document.getElementById('fs-specific-field-container').style.display = 'none';
+            }
             document.getElementById('fs-filter-gender').value = '';
             document.getElementById('fs-filter-gruppe').value = '';
             document.getElementById('fs-filter-age-min').value = '';
@@ -6957,14 +6999,90 @@
             }
         }
 
+        // Sammle alle verfügbaren Felder aus allen Profilen
+        function collectAvailableFields() {
+            const fieldSet = new Set();
+            profiles.forEach(profile => {
+                profile.fields.forEach(field => {
+                    if (field.question && field.question.trim()) {
+                        fieldSet.add(field.question.trim());
+                    }
+                });
+            });
+            return Array.from(fieldSet).sort();
+        }
+
+        // Fülle das Feld-Dropdown mit verfügbaren Feldern
+        function populateFieldDropdown() {
+            const select = document.getElementById('specific-field-select');
+            if (!select) return;
+
+            const fields = collectAvailableFields();
+            select.innerHTML = '<option value="">-- Feld auswählen --</option>';
+
+            fields.forEach(field => {
+                const option = document.createElement('option');
+                option.value = field;
+                option.textContent = field;
+                select.appendChild(option);
+            });
+        }
+
+        // Erweiterte Suche durch Profile
+        function searchInProfile(profile, searchTerm, scope, specificField) {
+            if (!searchTerm) return true;
+
+            const term = searchTerm.toLowerCase();
+
+            switch (scope) {
+                case 'name':
+                    // Nur im Namen suchen
+                    return profile.name.toLowerCase().includes(term);
+
+                case 'specific':
+                    // In einem bestimmten Feld suchen
+                    if (!specificField) return true;
+                    const field = profile.fields.find(f => f.question === specificField);
+                    if (!field) return false;
+                    return field.answer.toLowerCase().includes(term);
+
+                case 'all':
+                default:
+                    // Durch alle Felder suchen
+                    // 1. Name
+                    if (profile.name.toLowerCase().includes(term)) return true;
+
+                    // 2. Alle Fragen und Antworten
+                    for (const field of profile.fields) {
+                        if (field.question.toLowerCase().includes(term)) return true;
+                        if (field.answer.toLowerCase().includes(term)) return true;
+                    }
+
+                    return false;
+            }
+        }
+
         function filterProfiles() {
             const search = document.getElementById('profile-search').value.toLowerCase().trim();
+            const searchScope = document.getElementById('search-scope').value;
+            const specificField = document.getElementById('specific-field-select')?.value || '';
             const genderFilter = document.getElementById('filter-gender').value.toLowerCase().trim();
             const gruppeFilter = document.getElementById('filter-gruppe').value.toLowerCase().trim();
             const ageMin = parseInt(document.getElementById('filter-age-min').value) || 0;
             const ageMax = parseInt(document.getElementById('filter-age-max').value) || 999;
 
-            console.log('🔍 Filter-Werte:', { search, genderFilter, gruppeFilter, ageMin, ageMax });
+            // Zeige/Verstecke spezifisches Feld-Dropdown
+            const specificFieldContainer = document.getElementById('specific-field-container');
+            if (specificFieldContainer) {
+                if (searchScope === 'specific') {
+                    specificFieldContainer.style.display = 'block';
+                    populateFieldDropdown();
+                } else {
+                    specificFieldContainer.style.display = 'none';
+                }
+            }
+
+            console.log('🔍 Filter-Werte:', { search, searchScope, specificField, genderFilter, gruppeFilter, ageMin, ageMax });
 
             // Prüfe welche Ansicht aktiv ist
             if (currentView === 'map') {
@@ -6988,8 +7106,8 @@
                     return;
                 }
 
-                // Name/Text-Suche
-                const matchesSearch = !search || item.textContent.toLowerCase().includes(search);
+                // Erweiterte Suche durch Profile
+                const matchesSearch = searchInProfile(profile, search, searchScope, specificField);
 
                 // Geschlecht-Filter - ROBUSTER
                 let matchesGender = true;
@@ -13707,8 +13825,14 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
                 <!-- Filter -->
                 <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <input type="text" id="fs-profile-search" placeholder="Profile suchen..."
-                        onkeyup="filterFullScreenMap()" style="flex: 1; min-width: 200px; padding: 0.5rem; border-radius: 4px; border: none;">
+                    <input type="text" id="fs-profile-search" placeholder="Profile durchsuchen (z.B. 'Studium', 'Fußball')..."
+                        onkeyup="filterFullScreenMap()" style="flex: 2; min-width: 200px; padding: 0.5rem; border-radius: 4px; border: none;">
+
+                    <select id="fs-search-scope" onchange="filterFullScreenMap()" style="flex: 1; min-width: 150px; padding: 0.5rem; border-radius: 4px; border: none;" title="Suchbereich festlegen">
+                        <option value="all">🔍 Alle Felder</option>
+                        <option value="name">👤 Nur Name</option>
+                        <option value="specific">📋 Bestimmtes Feld...</option>
+                    </select>
 
                     <select id="fs-filter-gender" onchange="filterFullScreenMap()" style="flex: 1; min-width: 150px; padding: 0.5rem; border-radius: 4px; border: none;">
                         <option value="">Alle Geschlechter</option>
@@ -13732,6 +13856,13 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
                     <button class="btn btn-outline" onclick="clearFullScreenFilters()"
                         style="white-space: nowrap; background: white; color: var(--swaf-teal); font-weight: bold;">🔄 Filter zurücksetzen</button>
+                </div>
+
+                <!-- Spezifisches Feld-Dropdown (nur sichtbar wenn "Bestimmtes Feld" ausgewählt) -->
+                <div id="fs-specific-field-container" style="display: none; margin-top: 0.5rem;">
+                    <select id="fs-specific-field-select" onchange="filterFullScreenMap()" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: none;">
+                        <option value="">-- Feld auswählen --</option>
+                    </select>
                 </div>
             </div>
 
