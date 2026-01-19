@@ -4227,15 +4227,21 @@
                 const matchesGruppe = !gruppeFilter || profileGruppe.includes(gruppeFilter);
 
                 // 4. Alter-Filter
-                const ageField = profile.fields.find(f => {
-                    const q = f.question.toLowerCase();
-                    // Suche nach Alter-relevanten Fragen, aber schließe Altersunterschied/Präferenzen aus
-                    return (q === 'alter' ||
-                            (q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz')) ||
-                            q.includes('geburts') || // Geburtstag, Geburtsdatum
-                            q === 'age' ||
-                            q.includes('how old'));
-                });
+                // WICHTIG: Priorisiere exaktes "alter" Feld, um "altersunterschied" zu vermeiden
+                let ageField = profile.fields.find(f => f.question.toLowerCase() === 'alter');
+
+                // Wenn kein exaktes "alter", suche nach anderen Varianten
+                if (!ageField) {
+                    ageField = profile.fields.find(f => {
+                        const q = f.question.toLowerCase();
+                        // Suche nach Alter-relevanten Fragen, aber schließe Präferenzen aus
+                        return ((q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz') && q !== 'alter') ||
+                                q.includes('geburts') || // Geburtstag, Geburtsdatum
+                                q === 'age' ||
+                                q.includes('how old'));
+                    });
+                }
+
                 let profileAge = 0;
                 if (ageField) {
                     profileAge = parseInt(ageField.answer) || 0;
@@ -5592,15 +5598,21 @@
             // Alter-Filter
             let matchesAge = true;
             if (ageMin > 0 || ageMax < 999) {
-                const ageField = profile.fields.find(f => {
-                    const q = f.question.toLowerCase();
-                    // Suche nach Alter-relevanten Fragen, aber schließe Altersunterschied/Präferenzen aus
-                    return (q === 'alter' ||
-                            (q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz')) ||
-                            q.includes('geburts') || // Geburtstag, Geburtsdatum
-                            q === 'age' ||
-                            q.includes('how old'));
-                });
+                // WICHTIG: Priorisiere exaktes "alter" Feld, um "altersunterschied" zu vermeiden
+                let ageField = profile.fields.find(f => f.question.toLowerCase() === 'alter');
+
+                // Wenn kein exaktes "alter", suche nach anderen Varianten
+                if (!ageField) {
+                    ageField = profile.fields.find(f => {
+                        const q = f.question.toLowerCase();
+                        // Suche nach Alter-relevanten Fragen, aber schließe Präferenzen aus
+                        return ((q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz') && q !== 'alter') ||
+                                q.includes('geburts') || // Geburtstag, Geburtsdatum
+                                q === 'age' ||
+                                q.includes('how old'));
+                    });
+                }
+
                 if (ageField) {
                     let profileAge = parseInt(ageField.answer) || 0;
                     if (profileAge === 0 && ageField.answer.includes('/')) {
@@ -7163,15 +7175,21 @@
                 // Alter-Filter
                 let matchesAge = true;
                 if (ageMin > 0 || ageMax < 999) {
-                    const ageField = profile.fields.find(f => {
-                        const q = f.question.toLowerCase();
-                        // Suche nach Alter-relevanten Fragen, aber schließe Altersunterschied/Präferenzen aus
-                        return (q === 'alter' ||
-                                (q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz')) ||
-                                q.includes('geburts') || // Geburtstag, Geburtsdatum
-                                q === 'age' ||
-                                q.includes('how old'));
-                    });
+                    // WICHTIG: Priorisiere exaktes "alter" Feld, um "altersunterschied" zu vermeiden
+                    let ageField = profile.fields.find(f => f.question.toLowerCase() === 'alter');
+
+                    // Wenn kein exaktes "alter", suche nach anderen Varianten
+                    if (!ageField) {
+                        ageField = profile.fields.find(f => {
+                            const q = f.question.toLowerCase();
+                            // Suche nach Alter-relevanten Fragen, aber schließe Präferenzen aus
+                            return ((q.includes('alt') && !q.includes('unterschied') && !q.includes('präferenz') && q !== 'alter') ||
+                                    q.includes('geburts') || // Geburtstag, Geburtsdatum
+                                    q === 'age' ||
+                                    q.includes('how old'));
+                        });
+                    }
+
                     if (ageField) {
                         let profileAge = parseInt(ageField.answer) || 0;
                         if (profileAge === 0 && ageField.answer.includes('/')) {
@@ -7184,10 +7202,10 @@
                         }
                         if (profileAge > 0) {
                             matchesAge = profileAge >= ageMin && profileAge <= ageMax;
-                            console.log(`🔍 Alter-Check für ${profile.name}: Alter=${profileAge}, Range=${ageMin}-${ageMax}, Match=${matchesAge}`);
+                            console.log(`🔍 Alter-Check für ${profile.name}: Feld="${ageField.question}", Alter=${profileAge}, Range=${ageMin}-${ageMax}, Match=${matchesAge}`);
                         } else {
                             // Alter konnte nicht geparst werden → zeige trotzdem an
-                            console.log(`⚠️ Konnte Alter nicht parsen für ${profile.name}: "${ageField.answer}"`);
+                            console.log(`⚠️ Konnte Alter nicht parsen für ${profile.name}: Feld="${ageField.question}", Antwort="${ageField.answer}"`);
                             matchesAge = true;
                         }
                     } else {
