@@ -1754,11 +1754,7 @@
                                 erstellen</button>
                             <button class="btn btn-outline" onclick="copyTandemToClipboard()">📋 Nur Tabelle
                                 kopieren</button>
-                            <button class="btn btn-outline" onclick="recomputeCommonalities()">🔄 Gemeinsamkeiten neu
-                                berechnen</button>
-                            <button class="btn btn-secondary" onclick="updatePLZDistancesOnly()">🗺️ Distanz berechnen</button>
-                            <button class="btn btn-secondary" onclick="generateSmartTextsLocally()" title="Generiert intelligente Texte basierend auf den Antworten">🧠 Intelligente Texte</button>
-                            <button class="btn btn-primary" onclick="testAdvancedPLZFeatures()" title="Teste erweiterte PLZ-Funktionen mit echten Routen">🗺️ PLZ-Features testen</button>                                
+                            <button class="btn btn-primary" onclick="generateSmartTextsAndDistances()" title="Generiert automatisch intelligente Texte und berechnet Distanzen">🧠 Intelligente Vorschläge generieren</button>
                         </div>
                     </div>
                 </div>
@@ -12257,6 +12253,115 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 trackActivity('smart_text_used');
             } else {
                 showNotification('ℹ️ Alle Zellen sind bereits gefüllt', 'info', 2000);
+            }
+        }
+
+        // NEUE KOMBINIERTE FUNKTION: Intelligente Texte + Distanzen in einem Schritt
+        async function generateSmartTextsAndDistances() {
+            if (!currentTandem) {
+                showNotification('❌ Bitte wähle zuerst ein Tandem aus', 'error');
+                return;
+            }
+
+            showNotification('🔄 Generiere intelligente Vorschläge...', 'info', 2000);
+
+            const table = document.getElementById('tandem-table');
+            const rows = table.querySelectorAll('tbody tr');
+            let generatedTexts = 0;
+            let updatedDistances = 0;
+
+            for (const row of rows) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    const question = cells[0].textContent.trim();
+                    const answer1 = cells[1].textContent.trim();
+                    const answer2 = cells[2].textContent.trim();
+                    const currentText = cells[3].textContent.trim();
+                    const cellForCommonality = cells[3];
+
+                    // Prüfe ob es PLZ-Feld ist
+                    const isPLZField = question.toLowerCase().includes('postleitzahl') ||
+                                      question.toLowerCase().includes('plz') ||
+                                      question.toLowerCase().includes('wohnort') ||
+                                      question.toLowerCase().includes('standort');
+
+                    if (isPLZField) {
+                        // Berechne PLZ-Distanz
+                        const plz1 = extractPLZ(answer1);
+                        const plz2 = extractPLZ(answer2);
+
+                        if (plz1 && plz2) {
+                            cellForCommonality.textContent = '🔄 Berechne Distanz...';
+                            cellForCommonality.style.background = 'var(--swaf-lightest-teal)';
+
+                            try {
+                                const result = await calculatePLZDistanceAdvanced(plz1, plz2);
+
+                                if (result && result.distance !== null) {
+                                    const times = result.estimatedTimes || {};
+                                    let timeInfo = '';
+
+                                    if (result.distance > 0 && times.walking) {
+                                        if (result.distance <= 10) {
+                                            timeInfo = ` • 🚶‍♂️ ${times.walking}min | 🚲 ${times.cycling}min | 🚌 ${times.transit}min`;
+                                        } else if (result.distance <= 25) {
+                                            timeInfo = ` • 🚲 ${times.cycling}min | 🚌 ${times.transit}min | 🚗 ${times.driving}min`;
+                                        } else {
+                                            timeInfo = ` • 🚌 ${times.transit}min | 🚗 ${times.driving}min`;
+                                        }
+                                    }
+
+                                    let distanceText = '';
+                                    if (result.distance === 0) {
+                                        distanceText = 'Ihr wohnt in derselben PLZ';
+                                    } else if (result.distance <= 10) {
+                                        distanceText = `Sehr nah (${result.distance} km)${timeInfo}`;
+                                    } else if (result.distance <= 25) {
+                                        distanceText = `Gleiche Region (ca. ${result.distance} km)${timeInfo}`;
+                                    } else {
+                                        distanceText = `Ähnliche Region (ca. ${result.distance} km)${timeInfo}`;
+                                    }
+
+                                    cellForCommonality.textContent = distanceText;
+                                    updatedDistances++;
+                                }
+                            } catch (error) {
+                                console.error('Fehler bei PLZ-Distanz:', error);
+                                cellForCommonality.textContent = 'Distanz nicht berechenbar';
+                            }
+
+                            cellForCommonality.style.background = 'var(--swaf-lightest-teal)';
+                            setTimeout(() => cellForCommonality.style.background = '', 2000);
+                        }
+                    } else {
+                        // Generiere intelligenten Text für andere Felder
+                        if ((!currentText || currentText === 'Keine Übereinstimmung' || currentText.length < 5) &&
+                            !shouldExcludeFromMatching(question)) {
+                            const smartText = generateIntelligentText(question, answer1, answer2);
+                            if (smartText) {
+                                cellForCommonality.textContent = smartText;
+                                cellForCommonality.style.background = 'var(--swaf-lightest-teal)';
+                                setTimeout(() => cellForCommonality.style.background = '', 2000);
+                                generatedTexts++;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Zusammenfassende Benachrichtigung
+            if (generatedTexts > 0 || updatedDistances > 0) {
+                let message = '✅ Fertig! ';
+                if (generatedTexts > 0) message += `${generatedTexts} Texte generiert`;
+                if (generatedTexts > 0 && updatedDistances > 0) message += ', ';
+                if (updatedDistances > 0) message += `${updatedDistances} Distanzen berechnet`;
+
+                showNotification(message, 'success', 4000);
+
+                // Gamification
+                if (generatedTexts > 0) trackActivity('smart_text_used');
+            } else {
+                showNotification('ℹ️ Alle Felder sind bereits gefüllt', 'info', 2000);
             }
         }
 
