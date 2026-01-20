@@ -11798,16 +11798,33 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                         
                         if (result && result.distance !== null) {
                             let distanceText = '';
-                            
+                            const times = result.estimatedTimes || {};
+
+                            // Formatiere Zeitangaben
+                            let timeInfo = '';
+                            if (result.distance > 0 && times.walking) {
+                                // Zeige nur relevante Verkehrsmittel basierend auf Distanz
+                                if (result.distance <= 10) {
+                                    // Kurze Strecke: Zu Fuß + Fahrrad + ÖPNV
+                                    timeInfo = ` • 🚶‍♂️ ${times.walking}min | 🚲 ${times.cycling}min | 🚌 ${times.transit}min`;
+                                } else if (result.distance <= 25) {
+                                    // Mittlere Strecke: Fahrrad + ÖPNV + Auto
+                                    timeInfo = ` • 🚲 ${times.cycling}min | 🚌 ${times.transit}min | 🚗 ${times.driving}min`;
+                                } else {
+                                    // Lange Strecke: ÖPNV + Auto
+                                    timeInfo = ` • 🚌 ${times.transit}min | 🚗 ${times.driving}min`;
+                                }
+                            }
+
                             if (result.distance === 0) {
                                 distanceText = 'Ihr wohnt in derselben PLZ';
                             } else {
                                 if (result.distance <= 10) {
-                                    distanceText = `Sehr nah (${result.distance} km)`;
+                                    distanceText = `Sehr nah (${result.distance} km)${timeInfo}`;
                                 } else if (result.distance <= 25) {
-                                    distanceText = `Gleiche Region (ca. ${result.distance} km)`;
+                                    distanceText = `Gleiche Region (ca. ${result.distance} km)${timeInfo}`;
                                 } else {
-                                    distanceText = `Ähnliche Region (ca. ${result.distance} km)`;
+                                    distanceText = `Ähnliche Region (ca. ${result.distance} km)${timeInfo}`;
                                 }
                             }
                             
@@ -13131,37 +13148,45 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             }
 
             // Spezifische Analysen nach Fragentyp
-            if (q.includes('alter') || q.includes('geburt')) {
+            // WICHTIG: Prüfe spezifischere Fragen ZUERST, um Verwechslungen zu vermeiden
+
+            // 1. Altersdifferenz-PRÄFERENZ (nicht echtes Alter!)
+            if (q.includes('altersunterschied') || q.includes('alterspräferenz')) {
+                return analyzeAgePreferences(answer1, answer2);
+            }
+
+            // 2. Echtes ALTER (erst nachdem Altersdifferenz ausgeschlossen wurde)
+            if ((q.includes('alter') || q.includes('geburt')) &&
+                !q.includes('unterschied') && !q.includes('präferenz')) {
                 return analyzeAgeCompatibilityImproved(answer1, answer2);
             }
-            
+
+            // 3. Hobbys & Freizeit
             if (q.includes('hobby') || q.includes('freizeit') || q.includes('interesse')) {
                 return analyzeHobbyCompatibilityImproved(answer1, answer2);
             }
-            
+
+            // 4. Sprachen
             if (q.includes('sprache') || q.includes('sprichst')) {
                 return analyzeLanguageCompatibilityImproved(answer1, answer2);
             }
-            
-            if (q.includes('postleitzahl') || q.includes('plz')) {
+
+            // 5. PLZ/Wohnort
+            if (q.includes('postleitzahl') || q.includes('plz') || q.includes('wohnort')) {
                 return analyzePLZCompatibility(answer1, answer2);
             }
-            
+
+            // 6. Treffzeiten
             if (q.includes('zeit') || q.includes('treffen') || q.includes('wann')) {
                 return analyzeTimeCompatibilityImproved(answer1, answer2);
             }
-            
-            if (q.includes('wichtig') || q.includes('freundschaft')) {
-                return analyzeFriendshipValues(answer1, answer2);
-            }
-            
-            if (q.includes('altersunterschied')) {
-                return analyzeAgePreferences(answer1, answer2);
-            }
-            if (q.includes('wichtig') || q.includes('freundschaft')) {
-                return analyzeFriendshipValues(answer1, answer2);
-            }            
 
+            // 7. Freundschaftswerte
+            if (q.includes('wichtig') || q.includes('freundschaft')) {
+                return analyzeFriendshipValues(answer1, answer2);
+            }
+
+            // 8. Anreise-Distanz
             if (q.includes('anreisen') || q.includes('entfernung')) {
                 return analyzeDistancePreferences(answer1, answer2);
             }
@@ -13192,90 +13217,229 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         }
 
         function analyzeAgeCompatibilityImproved(age1, age2) {
-            const num1 = extractNumber(age1);
-            const num2 = extractNumber(age2);
-            
-            if (num1 && num2) {
-                const diff = Math.abs(num1 - num2);
-                if (diff === 0) return 'Ihr seid genau gleich alt! 🎂';
-                if (diff <= 3) return `Nur ${diff} Jahr${diff > 1 ? 'e' : ''} Unterschied - perfekt! 🎯`;
-                if (diff <= 7) return `${diff} Jahre Unterschied - das passt gut zusammen 😊`;
-                if (diff <= 12) return `Altersunterschied kann spannend sein (${diff} Jahre) ✨`;
-                return 'Verschiedene Lebenserfahrungen zum Austauschen 🌟';
+            // Extrahiere Alter aus verschiedenen Formaten
+            let num1 = extractNumber(age1);
+            let num2 = extractNumber(age2);
+
+            // Wenn Geburtsdatum-Format erkannt wird (z.B. "01.01.1995"), berechne Alter
+            if (!num1 || num1 > 150) {
+                num1 = calculateAgeFromBirthdate(age1);
             }
-            
+            if (!num2 || num2 > 150) {
+                num2 = calculateAgeFromBirthdate(age2);
+            }
+
+            if (num1 && num2 && num1 < 150 && num2 < 150) {
+                const diff = Math.abs(num1 - num2);
+                const avgAge = Math.round((num1 + num2) / 2);
+
+                if (diff === 0) return `Ihr seid beide ${num1} Jahre alt! 🎂`;
+                if (diff === 1) return `Nur 1 Jahr Unterschied (${num1} & ${num2}) - perfekt! 🎯`;
+                if (diff <= 3) return `${diff} Jahre Unterschied (${num1} & ${num2}) - sehr gut! 🎯`;
+                if (diff <= 7) return `${diff} Jahre Unterschied (${num1} & ${num2}) - das passt! 😊`;
+                if (diff <= 12) return `${diff} Jahre Unterschied - verschiedene Perspektiven! ✨`;
+                return `${diff} Jahre Unterschied - viel Austauschpotenzial! 🌟`;
+            }
+
             return 'Alter ist nur eine Zahl! 😊';
+        }
+
+        // Hilfsfunktion zum Berechnen des Alters aus Geburtsdatum
+        function calculateAgeFromBirthdate(dateString) {
+            if (!dateString) return null;
+
+            // Erkenne verschiedene Datumsformate
+            const patterns = [
+                /(\d{1,2})\.(\d{1,2})\.(\d{4})/,  // DD.MM.YYYY
+                /(\d{1,2})\/(\d{1,2})\/(\d{4})/,  // DD/MM/YYYY
+                /(\d{4})-(\d{1,2})-(\d{1,2})/     // YYYY-MM-DD
+            ];
+
+            for (const pattern of patterns) {
+                const match = dateString.match(pattern);
+                if (match) {
+                    let day, month, year;
+
+                    if (pattern === patterns[2]) {
+                        // YYYY-MM-DD Format
+                        year = parseInt(match[1]);
+                        month = parseInt(match[2]);
+                        day = parseInt(match[3]);
+                    } else {
+                        // DD.MM.YYYY oder DD/MM/YYYY Format
+                        day = parseInt(match[1]);
+                        month = parseInt(match[2]);
+                        year = parseInt(match[3]);
+                    }
+
+                    const today = new Date();
+                    const birthDate = new Date(year, month - 1, day);
+
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+                    // Geburtstag dieses Jahr noch nicht gewesen?
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
+
+                    // Plausibilitätsprüfung
+                    if (age >= 0 && age < 150) {
+                        return age;
+                    }
+                }
+            }
+
+            return null;
         }
 
         function analyzeHobbyCompatibilityImproved(answer1, answer2) {
             const hobbies1 = splitAndNormalize(answer1);
             const hobbies2 = splitAndNormalize(answer2);
-            
+
             console.log(`🎨 Hobby-Analyse: "${hobbies1}" vs "${hobbies2}"`);
-            
-            // Erweiterte Hobby-Synonyme für besseres Matching
-            const hobbyMappings = {
-                'feiern': ['feiern gehen', 'ausgehen', 'party'],
-                'kino': ['ins kino gehen', 'filme schauen', 'film'],
-                'kochen': ['gemeinsam kochen', 'kulinarik', 'essen zubereiten'],
-                'museum': ['ins museum gehen', 'kultur', 'ausstellungen'],
-                'theater': ['ins theater gehen', 'schauspiel', 'bühne'],
-                'sport': ['fitness', 'training', 'bewegung', 'fitnessstudio'],
-                'musik': ['musikhören', 'konzerte', 'konzert'],
-                'lesen': ['bücher', 'literatur', 'book'],
-                'reisen': ['travel', 'urlaub', 'vacation']
-            };
-            
-            // Finde intelligente Übereinstimmungen
-            const commonHobbies = [];
-            
-            hobbies1.forEach(hobby1 => {
-                hobbies2.forEach(hobby2 => {
-                    // Exakte Übereinstimmung
-                    if (hobby1.toLowerCase() === hobby2.toLowerCase()) {
-                        if (!commonHobbies.includes(hobby1)) {
-                            commonHobbies.push(hobby1);
-                        }
-                        return;
-                    }
-                    
-                    // Synonym-Matching
-                    for (const [mainHobby, synonyms] of Object.entries(hobbyMappings)) {
-                        const hobby1IsMain = hobby1.toLowerCase().includes(mainHobby) || 
-                                        synonyms.some(syn => hobby1.toLowerCase().includes(syn));
-                        const hobby2IsMain = hobby2.toLowerCase().includes(mainHobby) || 
-                                        synonyms.some(syn => hobby2.toLowerCase().includes(syn));
-                        
-                        if (hobby1IsMain && hobby2IsMain && !commonHobbies.includes(mainHobby)) {
-                            commonHobbies.push(mainHobby);
-                            return;
-                        }
-                    }
-                    
-                    // Teilstring-Matching für ähnliche Begriffe
-                    if ((hobby1.length > 3 && hobby2.toLowerCase().includes(hobby1.toLowerCase())) || 
-                        (hobby2.length > 3 && hobby1.toLowerCase().includes(hobby2.toLowerCase()))) {
-                        const longerHobby = hobby1.length >= hobby2.length ? hobby1 : hobby2;
-                        if (!commonHobbies.includes(longerHobby)) {
-                            commonHobbies.push(longerHobby);
-                        }
-                    }
+
+            // MASSIV ERWEITERTE Hobby-Kategorien basierend auf echten SwaF-Daten
+            const hobbyCategories = [
+                // SPORT & BEWEGUNG (11 Kategorien)
+                { name: 'Sport/Fitness', keywords: ['sport', 'fitness', 'training', 'bewegung', 'fitnessstudio', 'gym'], emoji: '💪' },
+                { name: 'Fußball', keywords: ['fußball', 'fussball', 'football', 'soccer', 'kicken'], emoji: '⚽' },
+                { name: 'Wandern', keywords: ['wandern', 'hiking', 'berge'], emoji: '🥾' },
+                { name: 'Spazieren', keywords: ['spazieren', 'spaziergang', 'spazieren gehen', 'walk'], emoji: '🚶' },
+                { name: 'Schwimmen', keywords: ['schwimmen', 'swimming', 'baden'], emoji: '🏊' },
+                { name: 'Yoga', keywords: ['yoga', 'meditation', 'entspannung'], emoji: '🧘' },
+                { name: 'Laufen/Joggen', keywords: ['laufen', 'joggen', 'running', 'jogging'], emoji: '🏃' },
+                { name: 'Fahrradfahren', keywords: ['fahrrad', 'radfahren', 'cycling', 'bike', 'rad'], emoji: '🚴' },
+                { name: 'Tanzen', keywords: ['tanzen', 'dance', 'dancing'], emoji: '💃' },
+                { name: 'Klettern', keywords: ['klettern', 'climbing', 'bouldern'], emoji: '🧗' },
+                { name: 'Ballsport', keywords: ['volleyball', 'basketball', 'tennis', 'tischtennis', 'badminton'], emoji: '🏐' },
+
+                // KULTUR (6 Kategorien)
+                { name: 'Kino/Filme', keywords: ['kino', 'film', 'filme', 'movie', 'cinema'], emoji: '🎬' },
+                { name: 'Serien', keywords: ['serien', 'series', 'netflix', 'streaming'], emoji: '📺' },
+                { name: 'Museum', keywords: ['museum', 'ausstellung', 'galerie'], emoji: '🏛️' },
+                { name: 'Theater', keywords: ['theater', 'schauspiel', 'bühne', 'oper'], emoji: '🎭' },
+                { name: 'Konzerte', keywords: ['konzert', 'konzerte', 'concert', 'live musik'], emoji: '🎤' },
+                { name: 'Musik hören', keywords: ['musik hören', 'musikhören', 'music'], emoji: '🎵' },
+
+                // SOZIAL (5 Kategorien)
+                { name: 'Freunde treffen', keywords: ['freunde treffen', 'freunde', 'freundinnen', 'socializing'], emoji: '👥' },
+                { name: 'Feiern/Ausgehen', keywords: ['feiern', 'party', 'ausgehen', 'clubbing', 'tanzen gehen'], emoji: '🎉' },
+                { name: 'Café', keywords: ['café', 'cafe', 'kaffee', 'coffee'], emoji: '☕' },
+                { name: 'Essen gehen', keywords: ['essen gehen', 'restaurant', 'dining'], emoji: '🍽️' },
+                { name: 'Bars', keywords: ['bar', 'bars', 'kneipe', 'pub'], emoji: '🍺' },
+
+                // KREATIV (7 Kategorien)
+                { name: 'Kochen', keywords: ['kochen', 'cooking', 'kulinarik', 'backen'], emoji: '🍳' },
+                { name: 'Backen', keywords: ['backen', 'baking', 'kuchen'], emoji: '🧁' },
+                { name: 'Zeichnen/Malen', keywords: ['zeichnen', 'malen', 'drawing', 'painting', 'kunst'], emoji: '🎨' },
+                { name: 'Fotografie', keywords: ['fotografie', 'fotografieren', 'photography', 'fotos'], emoji: '📷' },
+                { name: 'Schreiben', keywords: ['schreiben', 'writing', 'texten', 'bloggen'], emoji: '✍️' },
+                { name: 'Handwerk', keywords: ['handwerk', 'basteln', 'diy', 'crafting'], emoji: '🔨' },
+                { name: 'Nähen/Stricken', keywords: ['nähen', 'stricken', 'häkeln', 'sewing'], emoji: '🧵' },
+
+                // WISSEN & BILDUNG (3 Kategorien)
+                { name: 'Lesen', keywords: ['lesen', 'bücher', 'book', 'reading', 'literatur'], emoji: '📚' },
+                { name: 'Lernen', keywords: ['lernen', 'learning', 'studieren', 'weiterbildung'], emoji: '📖' },
+                { name: 'Podcasts', keywords: ['podcast', 'podcasts', 'hörbuch', 'audiobook'], emoji: '🎧' },
+
+                // NATUR (4 Kategorien)
+                { name: 'Reisen', keywords: ['reisen', 'travel', 'urlaub', 'vacation'], emoji: '✈️' },
+                { name: 'Natur', keywords: ['natur', 'nature', 'draußen', 'outdoor'], emoji: '🌳' },
+                { name: 'Garten', keywords: ['garten', 'gardening', 'pflanzen', 'gärtnern'], emoji: '🌱' },
+                { name: 'Tiere', keywords: ['tiere', 'haustiere', 'pets', 'animals'], emoji: '🐾' },
+
+                // SPIELE (3 Kategorien)
+                { name: 'Brettspiele', keywords: ['brettspiel', 'brettspiele', 'boardgames', 'spieleabend'], emoji: '🎲' },
+                { name: 'Gaming', keywords: ['gaming', 'videospiele', 'zocken', 'games'], emoji: '🎮' },
+                { name: 'Sport schauen', keywords: ['sport schauen', 'fußball schauen', 'watching sports'], emoji: '📺' },
+
+                // TECHNOLOGIE (1 Kategorie)
+                { name: 'Tech/IT', keywords: ['tech', 'technologie', 'it', 'computer', 'programmieren'], emoji: '💻' },
+
+                // DISKUSSION & AUSTAUSCH (1 Kategorie)
+                { name: 'Diskutieren', keywords: ['diskutieren', 'debattieren', 'politik', 'philosophie'], emoji: '💬' }
+            ];
+
+
+            // Finde intelligente Übereinstimmungen durch Kategorien
+            const matchedCategories = [];
+            const answer1Lower = answer1.toLowerCase();
+            const answer2Lower = answer2.toLowerCase();
+
+            // Prüfe jede Kategorie
+            hobbyCategories.forEach(category => {
+                let found1 = false;
+                let found2 = false;
+
+                // Prüfe ob Keywords in den Antworten vorkommen
+                category.keywords.forEach(keyword => {
+                    if (answer1Lower.includes(keyword)) found1 = true;
+                    if (answer2Lower.includes(keyword)) found2 = true;
                 });
-            });
-            
-            // Generiere intelligenten Text
-            if (commonHobbies.length > 0) {
-                if (commonHobbies.length === 1) {
-                    return `Gemeinsames Hobby: ${commonHobbies[0]}! Das verbindet sofort 🎯`;
-                } else if (commonHobbies.length <= 3) {
-                    return `${commonHobbies.length} gemeinsame Hobbys: ${commonHobbies.join(', ')}! Perfekte Basis 🎨`;
-                } else {
-                    return `Viele gemeinsame Hobbys: ${commonHobbies.slice(0, 3).join(', ')} und mehr! Ihr werdet viel Spaß haben 🎉`;
+
+                // Wenn beide die Kategorie haben, füge sie hinzu
+                if (found1 && found2) {
+                    matchedCategories.push({
+                        name: category.name,
+                        emoji: category.emoji
+                    });
                 }
+            });
+
+            // Generiere intelligenten, detaillierten Text
+            if (matchedCategories.length === 0) {
+                // Keine direkten Übereinstimmungen - versuche Ähnlichkeiten zu finden
+                const similar = [];
+                hobbies1.forEach(h1 => {
+                    hobbies2.forEach(h2 => {
+                        if (h1.length > 3 && h2.length > 3 &&
+                            (h1.includes(h2) || h2.includes(h1))) {
+                            similar.push(h1.length >= h2.length ? h1 : h2);
+                        }
+                    });
+                });
+
+                if (similar.length > 0) {
+                    return `Ähnliche Interessen: ${similar.slice(0, 2).join(', ')}! Gute Basis 😊`;
+                }
+
+                return 'Verschiedene Hobbys - perfekt um Neues zu entdecken! 🌟';
             }
-            
-            // Standard für verschiedene Hobbys
-            return 'Verschiedene Hobbys - perfekt um neue Dinge auszuprobieren! 🌟';
+
+            // Erstelle ausgefeilten Text basierend auf Anzahl der Übereinstimmungen
+            if (matchedCategories.length === 1) {
+                const cat = matchedCategories[0];
+                return `Gemeinsames Hobby: ${cat.name}! ${cat.emoji} Das verbindet sofort!`;
+            } else if (matchedCategories.length === 2) {
+                const names = matchedCategories.map(c => c.name).join(' & ');
+                const emojis = matchedCategories.map(c => c.emoji).join(' ');
+                return `${names}! ${emojis} Tolle Basis für Freundschaft!`;
+            } else if (matchedCategories.length === 3) {
+                const names = matchedCategories.map(c => c.name).join(', ');
+                const emojis = matchedCategories.map(c => c.emoji).join(' ');
+                return `3 gemeinsame Hobbys: ${names}! ${emojis} Ihr werdet viel Spaß haben!`;
+            } else if (matchedCategories.length <= 5) {
+                const names = matchedCategories.slice(0, 3).map(c => c.name).join(', ');
+                const emojis = matchedCategories.slice(0, 5).map(c => c.emoji).join(' ');
+                return `${matchedCategories.length} gemeinsame Hobbys! ${names} & mehr! ${emojis} Perfektes Match!`;
+            } else {
+                // Viele Übereinstimmungen
+                const sportCount = matchedCategories.filter(c => ['💪', '⚽', '🥾', '🚶', '🏊', '🧘', '🏃', '🚴', '💃', '🧗', '🏐'].includes(c.emoji)).length;
+                const cultureCount = matchedCategories.filter(c => ['🎬', '📺', '🏛️', '🎭', '🎤', '🎵'].includes(c.emoji)).length;
+                const socialCount = matchedCategories.filter(c => ['👥', '🎉', '☕', '🍽️', '🍺'].includes(c.emoji)).length;
+
+                let summary = `${matchedCategories.length} gemeinsame Hobbys! `;
+
+                if (sportCount >= 3) summary += `Besonders: Sport & Bewegung! 💪 `;
+                if (cultureCount >= 2) summary += `Kulturliebhaber! 🎭 `;
+                if (socialCount >= 2) summary += `Soziale Butterflies! 🎉 `;
+
+                const topHobbies = matchedCategories.slice(0, 3).map(c => c.name).join(', ');
+                const emojis = matchedCategories.slice(0, 6).map(c => c.emoji).join(' ');
+
+                return `${summary}(z.B. ${topHobbies} & mehr) ${emojis} - Traumhaftes Match!`;
+            }
         }
 
         function splitAndNormalize(text) {
