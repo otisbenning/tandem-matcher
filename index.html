@@ -7582,6 +7582,67 @@
         // ===============================
         // BEARBEITUNGS-FUNKTIONEN
         // ===============================
+
+        // Kategorisiert Fragen in thematische Gruppen
+        function categorizeQuestion(question) {
+            const q = question.toLowerCase();
+
+            // Gründe für SwaF
+            if (q.includes('welche sprachen sprichst du') ||
+                q.includes('warum willst du bei swaf mitmachen') ||
+                q.includes('woher kennst du swaf')) {
+                return 'Gründe für SwaF';
+            }
+
+            // Person
+            if (q.includes('vorname') || q.includes('nachname') || q.includes('name') ||
+                q.includes('e-mail') || q.includes('telefon') ||
+                q.includes('geburtstag') || (q.includes('alter') && !q.includes('unterschied') && !q.includes('präferenz')) ||
+                q.includes('geschlecht') || q.includes('gruppe') ||
+                q.includes('in welchem land bist du geboren') ||
+                q.includes('seit wann lebst du in deutschland') ||
+                q.includes('willst du dich mit deinen kindern anmelden')) {
+                return 'Person';
+            }
+
+            // Beruf
+            if (q.includes('was machst du gerade im leben') ||
+                q.includes('was hast du vorher gemacht') || q.includes('was hast du gelernt') ||
+                q.includes('welches abschluss-zeugnis') ||
+                q.includes('was willst du in zukunft machen')) {
+                return 'Beruf';
+            }
+
+            // Tandem
+            if (q.includes('wann hast du zeit') && q.includes('tandem') ||
+                q.includes('was machst du in deiner freizeit') ||
+                q.includes('hobbys') || q.includes('hobby') ||
+                q.includes('gibt es etwas neues') && q.includes('ausprobieren') ||
+                q.includes('gibt es themen') && q.includes('interessieren') ||
+                q.includes('was ist dir in einer freundschaft') ||
+                q.includes('wie stellst du dir dein tandem vor')) {
+                return 'Tandem';
+            }
+
+            // Service-Hinweis für Tandems
+            if (q.includes('postleitzahl') || q.includes('plz') ||
+                q.includes('wie bewegst du dich in der stadt')) {
+                return 'Service-Hinweis';
+            }
+
+            // Tandem-Vorgaben für Vermittler
+            if (q.includes('wie groß darf der altersunterschied') ||
+                q.includes('geschlecht der tandempartner') ||
+                q.includes('wie lange kannst du anreisen') ||
+                q.includes('wie wirkt die person auf dich') ||
+                q.includes('worauf sollte bei der auswahl')) {
+                return 'Tandem-Vorgaben';
+            }
+
+            // Sonstiges
+            return 'Sonstiges';
+        }
+
         function loadTandemSelector() {
             const selector = document.getElementById('tandem-selector');
 
@@ -7627,29 +7688,67 @@
                 return indexA - indexB;
             });
 
-            filteredCommonalities.forEach(c => {
-                const isPLZField = c.question.toLowerCase().includes('postleitzahl') || c.question.toLowerCase().includes('plz');
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${c.question}</td>
-                    <td contenteditable="true">${c.answer1}</td>
-                    <td contenteditable="true">${c.answer2}</td>
-                    <td contenteditable="true" 
-                        style="background: var(--swaf-lightest-teal); cursor: text; ${isPLZField ? 'padding-right: 90px; position: relative;' : ''}" 
-                        title="${isPLZField ? '🔄 Distanz wird automatisch berechnet' : 'Klick hier für passende Formulierungsvorschläge'}"
-                        onfocus="handleCellFocus(this)"
-                        data-is-plz="${isPLZField}"
-                        data-answer1="${(c.answer1 || '').replace(/"/g, '&quot;')}"
-                        data-answer2="${(c.answer2 || '').replace(/"/g, '&quot;')}">
-                        ${isPLZField ? '🔄 Berechne Distanz...' : c.commonality}
-                    </td>
-                    <td style="position: relative;">
-                        ${!isPLZField ? `<button class="ai-assist-btn btn btn-outline btn-small" style="margin-right: 0.5rem;" title="KI-Unterstützung" data-question="${c.question.replace(/"/g, '&quot;')}" data-answer1="${(c.answer1 || '').replace(/"/g, '&quot;')}" data-answer2="${(c.answer2 || '').replace(/"/g, '&quot;')}">🤖 KI</button>` : ''}
-                        <button onclick="deleteRow(this)" class="btn btn-outline btn-small">🗑️</button>
+            // Gruppiere nach Kategorien
+            const categorizedFields = {};
+            const categoryOrder = [
+                'Gründe für SwaF',
+                'Person',
+                'Beruf',
+                'Tandem',
+                'Service-Hinweis',
+                'Tandem-Vorgaben',
+                'Sonstiges'
+            ];
+
+            sortedCommonalities.forEach(c => {
+                const category = categorizeQuestion(c.question);
+                if (!categorizedFields[category]) {
+                    categorizedFields[category] = [];
+                }
+                categorizedFields[category].push(c);
+            });
+
+            // Rendere Felder gruppiert nach Kategorien
+            categoryOrder.forEach(category => {
+                if (!categorizedFields[category] || categorizedFields[category].length === 0) {
+                    return; // Überspringe leere Kategorien
+                }
+
+                // Füge Kategorie-Header hinzu
+                const categoryHeader = document.createElement('tr');
+                categoryHeader.className = 'category-header';
+                categoryHeader.innerHTML = `
+                    <td colspan="5" style="background: var(--swaf-teal); color: white; font-weight: bold; padding: 0.75rem; text-align: left; font-size: 0.95rem;">
+                        ${category}
                     </td>
                 `;
-                tbody.appendChild(row);
+                tbody.appendChild(categoryHeader);
+
+                // Füge Felder dieser Kategorie hinzu
+                categorizedFields[category].forEach(c => {
+                    const isPLZField = c.question.toLowerCase().includes('postleitzahl') || c.question.toLowerCase().includes('plz');
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${c.question}</td>
+                        <td contenteditable="true">${c.answer1}</td>
+                        <td contenteditable="true">${c.answer2}</td>
+                        <td contenteditable="true"
+                            style="background: var(--swaf-lightest-teal); cursor: text; ${isPLZField ? 'padding-right: 90px; position: relative;' : ''}"
+                            title="${isPLZField ? '🔄 Distanz wird automatisch berechnet' : 'Klick hier für passende Formulierungsvorschläge'}"
+                            onfocus="handleCellFocus(this)"
+                            data-is-plz="${isPLZField}"
+                            data-answer1="${(c.answer1 || '').replace(/"/g, '&quot;')}"
+                            data-answer2="${(c.answer2 || '').replace(/"/g, '&quot;')}">
+                            ${isPLZField ? '🔄 Berechne Distanz...' : c.commonality}
+                        </td>
+                        <td style="position: relative;">
+                            ${!isPLZField ? `<button class="ai-assist-btn btn btn-outline btn-small" style="margin-right: 0.5rem;" title="KI-Unterstützung" data-question="${c.question.replace(/"/g, '&quot;')}" data-answer1="${(c.answer1 || '').replace(/"/g, '&quot;')}" data-answer2="${(c.answer2 || '').replace(/"/g, '&quot;')}">🤖 KI</button>` : ''}
+                            <button onclick="deleteRow(this)" class="btn btn-outline btn-small">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
             });
 
             // Event Listener für KI-Buttons
@@ -12418,15 +12517,15 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             // 1. EXAKTE ÜBEREINSTIMMUNGEN zuerst prüfen
             if (answer1.toLowerCase().trim() === answer2.toLowerCase().trim()) {
                 if (q.includes('wichtig') || q.includes('freundschaft')) {
-                    return `Gemeinsamer Wert: ${answer1}! Das ist eine starke Basis für eure Freundschaft 💝`;
+                    return `Gemeinsamer Wert: ${answer1}! Das ist eine starke Basis für eure Freundschaft`;
                 }
                 if (q.includes('studium') && answer1.toLowerCase().includes('ja')) {
-                    return 'Ihr habt beide studiert - das verbindet! 🎓';
+                    return 'Ihr habt beide studiert - das verbindet!';
                 }
                 if (q.includes('deutschland') && answer1.toLowerCase().includes('nein')) {
-                    return 'Ihr seid beide nicht in Deutschland geboren - ähnliche Erfahrungen! 🌍';
+                    return 'Ihr seid beide nicht in Deutschland geboren - ähnliche Erfahrungen!';
                 }
-                return `Identisch: ${answer1} - perfekte Übereinstimmung! ✨`;
+                return `Identisch: ${answer1} - perfekte Übereinstimmung!`;
             }
             
             // 2. ALTERS-ANALYSE
@@ -12435,11 +12534,11 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 const age2 = parseInt(answer2);
                 if (!isNaN(age1) && !isNaN(age2)) {
                     const diff = Math.abs(age1 - age2);
-                    if (diff === 0) return 'Ihr seid genau gleich alt! 🎂';
-                    if (diff <= 3) return `Nur ${diff} Jahr${diff > 1 ? 'e' : ''} Unterschied - perfekt! 🎯`;
-                    if (diff <= 7) return `${diff} Jahre Unterschied - das passt gut zusammen 😊`;
-                    if (diff <= 12) return `Generationsunterschied kann bereichernd sein (${diff} Jahre) ✨`;
-                    return 'Verschiedene Lebenserfahrungen zum Austauschen 🌟';
+                    if (diff === 0) return 'Ihr seid genau gleich alt!';
+                    if (diff <= 3) return `Nur ${diff} Jahr${diff > 1 ? 'e' : ''} Unterschied - perfekt!`;
+                    if (diff <= 7) return `${diff} Jahre Unterschied - das passt gut zusammen`;
+                    if (diff <= 12) return `Generationsunterschied kann bereichernd sein (${diff} Jahre)`;
+                    return 'Verschiedene Lebenserfahrungen zum Austauschen';
                 }
             }
             
@@ -12486,18 +12585,41 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 return analyzeCommunityEventsIntelligently(answer1, answer2);
             }
 
-            // 11. STUDIUM/BILDUNG
-            if (q.includes('studium') || q.includes('schule') || q.includes('ausbildung')) {
-                if (answer1.toLowerCase().trim() === answer2.toLowerCase().trim()) {
-                    return `Identisch: ${answer1} - das verbindet! 🎓`;
-                }
-                return 'Verschiedene Bildungswege - viel zu erzählen! 📚';
+            // 11. BERUF/LEBENSSITUATION
+            if (q.includes('was machst du gerade') || q.includes('beruf') || q.includes('arbeit') || q.includes('im leben')) {
+                return analyzeOccupationIntelligently(answer1, answer2);
             }
 
-            // 12. JA/NEIN Fragen
+            // 12. BILDUNGSABSCHLUSS
+            if (q.includes('abschluss') || q.includes('zeugnis') || q.includes('höchste')) {
+                return analyzeEducationIntelligently(answer1, answer2);
+            }
+
+            // 13. MOTIVATION FÜR SWAF
+            if (q.includes('warum') && (q.includes('swaf') || q.includes('mitmachen'))) {
+                return analyzeMotivationIntelligently(answer1, answer2);
+            }
+
+            // 14. HERKUNFT/AUFENTHALT
+            if (q.includes('land') && q.includes('geboren')) {
+                return analyzeOriginIntelligently(answer1, answer2);
+            }
+            if (q.includes('seit wann') && q.includes('deutschland')) {
+                return analyzeStayDurationIntelligently(answer1, answer2);
+            }
+
+            // 15. STUDIUM (alte Logik für andere Studienfragen)
+            if (q.includes('studium') || q.includes('studiert')) {
+                if (answer1.toLowerCase().trim() === answer2.toLowerCase().trim()) {
+                    return `Identisch: ${answer1} - das verbindet!`;
+                }
+                return 'Verschiedene Bildungswege - viel zu erzählen!';
+            }
+
+            // 16. JA/NEIN Fragen
             if ((answer1.toLowerCase().includes('ja') && answer2.toLowerCase().includes('ja')) ||
                 (answer1.toLowerCase().includes('nein') && answer2.toLowerCase().includes('nein'))) {
-                return `Ihr seid euch einig: ${answer1}! ✅`;
+                return `Ihr seid euch einig: ${answer1}!`;
             }
 
             // 13. STANDARD für alle anderen
@@ -12743,15 +12865,15 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             });
             
             console.log(`🎯 Finale gemeinsame Hobbys: [${commonHobbies.join(', ')}]`);
-            
+
             if (commonHobbies.length === 0) {
-                return 'Verschiedene Hobbys - perfekt um neue Dinge voneinander zu lernen! 🌟';
+                return 'Verschiedene Hobbys - perfekt um neue Dinge voneinander zu lernen!';
             } else if (commonHobbies.length === 1) {
-                return `Gemeinsames Hobby: ${commonHobbies[0]}! Das verbindet euch sofort 🎯`;
+                return `Gemeinsames Hobby: ${commonHobbies[0]}! Das verbindet euch sofort`;
             } else if (commonHobbies.length <= 3) {
-                return `${commonHobbies.length} gemeinsame Hobbys: ${commonHobbies.join(', ')}! Perfekte Basis für eure Freundschaft 🎨`;
+                return `${commonHobbies.length} gemeinsame Hobbys: ${commonHobbies.join(', ')}! Perfekte Basis für eure Freundschaft`;
             } else {
-                return `Viele gemeinsame Hobbys: ${commonHobbies.slice(0, 3).join(', ')} und mehr! Ihr werdet zusammen viel Spaß haben 🎉`;
+                return `Viele gemeinsame Hobbys: ${commonHobbies.slice(0, 3).join(', ')} und mehr! Ihr werdet zusammen viel Spaß haben`;
             }
         }
 
@@ -12762,27 +12884,27 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             console.log(`💝 Verbesserte Freundschafts-Analyse: [${v1.join(', ')}] vs [${v2.join(', ')}]`);
             
             // Exakte Übereinstimmungen haben Priorität
-            const exactMatches = v1.filter(val1 => 
+            const exactMatches = v1.filter(val1 =>
                 v2.some(val2 => val1 === val2)
             );
-            
+
             if (exactMatches.length > 0) {
                 if (exactMatches.length === 1) {
-                    return `Gemeinsamer Wert: ${exactMatches[0]}! Das ist eine perfekte Basis für eure Freundschaft 💝`;
+                    return `Gemeinsamer Wert: ${exactMatches[0]}! Das ist eine perfekte Basis für eure Freundschaft`;
                 } else {
-                    return `${exactMatches.length} gemeinsame Werte: ${exactMatches.join(', ')}! Ihr passt wirklich gut zusammen 🤝`;
+                    return `${exactMatches.length} gemeinsame Werte: ${exactMatches.join(', ')}! Ihr passt wirklich gut zusammen`;
                 }
             }
-            
+
             // Ähnliche Werte
-            const similarMatches = v1.filter(val1 => 
+            const similarMatches = v1.filter(val1 =>
                 v2.some(val2 => val1.includes(val2) || val2.includes(val1))
             );
-            
+
             if (similarMatches.length > 0) {
-                return `Ähnliche Werte: ${similarMatches[0]} - das ergänzt sich gut! 💫`;
+                return `Ähnliche Werte: ${similarMatches[0]} - das ergänzt sich gut!`;
             }
-            
+
             // Ergänzende Werte
             const complementaryPairs = [
                 ['ehrlichkeit', 'vertrauen'],
@@ -12791,14 +12913,14 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 ['respekt', 'toleranz'],
                 ['hilfsbereitschaft', 'unterstützung']
             ];
-            
+
             for (const [val1, val2] of complementaryPairs) {
                 if (v1.some(v => v.includes(val1)) && v2.some(v => v.includes(val2))) {
-                    return `${val1} und ${val2} - das ergänzt sich perfekt! 🤝`;
+                    return `${val1} und ${val2} - das ergänzt sich perfekt!`;
                 }
             }
-            
-            return 'Verschiedene Werte können Freundschaften bereichern! 🌟';
+
+            return 'Verschiedene Werte können Freundschaften bereichern!';
         }
 
         function analyzeTimeCompatibilityImproved(time1, time2) {
@@ -12809,38 +12931,38 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             
             // Exakte Übereinstimmungen
             if (t1 === t2) {
-                return `Identische Verfügbarkeit: ${time1}! ⏰`;
+                return `Identische Verfügbarkeit: ${time1}!`;
             }
-            
+
             // Wochenende
             if (t1.includes('wochenende') && t2.includes('wochenende')) {
-                return 'Beide am Wochenende verfügbar - perfekt für gemeinsame Aktivitäten! 📅';
+                return 'Beide am Wochenende verfügbar - perfekt für gemeinsame Aktivitäten!';
             }
-            
+
             // Abends
             if (t1.includes('abend') && t2.includes('abend')) {
-                return 'Beide abends Zeit - ideal für entspannte Treffen! 🌆';
+                return 'Beide abends Zeit - ideal für entspannte Treffen!';
             }
-            
+
             // Morgens/Vormittags
-            if ((t1.includes('morgen') || t1.includes('vormittag')) && 
+            if ((t1.includes('morgen') || t1.includes('vormittag')) &&
                 (t2.includes('morgen') || t2.includes('vormittag'))) {
-                return 'Beide Frühaufsteher - perfekt für Morgen-Aktivitäten! ☀️';
+                return 'Beide Frühaufsteher - perfekt für Morgen-Aktivitäten!';
             }
-            
+
             // Flexibilität erkennen
-            if (t1.includes('flexibel') || t2.includes('flexibel') || 
+            if (t1.includes('flexibel') || t2.includes('flexibel') ||
                 t1.includes('egal') || t2.includes('egal')) {
-                return 'Einer von euch ist zeitlich flexibel - das macht Terminplanung einfach! ✨';
+                return 'Einer von euch ist zeitlich flexibel - das macht Terminplanung einfach!';
             }
-            
+
             // Überschneidungen finden
             const overlap = findTimeOverlaps(t1, t2);
             if (overlap.length > 0) {
-                return `Überschneidung bei: ${overlap.join(', ')} - ihr findet bestimmt gemeinsame Termine! ⏰`;
+                return `Überschneidung bei: ${overlap.join(', ')} - ihr findet bestimmt gemeinsame Termine!`;
             }
-            
-            return 'Verschiedene Zeiten - aber Kompromisse machen Freundschaften stark! 💪';
+
+            return 'Verschiedene Zeiten - aber Kompromisse machen Freundschaften stark!';
         }
 
         function findTimeOverlaps(time1, time2) {
@@ -12851,59 +12973,81 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         function analyzeTandemExpectations(expectation1, expectation2) {
             const e1 = expectation1.toLowerCase();
             const e2 = expectation2.toLowerCase();
-            
+
             console.log(`🤝 Tandem-Erwartungen: "${e1}" vs "${e2}"`);
-            
+
             // Deutsche Sprache
             if (e1.includes('deutsch') && e2.includes('deutsch')) {
-                return 'Beide wollen Deutsch sprechen/lernen - perfektes Tandem! 🗣️';
+                return 'Beide wollen Deutsch sprechen/lernen - perfektes Tandem!';
             }
-            
+
             // Stadt erkunden
-            if ((e1.includes('stadt') || e1.includes('erkunden')) && 
+            if ((e1.includes('stadt') || e1.includes('erkunden')) &&
                 (e2.includes('stadt') || e2.includes('erkunden'))) {
-                return 'Ihr wollt beide die Stadt erkunden - wird bestimmt spannend! 🗺️';
+                return 'Ihr wollt beide die Stadt erkunden - wird bestimmt spannend!';
             }
-            
+
             // Kochen
             if (e1.includes('kochen') && e2.includes('kochen')) {
-                return 'Gemeinsam kochen - das verbindet und ist lecker! 🍳';
+                return 'Gemeinsam kochen - das verbindet und ist lecker!';
             }
-            
+
             // Kultureller Austausch
-            if ((e1.includes('kultur') || e1.includes('austausch')) && 
+            if ((e1.includes('kultur') || e1.includes('austausch')) &&
                 (e2.includes('kultur') || e2.includes('austausch'))) {
-                return 'Kultureller Austausch ist euch beiden wichtig - perfekte Voraussetzung! 🌍';
+                return 'Kultureller Austausch ist euch beiden wichtig - perfekte Voraussetzung!';
             }
-            
-            return 'Verschiedene Erwartungen können euer Tandem bereichern! ✨';
+
+            return 'Verschiedene Erwartungen können euer Tandem bereichern!';
         }
 
         function analyzeTransportation(transport1, transport2) {
             const t1 = transport1.toLowerCase();
             const t2 = transport2.toLowerCase();
-            
-            // ÖPNV
-            if (t1.includes('öpnv') && t2.includes('öpnv')) {
-                return 'Beide mit ÖPNV unterwegs - umweltfreundlich und flexibel! 🚋';
+
+            console.log(`Verkehrsmittel-Analyse: "${t1}" vs "${t2}"`);
+
+            // Dropdown-Optionen basierend auf SwaF-Daten
+            const transportOptions = [
+                { keywords: ['öpnv', 'bahn', 'bus', 'öffentliche'], name: 'ÖPNV' },
+                { keywords: ['auto', 'pkw', 'wagen'], name: 'Auto' },
+                { keywords: ['fahrrad', 'rad', 'bike'], name: 'Fahrrad' },
+                { keywords: ['fuß', 'zu fuß', 'laufen', 'gehen'], name: 'zu Fuß' }
+            ];
+
+            let transport1Type = null;
+            let transport2Type = null;
+
+            transportOptions.forEach(option => {
+                if (option.keywords.some(kw => t1.includes(kw))) transport1Type = option.name;
+                if (option.keywords.some(kw => t2.includes(kw))) transport2Type = option.name;
+            });
+
+            // Beide nutzen dasselbe Verkehrsmittel
+            if (transport1Type && transport2Type && transport1Type === transport2Type) {
+                if (transport1Type === 'ÖPNV') {
+                    return 'Beide mit ÖPNV unterwegs - umweltfreundlich und flexibel!';
+                } else if (transport1Type === 'Auto') {
+                    return 'Beide mit eigenem Auto - perfekt für Ausflüge!';
+                } else if (transport1Type === 'Fahrrad') {
+                    return 'Beide auf dem Fahrrad - gesund und sportlich!';
+                } else if (transport1Type === 'zu Fuß') {
+                    return 'Beide zu Fuß unterwegs - ihr könnt Spaziergänge kombinieren!';
+                }
             }
-            
-            // Auto
-            if (t1.includes('auto') && t2.includes('auto')) {
-                return 'Beide mit eigenem Auto - perfekt für Ausflüge! 🚗';
+
+            // Komplementäre Verkehrsmittel
+            if ((transport1Type === 'ÖPNV' && transport2Type === 'Auto') ||
+                (transport1Type === 'Auto' && transport2Type === 'ÖPNV')) {
+                return 'ÖPNV und Auto - ihr könnt flexibel entscheiden wie ihr euch trefft!';
             }
-            
-            // Fahrrad
-            if (t1.includes('fahrrad') && t2.includes('fahrrad')) {
-                return 'Beide auf dem Fahrrad - gesund und sportlich! 🚲';
+
+            if ((transport1Type === 'Fahrrad' && transport2Type === 'zu Fuß') ||
+                (transport1Type === 'zu Fuß' && transport2Type === 'Fahrrad')) {
+                return 'Fahrrad und zu Fuß - perfekt für aktive Treffen im Freien!';
             }
-            
-            // Unterschiedliche Verkehrsmittel
-            if (t1.includes('öpnv') && t2.includes('auto')) {
-                return 'ÖPNV und Auto - ihr könnt flexibel entscheiden wie ihr euch trefft! 🚌🚗';
-            }
-            
-            return 'Verschiedene Verkehrsmittel - ihr findet bestimmt einen Weg zueinander! 🛣️';
+
+            return 'Verschiedene Verkehrsmittel - ihr findet bestimmt einen Weg zueinander!';
         }
 
         function analyzeContactMethods(contact1, contact2) {
@@ -12919,10 +13063,10 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             if (c1.includes('telefon') && c2.includes('telefon')) commonMethods.push('Telefon');
 
             if (commonMethods.length > 0) {
-                return `Kommunikation über ${commonMethods.join(' und ')} - perfekt! 📱`;
+                return `Kommunikation über ${commonMethods.join(' und ')} - perfekt!`;
             }
 
-            return 'Verschiedene Kontaktwege - ihr findet bestimmt einen gemeinsamen! 📞';
+            return 'Verschiedene Kontaktwege - ihr findet bestimmt einen gemeinsamen!';
         }
 
         function analyzeCommunityEventsIntelligently(event1, event2) {
@@ -13024,15 +13168,15 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
             // Generiere passende Texte
             if (commonEvents.length === 0) {
-                return 'Verschiedene Event-Vorlieben - perfekt um Neues kennenzulernen! 🌟';
+                return 'Verschiedene Event-Vorlieben - perfekt um Neues kennenzulernen!';
             } else if (commonEvents.length === 1) {
                 const event = commonEvents[0];
-                return `Gemeinsames Interesse: ${event.name}! ${event.emoji} Das könnt ihr zusammen besuchen!`;
+                return `Gemeinsames Interesse: ${event.name}! Das könnt ihr zusammen besuchen!`;
             } else if (commonEvents.length === 2) {
-                return `2 gemeinsame Event-Interessen: ${commonEvents.map(e => e.name).join(' und ')}! ${commonEvents[0].emoji} Viel Auswahl für euch!`;
+                return `2 gemeinsame Event-Interessen: ${commonEvents.map(e => e.name).join(' und ')}! Viel Auswahl für euch!`;
             } else {
                 const eventNames = commonEvents.slice(0, 3).map(e => e.name).join(', ');
-                return `${commonEvents.length} gemeinsame Interessen: ${eventNames}${commonEvents.length > 3 ? ' und mehr' : ''}! 🎊 Ihr werdet viel zusammen erleben!`;
+                return `${commonEvents.length} gemeinsame Interessen: ${eventNames}${commonEvents.length > 3 ? ' und mehr' : ''}! Ihr werdet viel zusammen erleben!`;
             }
         }
 
@@ -13077,34 +13221,34 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             });
             
             console.log(`🎯 Gemeinsame Hobbys gefunden: [${commonHobbies.join(', ')}]`);
-            
+
             if (commonHobbies.length === 0) {
-                return 'Verschiedene Hobbys - perfekt um neue Dinge auszuprobieren! 🌟';
+                return 'Verschiedene Hobbys - perfekt um neue Dinge auszuprobieren!';
             } else if (commonHobbies.length === 1) {
-                return `Gemeinsames Hobby: ${commonHobbies[0]}! Das verbindet sofort 🎯`;
+                return `Gemeinsames Hobby: ${commonHobbies[0]}! Das verbindet sofort`;
             } else if (commonHobbies.length <= 3) {
-                return `${commonHobbies.length} gemeinsame Hobbys: ${commonHobbies.join(', ')}! Perfekte Basis 🎨`;
+                return `${commonHobbies.length} gemeinsame Hobbys: ${commonHobbies.join(', ')}! Perfekte Basis`;
             } else {
-                return `Viele gemeinsame Hobbys: ${commonHobbies.slice(0, 3).join(', ')} und mehr! Ihr werdet viel Spaß haben 🎉`;
+                return `Viele gemeinsame Hobbys: ${commonHobbies.slice(0, 3).join(', ')} und mehr! Ihr werdet viel Spaß haben`;
             }
         }
 
         function analyzeFriendshipValuesIntelligently(values1, values2) {
             const v1 = values1.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
             const v2 = values2.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
-            
+
             console.log(`💝 Freundschafts-Analyse: [${v1.join(', ')}] vs [${v2.join(', ')}]`);
-            
+
             // Suche nach gemeinsamen Werten
-            const commonValues = v1.filter(val => 
+            const commonValues = v1.filter(val =>
                 v2.some(val2 => val.includes(val2) || val2.includes(val) || val === val2)
             );
-            
+
             if (commonValues.length > 0) {
-                return `Gemeinsamer Wert: ${commonValues[0]}! Das ist eine starke Basis 💝`;
+                return `Gemeinsamer Wert: ${commonValues[0]}! Das ist eine starke Basis`;
             }
-            
-            return 'Verschiedene Werte bereichern Freundschaften! 🤝';
+
+            return 'Verschiedene Werte bereichern Freundschaften!';
         }
 
         function analyzeLanguagesIntelligently(lang1, lang2) {
@@ -13148,33 +13292,319 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
             // Generiere passenden Text
             if (commonLanguages.length === 0) {
-                return 'Verschiedene Sprachen - perfekt zum Voneinander-Lernen! 🌎';
+                return 'Verschiedene Sprachen - perfekt zum Voneinander-Lernen!';
             } else if (commonLanguages.length === 1) {
                 const langName = commonLanguages[0].charAt(0).toUpperCase() + commonLanguages[0].slice(1);
-                return `Gemeinsame Sprache: ${langName}! Das erleichtert die Kommunikation 🗣️`;
+                return `Gemeinsame Sprache: ${langName}! Das erleichtert die Kommunikation`;
             } else if (commonLanguages.length === 2) {
                 const langNames = commonLanguages.map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(' und ');
-                return `2 gemeinsame Sprachen: ${langNames}! Ihr könnt euch gut austauschen 🌍`;
+                return `2 gemeinsame Sprachen: ${langNames}! Ihr könnt euch gut austauschen`;
             } else {
                 const langNames = commonLanguages.slice(0, 3).map(l => l.charAt(0).toUpperCase() + l.slice(1)).join(', ');
-                return `${commonLanguages.length} gemeinsame Sprachen: ${langNames}${commonLanguages.length > 3 ? ' und mehr' : ''}! Mehrsprachigkeit verbindet 🌎`;
+                return `${commonLanguages.length} gemeinsame Sprachen: ${langNames}${commonLanguages.length > 3 ? ' und mehr' : ''}! Mehrsprachigkeit verbindet`;
             }
         }
 
         function analyzeTimeCompatibility(time1, time2) {
             const t1 = time1.toLowerCase();
             const t2 = time2.toLowerCase();
-            
+
             if (t1.includes('wochenende') && t2.includes('wochenende')) {
-                return 'Beide am Wochenende verfügbar - perfekt! 📅';
+                return 'Beide am Wochenende verfügbar - perfekt!';
             }
-            
+
             if (t1.includes('abend') && t2.includes('abend')) {
-                return 'Beide abends Zeit - ideal für Treffen! 🌆';
+                return 'Beide abends Zeit - ideal für Treffen!';
             }
-            
-            return 'Verschiedene Zeiten - aber Kompromisse sind möglich! ⏰';
-        }        
+
+            return 'Verschiedene Zeiten - aber Kompromisse sind möglich!';
+        }
+
+        // Neue Analysefunktionen basierend auf semantischer Analyse der SwaF-Daten
+
+        function analyzeOccupationIntelligently(occupation1, occupation2) {
+            const occ1 = occupation1.toLowerCase();
+            const occ2 = occupation2.toLowerCase();
+
+            console.log(`Berufs-Analyse: "${occ1}" vs "${occ2}"`);
+
+            // Dropdown-Optionen basierend auf SwaF-Fragebogen
+            const occupationCategories = [
+                { keywords: ['vollzeit', 'vollzeitjob', 'voll arbeiten'], name: 'Vollzeit arbeitend' },
+                { keywords: ['teilzeit', 'teilzeitjob', 'halbtags'], name: 'Teilzeit arbeitend' },
+                { keywords: ['studiere', 'student', 'studium', 'uni', 'universität'], name: 'Studierend' },
+                { keywords: ['sprachschule', 'sprachkurs', 'deutschkurs'], name: 'Sprachschule' },
+                { keywords: ['schule', 'schüler', 'abitur'], name: 'Schule' },
+                { keywords: ['ausbildung', 'azubi', 'lehre'], name: 'Ausbildung' },
+                { keywords: ['rente', 'pension', 'rentner', 'ruhestand'], name: 'Rente/Pension' },
+                { keywords: ['arbeit such', 'arbeitslos', 'jobsuche', 'bewerbung'], name: 'Arbeit suchend' }
+            ];
+
+            let occ1Type = null;
+            let occ2Type = null;
+
+            occupationCategories.forEach(cat => {
+                if (cat.keywords.some(kw => occ1.includes(kw))) occ1Type = cat.name;
+                if (cat.keywords.some(kw => occ2.includes(kw))) occ2Type = cat.name;
+            });
+
+            // Beide in derselben Lebenssituation
+            if (occ1Type && occ2Type && occ1Type === occ2Type) {
+                if (occ1Type === 'Studierend') {
+                    return 'Beide studieren - ihr kennt das Uni-Leben!';
+                } else if (occ1Type === 'Vollzeit arbeitend') {
+                    return 'Beide berufstätig - ähnliche Tagesabläufe!';
+                } else if (occ1Type === 'Sprachschule') {
+                    return 'Beide beim Deutschlernen - perfekt zum gemeinsamen Üben!';
+                } else if (occ1Type === 'Rente/Pension') {
+                    return 'Beide im Ruhestand - viel Zeit für gemeinsame Aktivitäten!';
+                } else {
+                    return `Beide ${occ1Type} - ähnliche Lebenssituation!`;
+                }
+            }
+
+            // Komplementäre Situationen
+            if ((occ1Type === 'Studierend' && occ2Type === 'Vollzeit arbeitend') ||
+                (occ1Type === 'Vollzeit arbeitend' && occ2Type === 'Studierend')) {
+                return 'Studium und Beruf - spannender Austausch über verschiedene Lebenswelten!';
+            }
+
+            if ((occ1Type === 'Sprachschule' || occ2Type === 'Sprachschule') &&
+                (occ1Type !== occ2Type)) {
+                return 'Deutschlernen trifft auf Beruf/Studium - perfekte Sprachpraxis!';
+            }
+
+            // Branchenanalyse (falls Details vorhanden)
+            const commonBranches = [
+                { keywords: ['it', 'software', 'programm', 'entwickl'], name: 'IT/Tech' },
+                { keywords: ['medizin', 'pflege', 'arzt', 'kranken', 'gesundheit'], name: 'Medizin/Pflege' },
+                { keywords: ['lehrer', 'bildung', 'schule', 'pädagog'], name: 'Bildung' },
+                { keywords: ['ingenieur', 'technik', 'maschinenbau'], name: 'Ingenieurwesen' },
+                { keywords: ['sozial', 'beratung', 'coach'], name: 'Soziales' },
+                { keywords: ['handel', 'verkauf', 'einzelhandel'], name: 'Handel' }
+            ];
+
+            for (const branch of commonBranches) {
+                const both = branch.keywords.some(kw => occ1.includes(kw)) &&
+                             branch.keywords.some(kw => occ2.includes(kw));
+                if (both) {
+                    return `Beide im Bereich ${branch.name} - gemeinsame Berufswelt!`;
+                }
+            }
+
+            return 'Verschiedene berufliche Wege - viel Neues voneinander zu lernen!';
+        }
+
+        function analyzeEducationIntelligently(edu1, edu2) {
+            const e1 = edu1.toLowerCase();
+            const e2 = edu2.toLowerCase();
+
+            console.log(`Bildungs-Analyse: "${e1}" vs "${e2}"`);
+
+            // Dropdown-Optionen basierend auf SwaF-Fragebogen
+            const educationLevels = [
+                { keywords: ['kein', 'keines', 'ohne'], name: 'Kein Zeugnis', level: 0 },
+                { keywords: ['schule', 'hauptschule', 'realschule', 'gymnasium', 'abitur'], name: 'Schule', level: 1 },
+                { keywords: ['ausbildung', 'berufsausbildung', 'lehre'], name: 'Ausbildung', level: 2 },
+                { keywords: ['studium', 'bachelor', 'master', 'diplom', 'universität', 'hochschule'], name: 'Studium', level: 3 },
+                { keywords: ['promotion', 'doktor', 'phd', 'dr.'], name: 'Promotion', level: 4 }
+            ];
+
+            let edu1Type = null, edu1Level = -1;
+            let edu2Type = null, edu2Level = -1;
+
+            educationLevels.forEach(lvl => {
+                if (lvl.keywords.some(kw => e1.includes(kw))) {
+                    edu1Type = lvl.name;
+                    edu1Level = lvl.level;
+                }
+                if (lvl.keywords.some(kw => e2.includes(kw))) {
+                    edu2Type = lvl.name;
+                    edu2Level = lvl.level;
+                }
+            });
+
+            // Gleicher Bildungsabschluss
+            if (edu1Type && edu2Type && edu1Type === edu2Type) {
+                if (edu1Type === 'Studium') {
+                    return 'Beide mit Hochschulabschluss - akademischer Austausch auf Augenhöhe!';
+                } else if (edu1Type === 'Ausbildung') {
+                    return 'Beide mit Berufsausbildung - praktische Erfahrungen verbinden!';
+                } else {
+                    return `Beide: ${edu1Type} - ähnlicher Bildungsweg!`;
+                }
+            }
+
+            // Ähnliche Level (±1)
+            if (edu1Level !== -1 && edu2Level !== -1 && Math.abs(edu1Level - edu2Level) <= 1) {
+                return 'Ähnliche Bildungswege - gute Basis für den Austausch!';
+            }
+
+            // Unterschiedliche Bildungswege
+            if (edu1Type && edu2Type) {
+                return 'Verschiedene Bildungswege - unterschiedliche Perspektiven bereichern!';
+            }
+
+            return 'Bildung hat viele Formen - jeder bringt eigene Erfahrungen mit!';
+        }
+
+        function analyzeMotivationIntelligently(motiv1, motiv2) {
+            const m1 = motiv1.toLowerCase();
+            const m2 = motiv2.toLowerCase();
+
+            console.log(`Motivations-Analyse: "${m1}" vs "${m2}"`);
+
+            // Dropdown-Optionen basierend auf SwaF-Fragebogen
+            const motivationCategories = [
+                { keywords: ['neue leute', 'menschen kennenlernen', 'freunde finden', 'kontakte'], name: 'Neue Leute kennenlernen' },
+                { keywords: ['deutsch lernen', 'sprache lernen', 'deutsch verbessern', 'sprachpraxis'], name: 'Deutsch lernen' },
+                { keywords: ['kultur', 'deutsche kultur', 'kulturell'], name: 'Deutsche Kultur kennenlernen' },
+                { keywords: ['engagement', 'helfen', 'unterstützen', 'wichtig'], name: 'Engagement/Helfen' },
+                { keywords: ['einsam', 'allein', 'isolation', 'anschluss'], name: 'Einsamkeit überwinden' },
+                { keywords: ['austausch', 'andere kultur', 'horizont'], name: 'Kultureller Austausch' }
+            ];
+
+            const motiv1Cats = [];
+            const motiv2Cats = [];
+
+            motivationCategories.forEach(cat => {
+                if (cat.keywords.some(kw => m1.includes(kw))) motiv1Cats.push(cat.name);
+                if (cat.keywords.some(kw => m2.includes(kw))) motiv2Cats.push(cat.name);
+            });
+
+            // Finde gemeinsame Motivationen
+            const commonMotivations = motiv1Cats.filter(cat => motiv2Cats.includes(cat));
+
+            if (commonMotivations.length > 0) {
+                if (commonMotivations.length === 1) {
+                    return `Gemeinsame Motivation: ${commonMotivations[0]}! Perfekte Grundlage für euer Tandem`;
+                } else {
+                    return `${commonMotivations.length} gemeinsame Ziele: ${commonMotivations.slice(0, 2).join(' und ')}! Ihr wisst beide, was ihr wollt`;
+                }
+            }
+
+            // Komplementäre Motivationen
+            if ((motiv1Cats.includes('Deutsch lernen') && motiv2Cats.includes('Engagement/Helfen')) ||
+                (motiv2Cats.includes('Deutsch lernen') && motiv1Cats.includes('Engagement/Helfen'))) {
+                return 'Deutsch lernen trifft auf Hilfsbereitschaft - ideale Kombination!';
+            }
+
+            if (motiv1Cats.includes('Kultureller Austausch') || motiv2Cats.includes('Kultureller Austausch')) {
+                return 'Kultureller Austausch steht im Fokus - perfekt für ein internationales Tandem!';
+            }
+
+            return 'Verschiedene Motivationen - das macht euer Tandem vielseitig!';
+        }
+
+        function analyzeOriginIntelligently(origin1, origin2) {
+            const o1 = origin1.toLowerCase();
+            const o2 = origin2.toLowerCase();
+
+            console.log(`Herkunfts-Analyse: "${o1}" vs "${o2}"`);
+
+            // Regionen basierend auf SwaF-Daten
+            const regions = {
+                'Europa': ['deutschland', 'griechenland', 'italien', 'ukraine', 'türkei', 'spanien', 'frankreich', 'polen'],
+                'Naher Osten': ['syrien', 'irak', 'iran', 'libanon', 'palästina', 'afghanistan'],
+                'Afrika': ['eritrea', 'guinea', 'libyen', 'tunesien', 'marokko', 'ägypten'],
+                'Asien': ['indien', 'pakistan', 'china', 'vietnam', 'thailand'],
+                'Lateinamerika': ['honduras', 'kolumbien', 'brasilien', 'mexiko']
+            };
+
+            let region1 = 'Andere', region2 = 'Andere';
+            let country1 = '', country2 = '';
+
+            // Finde Land und Region
+            for (const [regionName, countries] of Object.entries(regions)) {
+                for (const country of countries) {
+                    if (o1.includes(country)) {
+                        region1 = regionName;
+                        country1 = country.charAt(0).toUpperCase() + country.slice(1);
+                    }
+                    if (o2.includes(country)) {
+                        region2 = regionName;
+                        country2 = country.charAt(0).toUpperCase() + country.slice(1);
+                    }
+                }
+            }
+
+            // Beide aus Deutschland
+            if (o1.includes('deutschland') && o2.includes('deutschland')) {
+                return 'Beide in Deutschland geboren - gemeinsame kulturelle Basis!';
+            }
+
+            // Einer aus Deutschland, einer nicht
+            if (o1.includes('deutschland') || o2.includes('deutschland')) {
+                const otherCountry = o1.includes('deutschland') ? country2 : country1;
+                return `Lokale und internationale Perspektive - perfekt für kulturellen Austausch!`;
+            }
+
+            // Gleiche Region
+            if (region1 === region2 && region1 !== 'Andere') {
+                return `Beide aus ${region1} - ähnliche kulturelle Hintergründe!`;
+            }
+
+            // Verschiedene Regionen
+            if (region1 !== 'Andere' && region2 !== 'Andere') {
+                return `${region1} trifft ${region2} - spannende interkulturelle Begegnung!`;
+            }
+
+            return 'Verschiedene Hintergründe - viele Geschichten zum Teilen!';
+        }
+
+        function analyzeStayDurationIntelligently(duration1, duration2) {
+            const d1 = duration1.toLowerCase();
+            const d2 = duration2.toLowerCase();
+
+            console.log(`Aufenthaltsdauer-Analyse: "${d1}" vs "${d2}"`);
+
+            // Extrahiere Jahreszahlen
+            const year1 = extractYear(d1);
+            const year2 = extractYear(d2);
+
+            const currentYear = new Date().getFullYear();
+
+            if (year1 && year2) {
+                const yearsIn1 = currentYear - year1;
+                const yearsIn2 = currentYear - year2;
+
+                // Beide geboren in Deutschland oder sehr lange hier
+                if ((d1.includes('geboren') || yearsIn1 > 20) && (d2.includes('geboren') || yearsIn2 > 20)) {
+                    return 'Beide sehr lange in Deutschland - kennen sich gut aus!';
+                }
+
+                // Beide relativ neu (< 5 Jahre)
+                if (yearsIn1 < 5 && yearsIn2 < 5) {
+                    const diff = Math.abs(yearsIn1 - yearsIn2);
+                    if (diff <= 1) {
+                        return 'Beide etwa zur gleichen Zeit angekommen - ähnliche Erfahrungen!';
+                    }
+                    return 'Beide noch relativ neu in Deutschland - gemeinsam ankommen!';
+                }
+
+                // Einer neu, einer länger
+                if ((yearsIn1 < 5 && yearsIn2 >= 5) || (yearsIn2 < 5 && yearsIn1 >= 5)) {
+                    return 'Neu-Angekommene trifft Erfahrene - perfekt für Tipps und Orientierung!';
+                }
+
+                // Beide länger, aber unterschiedlich
+                const avgYears = Math.round((yearsIn1 + yearsIn2) / 2);
+                return `Beide mehrere Jahre in Deutschland - gutes Verständnis für beide Kulturen!`;
+            }
+
+            // Fallback ohne Jahreszahl
+            if ((d1.includes('geboren') || d1.includes('immer')) && (d2.includes('geboren') || d2.includes('immer'))) {
+                return 'Beide hier aufgewachsen - gemeinsame kulturelle Basis!';
+            }
+
+            return 'Verschiedene Aufenthaltsdauern - unterschiedliche Perspektiven auf Deutschland!';
+        }
+
+        // Hilfsfunktion zum Extrahieren von Jahreszahlen
+        function extractYear(text) {
+            const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+            return yearMatch ? parseInt(yearMatch[0]) : null;
+        }
 
         function cleanAnswer(answer) {
             if (!answer || typeof answer !== 'string') return '';
@@ -13196,46 +13626,46 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
         function getNoAnswerText(question) {
             const q = question.toLowerCase();
-            
+
             if (q.includes('hobby') || q.includes('interesse')) {
-                return 'Perfekte Gelegenheit, eure Hobbys kennenzulernen! 🎯';
+                return 'Perfekte Gelegenheit, eure Hobbys kennenzulernen!';
             }
             if (q.includes('sprache')) {
-                return 'Sprachenaustausch wird spannend! 🗣️';
+                return 'Sprachenaustausch wird spannend!';
             }
             if (q.includes('beruf') || q.includes('arbeit')) {
-                return 'Berufstalk beim ersten Treffen! 💼';
+                return 'Berufstalk beim ersten Treffen!';
             }
-            
-            return 'Hier gibt\'s viel zu entdecken beim ersten Gespräch! ✨';
+
+            return 'Hier gibt\'s viel zu entdecken beim ersten Gespräch!';
         }
 
         function getOneAnswerText(question, answererName, otherName, answer, isFirst) {
             const q = question.toLowerCase();
-            
+
             // Spezielle Behandlung für verschiedene Fragetypen
             if (q.includes('hobby') || q.includes('interesse') || q.includes('freizeit')) {
-                return `${answererName} kann ${otherName} ${answer} zeigen! 🎨`;
+                return `${answererName} kann ${otherName} ${answer} zeigen!`;
             }
-            
+
             if (q.includes('sprache')) {
-                return `${answererName} spricht ${answer} - perfekt zum Lernen für ${otherName}! 🌍`;
+                return `${answererName} spricht ${answer} - perfekt zum Lernen für ${otherName}!`;
             }
-            
+
             if (q.includes('beruf') || q.includes('arbeit') || q.includes('job')) {
-                return `${answererName} arbeitet ${answer} - ${otherName} kann viel fragen! 💼`;
+                return `${answererName} arbeitet ${answer} - ${otherName} kann viel fragen!`;
             }
-            
+
             if (q.includes('wohnort') || q.includes('postleitzahl')) {
-                return `${answererName} kennt sich in ${answer} aus - perfekter Tour-Guide! 📍`;
+                return `${answererName} kennt sich in ${answer} aus - perfekter Tour-Guide!`;
             }
-            
+
             if (q.includes('zeit') || q.includes('treffen')) {
-                return `${answererName} hat ${answer} Zeit - ihr findet bestimmt einen gemeinsamen Termin! ⏰`;
+                return `${answererName} hat ${answer} Zeit - ihr findet bestimmt einen gemeinsamen Termin!`;
             }
-            
+
             // Standard für einseitige Antworten
-            return `${answererName} kann ${otherName} von ${answer} erzählen! 💬`;
+            return `${answererName} kann ${otherName} von ${answer} erzählen!`;
         }
 
         function analyzeBothAnswers(question, name1, name2, answer1, answer2) {
@@ -13338,15 +13768,15 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 const diff = Math.abs(num1 - num2);
                 const avgAge = Math.round((num1 + num2) / 2);
 
-                if (diff === 0) return `Ihr seid beide ${num1} Jahre alt! 🎂`;
-                if (diff === 1) return `Nur 1 Jahr Unterschied (${num1} & ${num2}) - perfekt! 🎯`;
-                if (diff <= 3) return `${diff} Jahre Unterschied (${num1} & ${num2}) - sehr gut! 🎯`;
-                if (diff <= 7) return `${diff} Jahre Unterschied (${num1} & ${num2}) - das passt! 😊`;
-                if (diff <= 12) return `${diff} Jahre Unterschied - verschiedene Perspektiven! ✨`;
-                return `${diff} Jahre Unterschied - viel Austauschpotenzial! 🌟`;
+                if (diff === 0) return `Ihr seid beide ${num1} Jahre alt!`;
+                if (diff === 1) return `Nur 1 Jahr Unterschied (${num1} & ${num2}) - perfekt!`;
+                if (diff <= 3) return `${diff} Jahre Unterschied (${num1} & ${num2}) - sehr gut!`;
+                if (diff <= 7) return `${diff} Jahre Unterschied (${num1} & ${num2}) - das passt!`;
+                if (diff <= 12) return `${diff} Jahre Unterschied - verschiedene Perspektiven!`;
+                return `${diff} Jahre Unterschied - viel Austauschpotenzial!`;
             }
 
-            return 'Alter ist nur eine Zahl! 😊';
+            return 'Alter ist nur eine Zahl!';
         }
 
         // Hilfsfunktion zum Berechnen des Alters aus Geburtsdatum
