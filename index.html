@@ -6200,50 +6200,55 @@
             
             // Identische Antworten
             if (a1 === a2 && a1.length > 0) {
+                if (a1.length > 100) return '';
+
                 if (q.includes('hobby') || q.includes('freizeit')) {
-                    return `Gemeinsames Hobby: ${answer1}! 🎯`;
+                    return `Gemeinsames Hobby: ${answer1}!`;
                 }
                 if (q.includes('interesse') || q.includes('thema')) {
-                    return `Geteiltes Interesse: ${answer1} 💡`;
+                    return `Geteiltes Interesse: ${answer1}`;
                 }
                 if (q.includes('sprache')) {
-                    return `Sprechen beide: ${answer1} 🗣️`;
+                    return `Sprechen beide: ${answer1}`;
                 }
                 return `Haben gemeinsam: ${answer1}`;
             }
-            
+
             // Hobbies und Freizeitaktivitäten
             if (q.includes('hobby') || q.includes('freizeit') || q.includes('gerne')) {
                 const hobbies1 = splitAndNormalize(a1);
                 const hobbies2 = splitAndNormalize(a2);
                 const common = findCommonHobbies(hobbies1, hobbies2);
-                
+
                 if (common.length > 0) {
-                    return `Gemeinsame Interessen: ${common.join(', ')} 🎪`;
+                    return `Gemeinsame Interessen: ${common.join(', ')}`;
                 } else {
-                    return `${name1}: ${answer1} | ${name2}: ${answer2} - super Mix! 🌟`;
+                    if (a1.length > 80 || a2.length > 80) return '';
+                    return 'Verschiedene Hobbys - super Mix!';
                 }
             }
-            
+
             // Interessen und Themen
             if (q.includes('interesse') || q.includes('thema')) {
                 const interests1 = splitAndNormalize(a1);
                 const interests2 = splitAndNormalize(a2);
                 const common = findCommonInterests(interests1, interests2);
-                
+
                 if (common.length > 0) {
-                    return `Gemeinsame Themen: ${common.join(', ')} 💬`;
+                    return `Gemeinsame Themen: ${common.join(', ')}`;
                 } else {
-                    return `Verschiedene Perspektiven - perfekt zum Austauschen! 🔄`;
+                    return 'Verschiedene Perspektiven - perfekt zum Austauschen!';
                 }
             }
-            
+
             // Berufliches
             if (q.includes('beruf') || q.includes('arbeit') || q.includes('job')) {
+                if (a1.length > 80 || a2.length > 80) return '';
+
                 if (findCareerSimilarity(a1, a2)) {
-                    return `Ähnliche Bereiche - viel zu besprechen! 💼`;
+                    return 'Ähnliche Bereiche - viel zu besprechen!';
                 } else {
-                    return `${name1}: ${answer1} | ${name2}: ${answer2} - unterschiedliche Welten! 🌍`;
+                    return 'Verschiedene berufliche Wege - unterschiedliche Perspektiven!';
                 }
             }
             
@@ -13643,29 +13648,43 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         function getOneAnswerText(question, answererName, otherName, answer, isFirst) {
             const q = question.toLowerCase();
 
-            // Spezielle Behandlung für verschiedene Fragetypen
+            // Bei sehr langen Antworten (>100 Zeichen): leer lassen
+            if (answer.length > 100) {
+                return '';
+            }
+
+            // Spezielle Behandlung für verschiedene Fragetypen - nur bei kurzen, sinnvollen Antworten
             if (q.includes('hobby') || q.includes('interesse') || q.includes('freizeit')) {
-                return `${answererName} kann ${otherName} ${answer} zeigen!`;
+                if (answer.length < 40) {
+                    return `${answererName} kann ${otherName} ${answer} zeigen!`;
+                }
+                return `${answererName} hat spezifische Interessen - das kann bereichern!`;
             }
 
             if (q.includes('sprache')) {
-                return `${answererName} spricht ${answer} - perfekt zum Lernen für ${otherName}!`;
+                if (answer.length < 30) {
+                    return `${answererName} spricht ${answer} - perfekt zum Lernen für ${otherName}!`;
+                }
+                return `${answererName} bringt Sprachkenntnisse mit!`;
             }
 
             if (q.includes('beruf') || q.includes('arbeit') || q.includes('job')) {
-                return `${answererName} arbeitet ${answer} - ${otherName} kann viel fragen!`;
+                if (answer.length < 40) {
+                    return `${answererName}: ${answer} - unterschiedliche berufliche Perspektiven!`;
+                }
+                return '';
             }
 
             if (q.includes('wohnort') || q.includes('postleitzahl')) {
-                return `${answererName} kennt sich in ${answer} aus - perfekter Tour-Guide!`;
+                return `${answererName} kennt sich aus - perfekter Tour-Guide!`;
             }
 
             if (q.includes('zeit') || q.includes('treffen')) {
-                return `${answererName} hat ${answer} Zeit - ihr findet bestimmt einen gemeinsamen Termin!`;
+                return `Unterschiedliche Verfügbarkeit - aber Kompromisse sind möglich!`;
             }
 
-            // Standard für einseitige Antworten
-            return `${answererName} kann ${otherName} von ${answer} erzählen!`;
+            // Standard für einseitige Antworten: leer lassen
+            return '';
         }
 
         function analyzeBothAnswers(question, name1, name2, answer1, answer2) {
@@ -13832,68 +13851,68 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             const hobbies1 = splitAndNormalize(answer1);
             const hobbies2 = splitAndNormalize(answer2);
 
-            console.log(`🎨 Hobby-Analyse: "${hobbies1}" vs "${hobbies2}"`);
+            console.log(`Hobby-Analyse: "${hobbies1}" vs "${hobbies2}"`);
 
             // MASSIV ERWEITERTE Hobby-Kategorien basierend auf echten SwaF-Daten
             const hobbyCategories = [
                 // SPORT & BEWEGUNG (11 Kategorien)
-                { name: 'Sport/Fitness', keywords: ['sport', 'fitness', 'training', 'bewegung', 'fitnessstudio', 'gym'], emoji: '💪' },
-                { name: 'Fußball', keywords: ['fußball', 'fussball', 'football', 'soccer', 'kicken'], emoji: '⚽' },
-                { name: 'Wandern', keywords: ['wandern', 'hiking', 'berge'], emoji: '🥾' },
-                { name: 'Spazieren', keywords: ['spazieren', 'spaziergang', 'spazieren gehen', 'walk'], emoji: '🚶' },
-                { name: 'Schwimmen', keywords: ['schwimmen', 'swimming', 'baden'], emoji: '🏊' },
-                { name: 'Yoga', keywords: ['yoga', 'meditation', 'entspannung'], emoji: '🧘' },
-                { name: 'Laufen/Joggen', keywords: ['laufen', 'joggen', 'running', 'jogging'], emoji: '🏃' },
-                { name: 'Fahrradfahren', keywords: ['fahrrad', 'radfahren', 'cycling', 'bike', 'rad'], emoji: '🚴' },
-                { name: 'Tanzen', keywords: ['tanzen', 'dance', 'dancing'], emoji: '💃' },
-                { name: 'Klettern', keywords: ['klettern', 'climbing', 'bouldern'], emoji: '🧗' },
-                { name: 'Ballsport', keywords: ['volleyball', 'basketball', 'tennis', 'tischtennis', 'badminton'], emoji: '🏐' },
+                { name: 'Sport/Fitness', keywords: ['sport', 'fitness', 'training', 'bewegung', 'fitnessstudio', 'gym'] },
+                { name: 'Fußball', keywords: ['fußball', 'fussball', 'football', 'soccer', 'kicken'] },
+                { name: 'Wandern', keywords: ['wandern', 'hiking', 'berge'] },
+                { name: 'Spazieren', keywords: ['spazieren', 'spaziergang', 'spazieren gehen', 'walk'] },
+                { name: 'Schwimmen', keywords: ['schwimmen', 'swimming', 'baden'] },
+                { name: 'Yoga', keywords: ['yoga', 'meditation', 'entspannung'] },
+                { name: 'Laufen/Joggen', keywords: ['laufen', 'joggen', 'running', 'jogging'] },
+                { name: 'Fahrradfahren', keywords: ['fahrrad', 'radfahren', 'cycling', 'bike', 'rad'] },
+                { name: 'Tanzen', keywords: ['tanzen', 'dance', 'dancing'] },
+                { name: 'Klettern', keywords: ['klettern', 'climbing', 'bouldern'] },
+                { name: 'Ballsport', keywords: ['volleyball', 'basketball', 'tennis', 'tischtennis', 'badminton'] },
 
                 // KULTUR (6 Kategorien)
-                { name: 'Kino/Filme', keywords: ['kino', 'film', 'filme', 'movie', 'cinema'], emoji: '🎬' },
-                { name: 'Serien', keywords: ['serien', 'series', 'netflix', 'streaming'], emoji: '📺' },
-                { name: 'Museum', keywords: ['museum', 'ausstellung', 'galerie'], emoji: '🏛️' },
-                { name: 'Theater', keywords: ['theater', 'schauspiel', 'bühne', 'oper'], emoji: '🎭' },
-                { name: 'Konzerte', keywords: ['konzert', 'konzerte', 'concert', 'live musik'], emoji: '🎤' },
-                { name: 'Musik hören', keywords: ['musik hören', 'musikhören', 'music'], emoji: '🎵' },
+                { name: 'Kino/Filme', keywords: ['kino', 'film', 'filme', 'movie', 'cinema'] },
+                { name: 'Serien', keywords: ['serien', 'series', 'netflix', 'streaming'] },
+                { name: 'Museum', keywords: ['museum', 'ausstellung', 'galerie'] },
+                { name: 'Theater', keywords: ['theater', 'schauspiel', 'bühne', 'oper'] },
+                { name: 'Konzerte', keywords: ['konzert', 'konzerte', 'concert', 'live musik'] },
+                { name: 'Musik hören', keywords: ['musik hören', 'musikhören', 'music'] },
 
                 // SOZIAL (5 Kategorien)
-                { name: 'Freunde treffen', keywords: ['freunde treffen', 'freunde', 'freundinnen', 'socializing'], emoji: '👥' },
-                { name: 'Feiern/Ausgehen', keywords: ['feiern', 'party', 'ausgehen', 'clubbing', 'tanzen gehen'], emoji: '🎉' },
-                { name: 'Café', keywords: ['café', 'cafe', 'kaffee', 'coffee'], emoji: '☕' },
-                { name: 'Essen gehen', keywords: ['essen gehen', 'restaurant', 'dining'], emoji: '🍽️' },
-                { name: 'Bars', keywords: ['bar', 'bars', 'kneipe', 'pub'], emoji: '🍺' },
+                { name: 'Freunde treffen', keywords: ['freunde treffen', 'freunde', 'freundinnen', 'socializing'] },
+                { name: 'Feiern/Ausgehen', keywords: ['feiern', 'party', 'ausgehen', 'clubbing', 'tanzen gehen'] },
+                { name: 'Café', keywords: ['café', 'cafe', 'kaffee', 'coffee'] },
+                { name: 'Essen gehen', keywords: ['essen gehen', 'restaurant', 'dining'] },
+                { name: 'Bars', keywords: ['bar', 'bars', 'kneipe', 'pub'] },
 
                 // KREATIV (7 Kategorien)
-                { name: 'Kochen', keywords: ['kochen', 'cooking', 'kulinarik', 'backen'], emoji: '🍳' },
-                { name: 'Backen', keywords: ['backen', 'baking', 'kuchen'], emoji: '🧁' },
-                { name: 'Zeichnen/Malen', keywords: ['zeichnen', 'malen', 'drawing', 'painting', 'kunst'], emoji: '🎨' },
-                { name: 'Fotografie', keywords: ['fotografie', 'fotografieren', 'photography', 'fotos'], emoji: '📷' },
-                { name: 'Schreiben', keywords: ['schreiben', 'writing', 'texten', 'bloggen'], emoji: '✍️' },
-                { name: 'Handwerk', keywords: ['handwerk', 'basteln', 'diy', 'crafting'], emoji: '🔨' },
-                { name: 'Nähen/Stricken', keywords: ['nähen', 'stricken', 'häkeln', 'sewing'], emoji: '🧵' },
+                { name: 'Kochen', keywords: ['kochen', 'cooking', 'kulinarik', 'backen'] },
+                { name: 'Backen', keywords: ['backen', 'baking', 'kuchen'] },
+                { name: 'Zeichnen/Malen', keywords: ['zeichnen', 'malen', 'drawing', 'painting', 'kunst'] },
+                { name: 'Fotografie', keywords: ['fotografie', 'fotografieren', 'photography', 'fotos'] },
+                { name: 'Schreiben', keywords: ['schreiben', 'writing', 'texten', 'bloggen'] },
+                { name: 'Handwerk', keywords: ['handwerk', 'basteln', 'diy', 'crafting'] },
+                { name: 'Nähen/Stricken', keywords: ['nähen', 'stricken', 'häkeln', 'sewing'] },
 
                 // WISSEN & BILDUNG (3 Kategorien)
-                { name: 'Lesen', keywords: ['lesen', 'bücher', 'book', 'reading', 'literatur'], emoji: '📚' },
-                { name: 'Lernen', keywords: ['lernen', 'learning', 'studieren', 'weiterbildung'], emoji: '📖' },
-                { name: 'Podcasts', keywords: ['podcast', 'podcasts', 'hörbuch', 'audiobook'], emoji: '🎧' },
+                { name: 'Lesen', keywords: ['lesen', 'bücher', 'book', 'reading', 'literatur'] },
+                { name: 'Lernen', keywords: ['lernen', 'learning', 'studieren', 'weiterbildung'] },
+                { name: 'Podcasts', keywords: ['podcast', 'podcasts', 'hörbuch', 'audiobook'] },
 
                 // NATUR (4 Kategorien)
-                { name: 'Reisen', keywords: ['reisen', 'travel', 'urlaub', 'vacation'], emoji: '✈️' },
-                { name: 'Natur', keywords: ['natur', 'nature', 'draußen', 'outdoor'], emoji: '🌳' },
-                { name: 'Garten', keywords: ['garten', 'gardening', 'pflanzen', 'gärtnern'], emoji: '🌱' },
-                { name: 'Tiere', keywords: ['tiere', 'haustiere', 'pets', 'animals'], emoji: '🐾' },
+                { name: 'Reisen', keywords: ['reisen', 'travel', 'urlaub', 'vacation'] },
+                { name: 'Natur', keywords: ['natur', 'nature', 'draußen', 'outdoor'] },
+                { name: 'Garten', keywords: ['garten', 'gardening', 'pflanzen', 'gärtnern'] },
+                { name: 'Tiere', keywords: ['tiere', 'haustiere', 'pets', 'animals'] },
 
                 // SPIELE (3 Kategorien)
-                { name: 'Brettspiele', keywords: ['brettspiel', 'brettspiele', 'boardgames', 'spieleabend'], emoji: '🎲' },
-                { name: 'Gaming', keywords: ['gaming', 'videospiele', 'zocken', 'games'], emoji: '🎮' },
-                { name: 'Sport schauen', keywords: ['sport schauen', 'fußball schauen', 'watching sports'], emoji: '📺' },
+                { name: 'Brettspiele', keywords: ['brettspiel', 'brettspiele', 'boardgames', 'spieleabend'] },
+                { name: 'Gaming', keywords: ['gaming', 'videospiele', 'zocken', 'games'] },
+                { name: 'Sport schauen', keywords: ['sport schauen', 'fußball schauen', 'watching sports'] },
 
                 // TECHNOLOGIE (1 Kategorie)
-                { name: 'Tech/IT', keywords: ['tech', 'technologie', 'it', 'computer', 'programmieren'], emoji: '💻' },
+                { name: 'Tech/IT', keywords: ['tech', 'technologie', 'it', 'computer', 'programmieren'] },
 
                 // DISKUSSION & AUSTAUSCH (1 Kategorie)
-                { name: 'Diskutieren', keywords: ['diskutieren', 'debattieren', 'politik', 'philosophie'], emoji: '💬' }
+                { name: 'Diskutieren', keywords: ['diskutieren', 'debattieren', 'politik', 'philosophie'] }
             ];
 
 
@@ -13915,10 +13934,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
                 // Wenn beide die Kategorie haben, füge sie hinzu
                 if (found1 && found2) {
-                    matchedCategories.push({
-                        name: category.name,
-                        emoji: category.emoji
-                    });
+                    matchedCategories.push({ name: category.name });
                 }
             });
 
@@ -13936,44 +13952,29 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 });
 
                 if (similar.length > 0) {
-                    return `Ähnliche Interessen: ${similar.slice(0, 2).join(', ')}! Gute Basis 😊`;
+                    return `Ähnliche Interessen: ${similar.slice(0, 2).join(', ')}! Gute Basis`;
                 }
 
-                return 'Verschiedene Hobbys - perfekt um Neues zu entdecken! 🌟';
+                return 'Verschiedene Hobbys - perfekt um Neues zu entdecken!';
             }
 
             // Erstelle ausgefeilten Text basierend auf Anzahl der Übereinstimmungen
             if (matchedCategories.length === 1) {
                 const cat = matchedCategories[0];
-                return `Gemeinsames Hobby: ${cat.name}! ${cat.emoji} Das verbindet sofort!`;
+                return `Gemeinsames Hobby: ${cat.name}! Das verbindet sofort`;
             } else if (matchedCategories.length === 2) {
                 const names = matchedCategories.map(c => c.name).join(' & ');
-                const emojis = matchedCategories.map(c => c.emoji).join(' ');
-                return `${names}! ${emojis} Tolle Basis für Freundschaft!`;
+                return `${names}! Tolle Basis für Freundschaft`;
             } else if (matchedCategories.length === 3) {
                 const names = matchedCategories.map(c => c.name).join(', ');
-                const emojis = matchedCategories.map(c => c.emoji).join(' ');
-                return `3 gemeinsame Hobbys: ${names}! ${emojis} Ihr werdet viel Spaß haben!`;
+                return `3 gemeinsame Hobbys: ${names}! Ihr werdet viel Spaß haben`;
             } else if (matchedCategories.length <= 5) {
                 const names = matchedCategories.slice(0, 3).map(c => c.name).join(', ');
-                const emojis = matchedCategories.slice(0, 5).map(c => c.emoji).join(' ');
-                return `${matchedCategories.length} gemeinsame Hobbys! ${names} & mehr! ${emojis} Perfektes Match!`;
+                return `${matchedCategories.length} gemeinsame Hobbys! ${names} & mehr! Perfektes Match`;
             } else {
                 // Viele Übereinstimmungen
-                const sportCount = matchedCategories.filter(c => ['💪', '⚽', '🥾', '🚶', '🏊', '🧘', '🏃', '🚴', '💃', '🧗', '🏐'].includes(c.emoji)).length;
-                const cultureCount = matchedCategories.filter(c => ['🎬', '📺', '🏛️', '🎭', '🎤', '🎵'].includes(c.emoji)).length;
-                const socialCount = matchedCategories.filter(c => ['👥', '🎉', '☕', '🍽️', '🍺'].includes(c.emoji)).length;
-
-                let summary = `${matchedCategories.length} gemeinsame Hobbys! `;
-
-                if (sportCount >= 3) summary += `Besonders: Sport & Bewegung! 💪 `;
-                if (cultureCount >= 2) summary += `Kulturliebhaber! 🎭 `;
-                if (socialCount >= 2) summary += `Soziale Butterflies! 🎉 `;
-
                 const topHobbies = matchedCategories.slice(0, 3).map(c => c.name).join(', ');
-                const emojis = matchedCategories.slice(0, 6).map(c => c.emoji).join(' ');
-
-                return `${summary}(z.B. ${topHobbies} & mehr) ${emojis} - Traumhaftes Match!`;
+                return `${matchedCategories.length} gemeinsame Hobbys! (z.B. ${topHobbies} & mehr) - Traumhaftes Match`;
             }
         }
 
@@ -13989,81 +13990,81 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             // Analysiere Präferenzen, nicht tatsächliches Alter
             const p1 = pref1.toLowerCase();
             const p2 = pref2.toLowerCase();
-            
-            if ((p1.includes('10') && p2.includes('10')) || 
+
+            if ((p1.includes('10') && p2.includes('10')) ||
                 (p1.includes('egal') && p2.includes('egal'))) {
-                return 'Ihr seid beide offen für verschiedene Altersgruppen! 🤗';
+                return 'Beide offen für verschiedene Altersgruppen!';
             }
-            
+
             if (p1.includes('egal') || p2.includes('egal')) {
-                return 'Einer ist sehr flexibel beim Alter - das passt! ✨';
+                return 'Einer ist sehr flexibel beim Alter - das passt!';
             }
-            
-            return 'Eure Altersvorstellungen ergänzen sich gut 😊';
+
+            return 'Altersvorstellungen ergänzen sich gut';
         }
 
         function analyzeLanguageCompatibilityImproved(lang1, lang2) {
             const l1 = lang1.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 1);
             const l2 = lang2.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 1);
-            
-            console.log(`🗣️ Sprachen-Analyse: "${l1}" vs "${l2}"`);
-            
+
+            console.log(`Sprachen-Analyse: "${l1}" vs "${l2}"`);
+
             // Suche nach gemeinsamen Sprachen
-            const commonLanguages = l1.filter(lang => 
-                l2.some(lang2 => 
-                    lang.includes(lang2) || lang2.includes(lang) || 
+            const commonLanguages = l1.filter(lang =>
+                l2.some(lang2 =>
+                    lang.includes(lang2) || lang2.includes(lang) ||
                     (lang.includes('deutsch') && lang2.includes('deutsch'))
                 )
             );
-            
+
             if (commonLanguages.length > 0) {
-                return `Gemeinsame Sprache: ${commonLanguages[0]}! Das erleichtert die Kommunikation 🗣️`;
+                return `Gemeinsame Sprache: ${commonLanguages[0]}! Das erleichtert die Kommunikation`;
             }
-            
+
             // Prüfe auf Lern-Möglichkeiten
             if (l1.some(l => l.includes('deutsch')) && l2.some(l => !l.includes('deutsch'))) {
-                return 'Perfekt für Deutsch-Praxis und kulturellen Austausch! 🌍';
+                return 'Perfekt für Deutsch-Praxis und kulturellen Austausch!';
             }
-            
+
             if (l2.some(l => l.includes('deutsch')) && l1.some(l => !l.includes('deutsch'))) {
-                return 'Tolle Gelegenheit für Sprachpraxis und neue Kulturen! 🌍';
+                return 'Tolle Gelegenheit für Sprachpraxis und neue Kulturen!';
             }
-            
-            return 'Verschiedene Sprachen - perfekt zum Voneinander-Lernen! 🌎';
+
+            return 'Verschiedene Sprachen - perfekt zum Voneinander-Lernen!';
         }
 
         function analyzePLZCompatibility(plz1, plz2) {
             const num1 = extractNumber(plz1);
             const num2 = extractNumber(plz2);
-            
+
             if (num1 && num2) {
-                if (num1 === num2) return 'Gleiche PLZ - ihr seid quasi Nachbarn! 🏠';
-                
+                if (num1 === num2) return 'Gleiche PLZ - ihr seid quasi Nachbarn!';
+
                 const diff = Math.abs(num1 - num2);
-                if (diff < 100) return 'Sehr nah beieinander - kurze Wege! 🚶‍♀️';
-                if (diff < 1000) return 'Gute Erreichbarkeit mit ÖPNV! 🚋';
-                if (diff < 10000) return 'Gleiche Region - das ist praktisch! 📍';
+                if (diff < 100) return 'Sehr nah beieinander - kurze Wege!';
+                if (diff < 1000) return 'Gute Erreichbarkeit mit ÖPNV!';
+                if (diff < 10000) return 'Gleiche Region - das ist praktisch!';
             }
-            
-            return 'Verschiedene Gegenden - könnt euch eure Kieze zeigen! 🗺️';
+
+            return 'Verschiedene Gegenden - könnt euch eure Kieze zeigen!';
         }
 
         function analyzeFriendshipValues(values1, values2) {
             const v1 = values1.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
             const v2 = values2.toLowerCase().split(/[,;]/).map(s => s.trim()).filter(s => s.length > 2);
-            
-            console.log(`💝 Freundschafts-Analyse: "${v1}" vs "${v2}"`);
-            
+
+            console.log(`Freundschafts-Analyse: "${v1}" vs "${v2}"`);
+
             // Suche nach gemeinsamen Werten
-            const commonValues = v1.filter(val => 
+            const commonValues = v1.filter(val =>
                 v2.some(val2 => val.includes(val2) || val2.includes(val) || val === val2)
             );
-            
+
             if (commonValues.length > 0) {
                 const mainValue = commonValues[0];
-                return `Gemeinsamer Wert: ${mainValue}! Das ist eine starke Basis 💝`;
+                return `Gemeinsamer Wert: ${mainValue}! Das ist eine starke Basis`;
             }
-            
+
             // Prüfe auf ergänzende Werte
             const complementaryPairs = [
                 ['ehrlichkeit', 'vertrauen'],
@@ -14071,41 +14072,48 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 ['treue', 'loyalität'],
                 ['respekt', 'toleranz']
             ];
-            
+
             for (const [val1, val2] of complementaryPairs) {
                 if (v1.some(v => v.includes(val1)) && v2.some(v => v.includes(val2))) {
-                    return `${val1} + ${val2} - das ergänzt sich perfekt! 🤝`;
+                    return `${val1} + ${val2} - das ergänzt sich perfekt!`;
                 }
             }
-            
-            return 'Verschiedene Werte bereichern Freundschaften! 🌟';
+
+            return 'Verschiedene Werte bereichern Freundschaften!';
         }
 
         function getDifferenceTextImproved(question, name1, name2, answer1, answer2) {
             const q = question.toLowerCase();
-            
-            // Spezifische Unterschieds-Texte
+
+            // Bei sehr langen Antworten (>150 Zeichen) oder unsinnigen Inhalten: leer lassen
+            if (answer1.length > 150 || answer2.length > 150) {
+                return '';
+            }
+
+            // Spezifische Unterschieds-Texte nur für kurze, sinnvolle Antworten
             if (q.includes('beruf') || q.includes('arbeit')) {
-                return `${name1}: ${answer1} | ${name2}: ${answer2} - perfekt für neue Perspektiven! 💼`;
+                if (answer1.length < 50 && answer2.length < 50) {
+                    return 'Verschiedene berufliche Wege - unterschiedliche Perspektiven';
+                }
+                return '';
             }
-            
+
             if (q.includes('studium') || q.includes('ausbildung')) {
-                return 'Verschiedene Bildungswege - viel zu erzählen! 🎓';
+                return 'Verschiedene Bildungswege - viel zu erzählen!';
             }
-            
+
             if (q.includes('geboren') || q.includes('herkunft')) {
-                return 'Verschiedene Hintergründe - perfekt für kulturellen Austausch! 🌍';
+                return 'Verschiedene Hintergründe - perfekt für kulturellen Austausch!';
             }
-            
-            // Motivierende Standard-Texte
+
+            // Für andere Felder: Neutrale, generische Texte
             const encouragingTexts = [
-                'Unterschiede machen Freundschaften spannend! ✨',
-                'Perfekt zum Voneinander-Lernen! 🤝', 
-                'Verschiedene Perspektiven bereichern! 🌟',
-                'Das wird sicher interessant! 💭',
-                'Gegensätze können sich perfekt ergänzen! 😊'
+                'Unterschiede machen Freundschaften spannend!',
+                'Perfekt zum Voneinander-Lernen!',
+                'Verschiedene Perspektiven bereichern!',
+                'Gegensätze können sich gut ergänzen!'
             ];
-            
+
             const index = (question.length + answer1.length + answer2.length) % encouragingTexts.length;
             return encouragingTexts[index];
         }
@@ -14136,51 +14144,62 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         function analyzeDistancePreferences(dist1, dist2) {
             const d1 = dist1.toLowerCase();
             const d2 = dist2.toLowerCase();
-            
+
             if (d1 === d2) {
-                return `Identische Anreise-Vorstellungen: ${dist1}! 🎯`;
+                return `Identische Anreise-Vorstellungen: ${dist1}!`;
             }
-            
+
             if ((d1.includes('stunde') && d2.includes('stunde')) ||
                 (d1.includes('30') && d2.includes('30'))) {
-                return 'Ähnliche Entfernungsvorstellungen - das passt! 🚋';
+                return 'Ähnliche Entfernungsvorstellungen - das passt!';
             }
-            
-            return 'Unterschiedliche Anreise-Präferenzen - Kompromisse sind möglich! 🗺️';
+
+            return 'Unterschiedliche Anreise-Präferenzen - Kompromisse sind möglich!';
         }
 
         function getExactMatchTextImproved(question, answer) {
             const q = question.toLowerCase();
             const a = answer.toLowerCase();
-            
+
+            // Bei sehr langen Antworten: leer lassen
+            if (answer.length > 100) {
+                return '';
+            }
+
             if (q.includes('hobby') || q.includes('interesse')) {
-                return `Gemeinsames Interesse: ${answer}! Das verbindet 🎯`;
+                if (answer.length < 40) {
+                    return `Gemeinsames Interesse: ${answer}! Das verbindet`;
+                }
+                return 'Gemeinsame Interessen - das verbindet!';
             }
             if (q.includes('sprache')) {
-                return `Perfekt - ihr sprecht beide: ${answer}! 🗣️`;
+                return `Perfekt - ihr sprecht beide: ${answer}!`;
             }
             if (q.includes('studium') && a.includes('ja')) {
-                return 'Ihr habt beide studiert - akademischer Austausch! 🎓';
+                return 'Beide mit akademischem Hintergrund - perfekt für Austausch!';
             }
             if (a.includes('ja') || a.includes('gerne')) {
-                return `Ihr seid euch einig: ${answer}! ✨`;
+                return `Ihr seid euch einig: ${answer}!`;
             }
-            
-            return `Identisch: ${answer} - das passt perfekt! 😊`;
+
+            if (answer.length < 50) {
+                return `Identisch: ${answer} - das passt perfekt!`;
+            }
+            return 'Identische Antworten - das passt!';
         }
 
         function getSimilarMatchTextImproved(question, answer1, answer2, similarity) {
             const q = question.toLowerCase();
             const simPercent = Math.round(similarity * 100);
-            
+
             if (q.includes('hobby')) {
-                return `${simPercent}% Übereinstimmung bei Hobbys - perfekte Mischung! 🎨`;
+                return `${simPercent}% Übereinstimmung bei Hobbys - perfekte Mischung!`;
             }
             if (q.includes('sprache')) {
-                return 'Ähnliche Sprachkenntnisse - könnt euch super helfen! 🌍';
+                return 'Ähnliche Sprachkenntnisse - könnt euch super helfen!';
             }
-            
-            return `Das passt gut zusammen (${simPercent}% ähnlich)! 😊`;
+
+            return `Das passt gut zusammen (${simPercent}% ähnlich)!`;
         }
 
         function debugQuestionSimilarity() {
