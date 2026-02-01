@@ -1108,7 +1108,7 @@
                         <div style="text-align: center; margin: 2rem 0;">
                             <p style="margin-bottom: 1rem;">Ziehe diesen Button in deine Lesezeichen-Leiste:</p>
 
-                            <a href="javascript:(function(){try{var d={url:location.href,name:'',fields:[],pageType:'',timestamp:Date.now()};function clearData(){localStorage.removeItem('swaf_batch_profiles');alert('Alle Daten wurden geloescht.');}function createClearButton(){if(document.getElementById('swafClearBtn'))return;var b=document.createElement('button');b.id='swafClearBtn';b.textContent='Daten loeschen';Object.assign(b.style,{position:'fixed',top:'10px',right:'10px',zIndex:999999,background:'%23c00',color:'%23fff',border:'none',padding:'8px 12px',borderRadius:'6px',cursor:'pointer',fontSize:'14px'});b.onclick=clearData;document.body.appendChild(b);}function getFieldValue(container){var hiddenInput=container.querySelector('input[type=hidden]');if(hiddenInput%26%26hiddenInput.value)return hiddenInput.value;var input=container.querySelector('input.o_input,input.o-autocomplete--input,input.o_datepicker_input');if(input%26%26input.value%26%26input.value.trim().length%3E0)return input.value.trim();var select=container.querySelector('select');if(select%26%26select.value)return select.options[select.selectedIndex]?select.options[select.selectedIndex].text.trim():'';var span=container.querySelector('span:not([class])');if(!span)span=container.querySelector('span');if(span%26%26span.textContent%26%26span.textContent.trim().length%3E0){var txt=span.textContent.trim();if(!txt.includes('o_field')%26%26txt!=='false'%26%26txt!=='true')return txt;}var textarea=container.querySelector('textarea');if(textarea%26%26textarea.value)return textarea.value.trim();return'';}function collectData(){if(document.querySelector('.js_question-wrapper')){d.pageType='Interview';var h=document.querySelector('h1')||document.querySelector('.breadcrumb-item.active');d.name=h?(h.textContent||'').trim():'Interview_'+Date.now();document.querySelectorAll('.js_question-wrapper').forEach(function(w){var qEl=w.querySelector('h2 span.text-break')||w.querySelector('h2');if(!qEl)return;var q=qEl.textContent.trim();var ans=[];w.querySelectorAll('input[type=checkbox]:checked,input[type=radio]:checked').forEach(function(inp){var sp=inp.nextElementSibling;if(sp%26%26sp.tagName==='SPAN'){ans.push(sp.textContent.trim());}else{var parent=inp.closest('label');if(parent)ans.push(parent.textContent.trim());}});w.querySelectorAll('select').forEach(function(sel){if(sel.value%26%26sel.selectedIndex%3E0){var opt=sel.options[sel.selectedIndex];if(opt)ans.push(opt.text.trim());}});w.querySelectorAll('textarea').forEach(function(ta){if(ta.disabled||ta.offsetHeight===0||ta.offsetWidth===0)return;var c=ta.value.trim()||ta.textContent.trim();if(c%26%26c.length%3E0)ans.push(c);});w.querySelectorAll('input[type=text],input[type=email],input[type=number],input[type=tel]').forEach(function(inp){var v=inp.value.trim();if(v%26%26v.length%3E0)ans.push(v);});var answer=ans.filter(function(a){return a%26%26a.length%3E0;}).join(', ');if(q%26%26answer)d.fields.push({question:q,answer:answer});});}else{d.pageType='Hauptprofil';var nameEl=document.querySelector('span[name=name]')||document.querySelector('input[name=name]')||document.querySelector('.o_field_char input')||document.querySelector('h1');if(nameEl)d.name=(nameEl.value||nameEl.textContent||nameEl.innerText||'').trim();if(!d.name)d.name='Profil_'+Date.now();var processedFields=new Set();document.querySelectorAll('label.o_form_label[for]').forEach(function(label){var forId=label.getAttribute('for');if(!forId)return;var input=document.getElementById(forId);var container=input?input.closest('div.o_field_widget'):null;if(!container)container=document.querySelector('div.o_field_widget[name=%22'+forId+'%22]');if(container){var fieldName=container.getAttribute('name')||forId;if(processedFields.has(fieldName))return;var q=label.textContent.trim().replace(':','');var a=getFieldValue(container);if(q%26%26a%26%26a.length%3E0%26%26q!==a){d.fields.push({question:q,answer:a});processedFields.add(fieldName);}}});document.querySelectorAll('div.o_field_widget[name]').forEach(function(container){var fieldName=container.getAttribute('name');if(processedFields.has(fieldName))return;var label=document.querySelector('label.o_form_label[for=%22'+fieldName+'%22]');if(!label){var wrap=container.closest('.o_wrap_field');if(wrap)label=wrap.querySelector('label.o_form_label');}if(!label){var row=container.closest('tr');if(row)label=row.querySelector('label.o_form_label');}if(label){var q=label.textContent.trim().replace(':','');var a=getFieldValue(container);if(q%26%26a%26%26a.length%3E0%26%26q!==a){d.fields.push({question:q,answer:a});processedFields.add(fieldName);}}});document.querySelectorAll('.tab-pane tr').forEach(function(row){var label=row.querySelector('label.o_form_label');var field=row.querySelector('div.o_field_widget[name],span.o_field_widget,a.o_field_widget');if(label%26%26field%26%26!field.classList.contains('o_field_empty')){var fieldName=field.getAttribute('name')||'';if(fieldName%26%26processedFields.has(fieldName))return;var q=label.textContent.trim().replace(':','');var a=getFieldValue(field);if(q%26%26a%26%26a.length%3E0%26%26q!==a){d.fields.push({question:q,answer:a});if(fieldName)processedFields.add(fieldName);}}});}var stored=localStorage.getItem('swaf_batch_profiles');var arr=[];if(stored){try{var parsed=JSON.parse(stored);arr=Array.isArray(parsed)?parsed:(parsed.profiles||[]);}catch(e){arr=[];}}arr.push(d);localStorage.setItem('swaf_batch_profiles',JSON.stringify(arr));var clipText='';arr.forEach(function(p){clipText+='SWAF_PROFILE_START'+JSON.stringify(p)+'SWAF_PROFILE_END\n';});if(navigator.clipboard%26%26navigator.clipboard.writeText){navigator.clipboard.writeText(clipText).then(function(){alert('Profil '+arr.length+' gesammelt! Alle '+arr.length+' Profile in Zwischenablage. Jetzt zur App wechseln und STRG+V druecken.');}).catch(function(){alert('Profil '+arr.length+' gesammelt! Zur App wechseln und STRG+V druecken.');});}else{alert('Profil '+arr.length+' gesammelt! Zur App wechseln und STRG+V druecken.');}}createClearButton();collectData();}catch(e){alert('Fehler: '+e.message);}})();" class="simple-bookmarklet" draggable="true">
+                            <a href="javascript:(function(){try{var d={url:location.href,name:'',fields:[],pageType:'',timestamp:Date.now()};function showToast(msg,isError){var t=document.getElementById('swafToast');if(t)t.remove();t=document.createElement('div');t.id='swafToast';t.textContent=msg;Object.assign(t.style,{position:'fixed',top:'60px',right:'10px',zIndex:999999,background:isError?'%23c00':'%232a9d8f',color:'%23fff',padding:'12px 20px',borderRadius:'8px',fontSize:'14px',fontWeight:'bold',boxShadow:'0 4px 12px rgba(0,0,0,0.3)',transition:'opacity 0.3s'});document.body.appendChild(t);setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.remove();},300);},2000);}function clearData(){localStorage.removeItem('swaf_batch_profiles');showToast('Alle Daten geloescht!');}function createClearButton(){if(document.getElementById('swafClearBtn'))return;var b=document.createElement('button');b.id='swafClearBtn';b.textContent='Daten loeschen';Object.assign(b.style,{position:'fixed',top:'10px',right:'10px',zIndex:999999,background:'%23c00',color:'%23fff',border:'none',padding:'8px 12px',borderRadius:'6px',cursor:'pointer',fontSize:'14px'});b.onclick=clearData;document.body.appendChild(b);}function getFieldValue(container){var hiddenInput=container.querySelector('input[type=hidden]');if(hiddenInput%26%26hiddenInput.value)return hiddenInput.value;var input=container.querySelector('input.o_input,input.o-autocomplete--input,input.o_datepicker_input');if(input%26%26input.value%26%26input.value.trim().length%3E0)return input.value.trim();var select=container.querySelector('select');if(select%26%26select.value)return select.options[select.selectedIndex]?select.options[select.selectedIndex].text.trim():'';var span=container.querySelector('span:not([class])');if(!span)span=container.querySelector('span');if(span%26%26span.textContent%26%26span.textContent.trim().length%3E0){var txt=span.textContent.trim();if(!txt.includes('o_field')%26%26txt!=='false'%26%26txt!=='true')return txt;}var textarea=container.querySelector('textarea');if(textarea%26%26textarea.value)return textarea.value.trim();return'';}function collectData(){if(document.querySelector('.js_question-wrapper')){d.pageType='Interview';var h=document.querySelector('h1')||document.querySelector('.breadcrumb-item.active');d.name=h?(h.textContent||'').trim():'Interview_'+Date.now();document.querySelectorAll('.js_question-wrapper').forEach(function(w){var qEl=w.querySelector('h2 span.text-break')||w.querySelector('h2');if(!qEl)return;var q=qEl.textContent.trim();var ans=[];w.querySelectorAll('input[type=checkbox]:checked,input[type=radio]:checked').forEach(function(inp){var sp=inp.nextElementSibling;if(sp%26%26sp.tagName==='SPAN'){ans.push(sp.textContent.trim());}else{var parent=inp.closest('label');if(parent)ans.push(parent.textContent.trim());}});w.querySelectorAll('select').forEach(function(sel){if(sel.value%26%26sel.selectedIndex%3E0){var opt=sel.options[sel.selectedIndex];if(opt)ans.push(opt.text.trim());}});w.querySelectorAll('textarea').forEach(function(ta){if(ta.disabled||ta.offsetHeight===0||ta.offsetWidth===0)return;var c=ta.value.trim()||ta.textContent.trim();if(c%26%26c.length%3E0)ans.push(c);});w.querySelectorAll('input[type=text],input[type=email],input[type=number],input[type=tel]').forEach(function(inp){var v=inp.value.trim();if(v%26%26v.length%3E0)ans.push(v);});var answer=ans.filter(function(a){return a%26%26a.length%3E0;}).join(', ');if(q%26%26answer)d.fields.push({question:q,answer:answer});});}else{d.pageType='Hauptprofil';var nameEl=document.querySelector('span[name=name]')||document.querySelector('input[name=name]')||document.querySelector('.o_field_char input')||document.querySelector('h1');if(nameEl)d.name=(nameEl.value||nameEl.textContent||nameEl.innerText||'').trim();if(!d.name)d.name='Profil_'+Date.now();var processedFields=new Set();document.querySelectorAll('label.o_form_label[for]').forEach(function(label){var forId=label.getAttribute('for');if(!forId)return;var input=document.getElementById(forId);var container=input?input.closest('div.o_field_widget'):null;if(!container)container=document.querySelector('div.o_field_widget[name=%22'+forId+'%22]');if(container){var fieldName=container.getAttribute('name')||forId;if(processedFields.has(fieldName))return;var q=label.textContent.trim().replace(':','');var a=getFieldValue(container);if(q%26%26a%26%26a.length%3E0%26%26q!==a){d.fields.push({question:q,answer:a});processedFields.add(fieldName);}}});document.querySelectorAll('div.o_field_widget[name]').forEach(function(container){var fieldName=container.getAttribute('name');if(processedFields.has(fieldName))return;var label=document.querySelector('label.o_form_label[for=%22'+fieldName+'%22]');if(!label){var wrap=container.closest('.o_wrap_field');if(wrap)label=wrap.querySelector('label.o_form_label');}if(!label){var row=container.closest('tr');if(row)label=row.querySelector('label.o_form_label');}if(label){var q=label.textContent.trim().replace(':','');var a=getFieldValue(container);if(q%26%26a%26%26a.length%3E0%26%26q!==a){d.fields.push({question:q,answer:a});processedFields.add(fieldName);}}});document.querySelectorAll('.tab-pane tr').forEach(function(row){var label=row.querySelector('label.o_form_label');var field=row.querySelector('div.o_field_widget[name],span.o_field_widget,a.o_field_widget');if(label%26%26field%26%26!field.classList.contains('o_field_empty')){var fieldName=field.getAttribute('name')||'';if(fieldName%26%26processedFields.has(fieldName))return;var q=label.textContent.trim().replace(':','');var a=getFieldValue(field);if(q%26%26a%26%26a.length%3E0%26%26q!==a){d.fields.push({question:q,answer:a});if(fieldName)processedFields.add(fieldName);}}});}var stored=localStorage.getItem('swaf_batch_profiles');var arr=[];if(stored){try{var parsed=JSON.parse(stored);arr=Array.isArray(parsed)?parsed:(parsed.profiles||[]);}catch(e){arr=[];}}arr.push(d);localStorage.setItem('swaf_batch_profiles',JSON.stringify(arr));var clipText='';arr.forEach(function(p){clipText+='SWAF_PROFILE_START'+JSON.stringify(p)+'SWAF_PROFILE_END\n';});if(navigator.clipboard%26%26navigator.clipboard.writeText){navigator.clipboard.writeText(clipText).then(function(){showToast(arr.length+' Profile gesammelt');}).catch(function(){showToast(arr.length+' Profile gesammelt');});}else{showToast(arr.length+' Profile gesammelt');}}createClearButton();collectData();}catch(e){showToast('Fehler: '+e.message,true);}})();" class="simple-bookmarklet" draggable="true">
                                 SwaF Sammler (Batch)
                             </a>
 
@@ -12534,12 +12534,26 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
         function analyzeBothAnswersIntelligently(question, name1, name2, answer1, answer2) {
             const q = question.toLowerCase();
-            
+
             console.log(`🧠 Detaillierte Analyse für: "${question}"`);
             console.log(`📝 Antworten: "${answer1}" vs "${answer2}"`);
-            
+
+            // Ignoriere leere oder nicht-aussagekräftige Antworten
+            const emptyAnswers = ['übersprungen', 'keine angabe', 'k.a.', 'n/a', '-', ''];
+            const isEmptyAnswer = (ans) => emptyAnswers.some(empty => ans.toLowerCase().trim() === empty);
+
+            if (isEmptyAnswer(answer1) || isEmptyAnswer(answer2)) {
+                return ''; // Keine Gemeinsamkeit anzeigen
+            }
+
             // 1. EXAKTE ÜBEREINSTIMMUNGEN zuerst prüfen
             if (answer1.toLowerCase().trim() === answer2.toLowerCase().trim()) {
+                // Keine "perfekte Übereinstimmung" für triviale Felder
+                const trivialFields = ['status', 'terminart', 'durchgeführt', 'vermittler', 'region', 'standort', 'gruppe'];
+                if (trivialFields.some(f => q.includes(f))) {
+                    return ''; // Keine Gemeinsamkeit für administrative Felder
+                }
+
                 if (q.includes('wichtig') || q.includes('freundschaft')) {
                     return `Gemeinsamer Wert: ${answer1}! Das ist eine starke Basis für eure Freundschaft`;
                 }
@@ -12549,7 +12563,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 if (q.includes('deutschland') && answer1.toLowerCase().includes('nein')) {
                     return 'Ihr seid beide nicht in Deutschland geboren - ähnliche Erfahrungen!';
                 }
-                return `Identisch: ${answer1} - perfekte Übereinstimmung!`;
+                return '';
             }
             
             // 2. ALTERS-ANALYSE
@@ -13399,24 +13413,36 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             }
 
             // Branchenanalyse (falls Details vorhanden)
+            // WICHTIG: Verwende Wortgrenzen, um false positives zu vermeiden (z.B. 'it' in 'arbeitet')
             const commonBranches = [
-                { keywords: ['it', 'software', 'programm', 'entwickl'], name: 'IT/Tech' },
-                { keywords: ['medizin', 'pflege', 'arzt', 'kranken', 'gesundheit'], name: 'Medizin/Pflege' },
-                { keywords: ['lehrer', 'bildung', 'schule', 'pädagog'], name: 'Bildung' },
-                { keywords: ['ingenieur', 'technik', 'maschinenbau'], name: 'Ingenieurwesen' },
-                { keywords: ['sozial', 'beratung', 'coach'], name: 'Soziales' },
-                { keywords: ['handel', 'verkauf', 'einzelhandel'], name: 'Handel' }
+                { keywords: ['\\bit\\b', '\\bsoftware\\b', 'programm', 'entwickl', 'informatik', 'computer'], name: 'IT/Tech' },
+                { keywords: ['medizin', 'pflege', 'arzt', 'kranken', 'gesundheit', 'klinik', 'praxis'], name: 'Medizin/Pflege' },
+                { keywords: ['lehrer', 'unterricht', 'bildung', 'schule', 'pädagog', 'dozent'], name: 'Bildung/Lehre' },
+                { keywords: ['ingenieur', 'maschinenbau', 'elektro', 'bau'], name: 'Ingenieurwesen' },
+                { keywords: ['sozial', 'beratung', 'coach', 'therapeut'], name: 'Soziales' },
+                { keywords: ['handel', 'verkauf', 'einzelhandel', 'vertrieb'], name: 'Handel' },
+                { keywords: ['kunst', 'künstler', 'musik', 'musiker', 'kreativ', 'design'], name: 'Kunst/Kreativ' },
+                { keywords: ['gastro', 'koch', 'küche', 'restaurant', 'hotel'], name: 'Gastronomie' }
             ];
 
             for (const branch of commonBranches) {
-                const both = branch.keywords.some(kw => occ1.includes(kw)) &&
-                             branch.keywords.some(kw => occ2.includes(kw));
+                const matchesBranch = (text, keywords) => {
+                    return keywords.some(kw => {
+                        if (kw.startsWith('\\b')) {
+                            // Regex mit Wortgrenzen
+                            return new RegExp(kw, 'i').test(text);
+                        }
+                        return text.includes(kw);
+                    });
+                };
+
+                const both = matchesBranch(occ1, branch.keywords) && matchesBranch(occ2, branch.keywords);
                 if (both) {
                     return `Beide im Bereich ${branch.name} - gemeinsame Berufswelt!`;
                 }
             }
 
-            return 'Verschiedene berufliche Wege - viel Neues voneinander zu lernen!';
+            return 'Unterschiedliche Wege - viel Neues voneinander zu lernen!';
         }
 
         function analyzeEducationIntelligently(edu1, edu2) {
@@ -14102,39 +14128,19 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         }
 
         function getDifferenceTextImproved(question, name1, name2, answer1, answer2) {
+            // Generische "ermutigende" Texte werden NICHT mehr angezeigt
+            // Stattdessen: Nur bei wirklichen Gemeinsamkeiten einen Text zeigen
+            // Diese Funktion sollte nur als Fallback aufgerufen werden und gibt meist leer zurück
+
             const q = question.toLowerCase();
 
-            // Bei sehr langen Antworten (>150 Zeichen) oder unsinnigen Inhalten: leer lassen
-            if (answer1.length > 150 || answer2.length > 150) {
+            // Bei sehr langen Antworten: leer lassen
+            if (answer1.length > 100 || answer2.length > 100) {
                 return '';
             }
 
-            // Spezifische Unterschieds-Texte nur für kurze, sinnvolle Antworten
-            if (q.includes('beruf') || q.includes('arbeit')) {
-                if (answer1.length < 50 && answer2.length < 50) {
-                    return 'Verschiedene berufliche Wege - unterschiedliche Perspektiven';
-                }
-                return '';
-            }
-
-            if (q.includes('studium') || q.includes('ausbildung')) {
-                return 'Verschiedene Bildungswege - viel zu erzählen!';
-            }
-
-            if (q.includes('geboren') || q.includes('herkunft')) {
-                return 'Verschiedene Hintergründe - perfekt für kulturellen Austausch!';
-            }
-
-            // Für andere Felder: Neutrale, generische Texte
-            const encouragingTexts = [
-                'Unterschiede machen Freundschaften spannend!',
-                'Perfekt zum Voneinander-Lernen!',
-                'Verschiedene Perspektiven bereichern!',
-                'Gegensätze können sich gut ergänzen!'
-            ];
-
-            const index = (question.length + answer1.length + answer2.length) % encouragingTexts.length;
-            return encouragingTexts[index];
+            // Keine generischen Texte mehr - nur spezifische Analysen
+            return '';
         }
 
         function splitAndNormalize(text) {
