@@ -3124,15 +3124,26 @@
             }
         }
 
+        function normalizeNameForGrouping(name) {
+            if (!name) return '';
+            // Entferne Klammern und deren Inhalt
+            let normalized = name.replace(/\s*\(.*?\)\s*/g, '').trim();
+            // Entferne Interview-Präfixe (deutsch)
+            normalized = normalized.replace(/^(Aufnahmegespräch|Interview\s+mit|Interview)\s+/i, '').trim();
+            // Entferne Interview-Suffixe
+            normalized = normalized.replace(/\s+(Aufnahmegespräch|Interview)$/i, '').trim();
+            return normalized;
+        }
+
         function countUniquePersons(profiles) {
             const names = new Set();
             profiles.forEach(p => {
-                const baseName = p.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+                const baseName = normalizeNameForGrouping(p.name);
                 names.add(baseName);
             });
             return names.size;
         }
-        
+
         function transferBatchToClipboard() {
             const batchJSON = localStorage.getItem('swaf_batch_profiles');
             
@@ -3217,26 +3228,17 @@
             }
         }
         
-        function countUniquePersons(profiles) {
-            const names = new Set();
-            profiles.forEach(p => {
-                const baseName = p.name.replace(/\s*\(.*?\)\s*/g, '').trim();
-                names.add(baseName);
-            });
-            return names.size;
-        }
-
         function importBatchProfiles(batchProfiles) {
             console.log('📥 Importiere Batch:', batchProfiles.length, 'Profile');
-            
+
             let imported = 0;
             let merged = 0;
             let skipped = 0;
-            
-            // Gruppiere Profile nach Person (Name ohne Klammern)
+
+            // Gruppiere Profile nach Person (normalisierter Name)
             const personGroups = {};
             batchProfiles.forEach(profile => {
-                const baseName = profile.name.replace(/\s*\(.*?\)\s*/g, '').trim();
+                const baseName = normalizeNameForGrouping(profile.name);
                 if (!personGroups[baseName]) {
                     personGroups[baseName] = [];
                 }
