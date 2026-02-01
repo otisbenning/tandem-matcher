@@ -4992,15 +4992,19 @@
                 const stars = '⭐'.repeat(suggestion.quality);
                 const reasons = suggestion.details.reasons || [];
 
-                // Erstelle vollständigen Profil-Vergleich mit ALLEN Feldern
+                // Erstelle Profil-Vergleich (ohne administrative Felder)
                 // Sammle alle eindeutigen Fragen aus beiden Profilen
                 const allQuestions = new Map();
                 suggestion.profile1.fields.forEach(field => {
+                    // Filtere administrative Felder aus
+                    if (shouldExcludeFromMatching(field.question)) return;
                     if (!allQuestions.has(field.question)) {
                         allQuestions.set(field.question, { p1: field.answer, p2: null });
                     }
                 });
                 suggestion.profile2.fields.forEach(field => {
+                    // Filtere administrative Felder aus
+                    if (shouldExcludeFromMatching(field.question)) return;
                     if (allQuestions.has(field.question)) {
                         allQuestions.get(field.question).p2 = field.answer;
                     } else {
@@ -6437,22 +6441,10 @@
             sortedQuestions.forEach(question => {
                 const normalizedQuestion = normalizeQuestion(question);
                 
-                // Überspringe Fragen, die nicht für Matching geeignet sind
+                // Überspringe Fragen, die nicht für Matching geeignet sind (komplett ausblenden)
                 if (shouldExcludeFromMatching(question)) {
-                    console.log(`⏭️ Überspringe Matching für: "${question}" (in Ausschlussliste)`);
-                    
-                    // Füge trotzdem zur Übersicht hinzu, aber ohne Gemeinsamkeiten-Analyse
-                    const field1 = profile1.fields.find(f => normalizeQuestion(f.question) === normalizedQuestion);
-                    const field2 = profile2.fields.find(f => normalizeQuestion(f.question) === normalizedQuestion);
-                    const displayQuestion = field1?.question || field2?.question || question;
-                    
-                    commonalities.push({
-                        question: displayQuestion,
-                        answer1: field1 ? field1.answer : '',
-                        answer2: field2 ? field2.answer : '',
-                        commonality: '' // Bewusst leer für ausgeschlossene Felder
-                    });
-                    return; // Überspringe den Rest der Matching-Logik
+                    console.log(`⏭️ Überspringe komplett: "${question}" (administrative Felder)`);
+                    return; // Nicht in der Tabelle anzeigen
                 }
                 
                 // Finde Felder mit normalisierter Frage (berücksichtigt Variationen)
