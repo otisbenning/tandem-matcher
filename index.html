@@ -3455,46 +3455,49 @@
 
             function isValidQuestion(question, pageType) {
                 const normalized = normalizeQuestion(question);
-                
+
+                // Merged Profile sollten alle Fragen akzeptieren (Interview + Hauptprofil)
+                const isInterviewOrMerged = pageType === 'Interview' || pageType === 'Merged';
+
                 // Blacklist statt Whitelist - nur offensichtlich irrelevante Fragen ausschließen
                 const excludePatterns = [
                     // Technische/System-Felder
                     /^(id|uid|token|csrf|session|cookie)/i,
                     /^(submit|button|hidden|temp)/i,
-                    
+
                     // Leere oder zu kurze Fragen
                     /^.{0,2}$/,
-                    
+
                     // Nur Zahlen oder Sonderzeichen
                     /^[\d\s\-_.,:;!?()[\]{}]+$/,
-                    
+
                     // Offensichtliche Platzhalter
                     /^(test|example|sample|placeholder|dummy)/i,
-                    
+
                     // Admin-Felder
                     /^(admin|moderator|staff|internal)/i
                 ];
-                
+
                 // Prüfe Blacklist
                 if (excludePatterns.some(pattern => pattern.test(normalized))) {
                     console.log(`❌ Frage durch Blacklist ausgeschlossen: "${question}"`);
                     return false;
                 }
-                
-                // Für Interview-Fragen: Akzeptiere alle sinnvollen Fragen
-                if (pageType === 'Interview') {
+
+                // Für Interview/Merged-Fragen: Akzeptiere alle sinnvollen Fragen
+                if (isInterviewOrMerged) {
                     // Akzeptiere Fragen die wie echte Fragen aussehen
                     const looksLikeQuestion = /^.{3,200}$/.test(normalized) && // Angemessene Länge
                                             !/^[\d\s\-_.,:;!?()[\]{}]+$/.test(normalized); // Nicht nur Sonderzeichen
-                    
+
                     if (looksLikeQuestion) {
-                        console.log(`✅ Interview-Frage akzeptiert: "${question}"`);
+                        console.log(`✅ Interview/Merged-Frage akzeptiert: "${question}"`);
                         return true;
                     }
                 }
-                
+
                 // Für Hauptprofile: Verwende die bekannte Liste
-                const validQuestions = pageType === 'Interview' ? validInterviewQuestions : validMainProfileQuestions;
+                const validQuestions = isInterviewOrMerged ? validInterviewQuestions : validMainProfileQuestions;
 
                 const isInWhitelist = validQuestions.some(validQ => {
                     const normalizedValid = normalizeQuestion(validQ);
@@ -3502,14 +3505,14 @@
                         normalized.toLowerCase().includes(normalizedValid.toLowerCase()) ||
                         normalizedValid.toLowerCase().includes(normalized.toLowerCase());
                 });
-                
+
                 if (isInWhitelist) {
                     console.log(`✅ Frage in Whitelist gefunden: "${question}"`);
                     return true;
                 }
-                
+
                 console.log(`❓ Frage nicht in Whitelist, aber möglicherweise gültig: "${question}"`);
-                return pageType === 'Interview'; // Bei Interviews: Im Zweifel akzeptieren
+                return isInterviewOrMerged; // Bei Interviews/Merged: Im Zweifel akzeptieren
             }
 
             data.fields = data.fields.filter(f => {
