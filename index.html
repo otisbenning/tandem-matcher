@@ -1969,32 +1969,32 @@
                 // Namen und IDs
                 'vorname', 'nachname', 'name', 'vollständiger name',
                 'e-mail-adresse', 'e-mail', 'email', 'telefonnummer', 'telefon',
-                'geschlecht', 'gender',
-                
+
                 // Administrative Felder
                 'id', 'user-id', 'teilnehmer-id', 'profil-id',
-                'gruppe', 'vermittler', 'vermittler*in', 'durchgeführt von',
+                'gruppe', 'standort', 'region',
+                'vermittler', 'vermittler*in', 'durchgeführt von',
                 'datum/uhrzeit', 'datum', 'uhrzeit', 'termin', 'terminart',
                 'status', 'bearbeitungsstatus', 'anmeldestatus',
-                
+
                 // System-/Meta-Felder
                 'standort-newsletter', 'newsletter', 'dsgvo', 'einverständnis',
                 'notizen', 'interne notizen', 'bemerkungen admin',
                 'url', 'link', 'portal-link',
-                
+
                 // Bewertungs-/Einschätzungsfelder (subjektiv)
                 'wie wirkt die person auf dich', 'eindruck', 'bewertung',
                 'wie schätzt du ein', 'einschätzung', 'beurteilung',
-                
-                // Prozess-/Workflow-Felder  
+
+                // Prozess-/Workflow-Felder
                 'sind weitere schritte nötig', 'nächste schritte', 'follow-up',
                 'infoabend', 'aufnahmegespräch datum', 'gespräch datum'
             ];
-            
+
             const normalized = question.toLowerCase().trim();
-            
+
             return excludeFromMatching.some(excluded => {
-                return normalized.includes(excluded.toLowerCase()) || 
+                return normalized.includes(excluded.toLowerCase()) ||
                     excluded.toLowerCase().includes(normalized);
             });
         }
@@ -12744,16 +12744,12 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                     name: 'Kino/Filme'
                 },
                 {
-                    keywords: ['serien', 'netflix', 'streaming', 'tv', 'fernsehen'],
-                    name: 'Serien'
+                    keywords: ['serien', 'serien und filme zu hause schauen', 'netflix', 'streaming', 'tv', 'fernsehen', 'zu hause schauen'],
+                    name: 'Serien/Streaming'
                 },
                 {
-                    keywords: ['museum', 'ins museum gehen', 'ausstellungen', 'galerie', 'galerien'],
-                    name: 'Museum/Ausstellungen'
-                },
-                {
-                    keywords: ['theater', 'ins theater gehen', 'schauspiel', 'oper', 'musical'],
-                    name: 'Theater'
+                    keywords: ['museum', 'ins museum gehen', 'ins museum oder theater gehen', 'kultur/museum/theater', 'ausstellungen', 'galerie', 'galerien', 'theater', 'ins theater gehen', 'schauspiel', 'oper', 'musical', 'kultur'],
+                    name: 'Kultur/Museum/Theater'
                 },
                 {
                     keywords: ['konzerte', 'konzert', 'livemusik', 'gigs', 'shows'],
@@ -12808,7 +12804,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                     name: 'Schreiben'
                 },
                 {
-                    keywords: ['handwerk', 'basteln', 'diy', 'werken', 'reparieren'],
+                    keywords: ['handwerk', 'handwerkliche tätigkeiten', 'basteln', 'diy', 'werken', 'reparieren'],
                     name: 'Handwerk/Basteln'
                 },
                 {
@@ -13224,17 +13220,22 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             
             console.log(`🎨 Hobby-Analyse: [${hobbies1.join(', ')}] vs [${hobbies2.join(', ')}]`);
             
-            // Hobby-Synonyme für intelligente Erkennung
+            // Hobby-Synonyme für intelligente Erkennung (Einwander*innen ↔ Locals Mapping)
             const synonymGroups = [
                 ['feiern', 'feiern gehen', 'party', 'ausgehen'],
-                ['kino', 'ins kino gehen', 'filme schauen', 'film'],
-                ['kochen', 'gemeinsam kochen', 'essen zubereiten'],
-                ['museum', 'ins museum gehen', 'kultur', 'ausstellungen'],
-                ['theater', 'ins theater gehen', 'schauspiel'],
+                ['kino', 'ins kino gehen', 'filme schauen', 'film', 'filme'],
+                ['serien', 'serien und filme zu hause schauen', 'netflix', 'streaming', 'fernsehen'],
+                ['kochen', 'gemeinsam kochen', 'essen zubereiten', 'kulinarik'],
+                ['museum', 'ins museum gehen', 'ins museum oder theater gehen', 'kultur/museum/theater', 'ausstellungen', 'galerie'],
+                ['theater', 'ins theater gehen', 'schauspiel', 'oper', 'musical'],
+                ['konzerte', 'konzerte besuchen', 'livemusik', 'musik live'],
                 ['sport', 'fitness', 'training', 'bewegung'],
-                ['musik', 'musikhören', 'konzerte'],
+                ['musik', 'musikhören', 'musik machen', 'instrument'],
                 ['lesen', 'bücher', 'literatur'],
-                ['spazieren', 'wandern', 'natur', 'draußen sein']
+                ['spazieren', 'wandern', 'wandern und natur', 'natur', 'draußen sein'],
+                ['politik', 'politik und gesellschaft', 'über politik und gesellschaft sprechen', 'politische diskussionen'],
+                ['handwerk', 'handwerkliche tätigkeiten', 'basteln', 'diy'],
+                ['brettspiele', 'gesellschaftsspiele', 'gesellschaftsspiele/brettspiele', 'spiele']
             ];
             
             const commonHobbies = [];
@@ -13915,7 +13916,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
                 // KULTUR (6 Kategorien)
                 { name: 'Kino/Filme', keywords: ['kino', 'film', 'filme', 'movie', 'cinema'] },
-                { name: 'Serien', keywords: ['serien', 'series', 'netflix', 'streaming'] },
+                { name: 'Serien/Streaming', keywords: ['serien', 'serien und filme zu hause schauen', 'series', 'netflix', 'streaming', 'zu hause schauen'] },
                 { name: 'Museum', keywords: ['museum', 'ausstellung', 'galerie'] },
                 { name: 'Theater', keywords: ['theater', 'schauspiel', 'bühne', 'oper'] },
                 { name: 'Konzerte', keywords: ['konzert', 'konzerte', 'concert', 'live musik'] },
