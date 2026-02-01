@@ -4588,8 +4588,240 @@
                 plzDistance: null,
                 intercultural: false,
                 genderPreference: null,
-                reasons: []
+                reasons: [],
+                hardFactsFailed: [], // Array für fehlgeschlagene Hard Facts
+                warnings: [] // Warnungen für manuelle Prüfung
             };
+
+            // ==========================================
+            // HARD FACTS - Müssen erfüllt sein für Match
+            // ==========================================
+
+            // HARD FACT 1: Alterspräferenz prüfen
+            const age1Field = profile1.fields.find(f =>
+                f.question.toLowerCase() === 'alter' ||
+                (f.question.toLowerCase().includes('alter') &&
+                 !f.question.toLowerCase().includes('unterschied') &&
+                 !f.question.toLowerCase().includes('groß') &&
+                 !f.question.toLowerCase().includes('präferenz') &&
+                 !f.question.toLowerCase().includes('tandem'))
+            );
+            const age2Field = profile2.fields.find(f =>
+                f.question.toLowerCase() === 'alter' ||
+                (f.question.toLowerCase().includes('alter') &&
+                 !f.question.toLowerCase().includes('unterschied') &&
+                 !f.question.toLowerCase().includes('groß') &&
+                 !f.question.toLowerCase().includes('präferenz') &&
+                 !f.question.toLowerCase().includes('tandem'))
+            );
+
+            // Alterspräferenz-Felder finden (±10, ±5, ±3, älter, jünger, egal)
+            const agePref1Field = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('alter') &&
+                (f.question.toLowerCase().includes('unterschied') ||
+                 f.question.toLowerCase().includes('tandem') ||
+                 f.question.toLowerCase().includes('groß'))
+            );
+            const agePref2Field = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('alter') &&
+                (f.question.toLowerCase().includes('unterschied') ||
+                 f.question.toLowerCase().includes('tandem') ||
+                 f.question.toLowerCase().includes('groß'))
+            );
+
+            if (age1Field && age2Field) {
+                const age1 = parseInt(age1Field.answer) || 0;
+                const age2 = parseInt(age2Field.answer) || 0;
+                const ageDiff = Math.abs(age1 - age2);
+                details.age = { age1, age2 };
+                details.ageDiff = ageDiff;
+
+                // Prüfe Alterspräferenz von Person 1 für Person 2
+                if (agePref1Field) {
+                    const pref1 = agePref1Field.answer.toLowerCase();
+                    let pref1Ok = true;
+
+                    if (pref1.includes('egal')) {
+                        pref1Ok = true;
+                    } else if (pref1.includes('±') || pref1.includes('+/-')) {
+                        // Extrahiere Zahl aus "±10 Jahre", "+/- 5 Jahre", etc.
+                        const match = pref1.match(/(\d+)/);
+                        if (match) {
+                            const allowedDiff = parseInt(match[1]);
+                            pref1Ok = ageDiff <= allowedDiff;
+                        }
+                    } else if (pref1.includes('3 jahre') || pref1 === '3') {
+                        pref1Ok = ageDiff <= 3;
+                    } else if (pref1.includes('5 jahre') || pref1 === '5') {
+                        pref1Ok = ageDiff <= 5;
+                    } else if (pref1.includes('10 jahre') || pref1 === '10') {
+                        pref1Ok = ageDiff <= 10;
+                    } else if (pref1.includes('älter')) {
+                        pref1Ok = age2 > age1;
+                    } else if (pref1.includes('jünger')) {
+                        pref1Ok = age2 < age1;
+                    }
+
+                    if (!pref1Ok) {
+                        details.hardFactsFailed.push(`${profile1.name}: Alterspräferenz "${agePref1Field.answer}" nicht erfüllt (Diff: ${ageDiff} Jahre)`);
+                    }
+                }
+
+                // Prüfe Alterspräferenz von Person 2 für Person 1
+                if (agePref2Field) {
+                    const pref2 = agePref2Field.answer.toLowerCase();
+                    let pref2Ok = true;
+
+                    if (pref2.includes('egal')) {
+                        pref2Ok = true;
+                    } else if (pref2.includes('±') || pref2.includes('+/-')) {
+                        const match = pref2.match(/(\d+)/);
+                        if (match) {
+                            const allowedDiff = parseInt(match[1]);
+                            pref2Ok = ageDiff <= allowedDiff;
+                        }
+                    } else if (pref2.includes('3 jahre') || pref2 === '3') {
+                        pref2Ok = ageDiff <= 3;
+                    } else if (pref2.includes('5 jahre') || pref2 === '5') {
+                        pref2Ok = ageDiff <= 5;
+                    } else if (pref2.includes('10 jahre') || pref2 === '10') {
+                        pref2Ok = ageDiff <= 10;
+                    } else if (pref2.includes('älter')) {
+                        pref2Ok = age1 > age2;
+                    } else if (pref2.includes('jünger')) {
+                        pref2Ok = age1 < age2;
+                    }
+
+                    if (!pref2Ok) {
+                        details.hardFactsFailed.push(`${profile2.name}: Alterspräferenz "${agePref2Field.answer}" nicht erfüllt (Diff: ${ageDiff} Jahre)`);
+                    }
+                }
+            }
+
+            // HARD FACT 2: Geschlechtspräferenz prüfen
+            const genderPref1 = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('geschlecht') &&
+                (f.question.toLowerCase().includes('tandem') || f.question.toLowerCase().includes('partner'))
+            );
+            const genderPref2 = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('geschlecht') &&
+                (f.question.toLowerCase().includes('tandem') || f.question.toLowerCase().includes('partner'))
+            );
+
+            const gender1 = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('geschlecht') &&
+                !f.question.toLowerCase().includes('tandem') &&
+                !f.question.toLowerCase().includes('partner')
+            );
+            const gender2 = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('geschlecht') &&
+                !f.question.toLowerCase().includes('tandem') &&
+                !f.question.toLowerCase().includes('partner')
+            );
+
+            if (gender1 && gender2) {
+                const g1 = gender1.answer.toLowerCase();
+                const g2 = gender2.answer.toLowerCase();
+                details.gender1 = gender1.answer;
+                details.gender2 = gender2.answer;
+
+                // Prüfe ob Person 1's Präferenz zu Person 2's Geschlecht passt
+                if (genderPref1) {
+                    const pref1 = genderPref1.answer.toLowerCase();
+                    details.genderPref1 = genderPref1.answer;
+                    let pref1Ok = true;
+
+                    if (pref1.includes('egal') || pref1.includes('keine')) {
+                        pref1Ok = true;
+                    } else if (pref1.includes('nur frauen') || pref1.includes('frauen*')) {
+                        pref1Ok = g2.includes('weiblich') || g2.includes('frau') || g2.includes('w');
+                    } else if (pref1.includes('nur männer') || pref1.includes('männer*')) {
+                        pref1Ok = g2.includes('männlich') || g2.includes('mann') || g2.includes('m');
+                    } else if (pref1.includes('sonstiges') || pref1.includes('andere')) {
+                        details.warnings.push(`${profile1.name}: Geschlechtspräferenz "${genderPref1.answer}" - manuelle Prüfung`);
+                    }
+
+                    if (!pref1Ok) {
+                        details.hardFactsFailed.push(`${profile1.name}: Geschlechtspräferenz "${genderPref1.answer}" nicht erfüllt`);
+                    }
+                }
+
+                // Prüfe ob Person 2's Präferenz zu Person 1's Geschlecht passt
+                if (genderPref2) {
+                    const pref2 = genderPref2.answer.toLowerCase();
+                    details.genderPref2 = genderPref2.answer;
+                    let pref2Ok = true;
+
+                    if (pref2.includes('egal') || pref2.includes('keine')) {
+                        pref2Ok = true;
+                    } else if (pref2.includes('nur frauen') || pref2.includes('frauen*')) {
+                        pref2Ok = g1.includes('weiblich') || g1.includes('frau') || g1.includes('w');
+                    } else if (pref2.includes('nur männer') || pref2.includes('männer*')) {
+                        pref2Ok = g1.includes('männlich') || g1.includes('mann') || g1.includes('m');
+                    } else if (pref2.includes('sonstiges') || pref2.includes('andere')) {
+                        details.warnings.push(`${profile2.name}: Geschlechtspräferenz "${genderPref2.answer}" - manuelle Prüfung`);
+                    }
+
+                    if (!pref2Ok) {
+                        details.hardFactsFailed.push(`${profile2.name}: Geschlechtspräferenz "${genderPref2.answer}" nicht erfüllt`);
+                    }
+                }
+            }
+
+            // HARD FACT 3: Zeitüberschneidung prüfen
+            const time1Field = profile1.fields.find(f =>
+                f.question.toLowerCase().includes('zeit') &&
+                (f.question.toLowerCase().includes('treffen') || f.question.toLowerCase().includes('tandem'))
+            );
+            const time2Field = profile2.fields.find(f =>
+                f.question.toLowerCase().includes('zeit') &&
+                (f.question.toLowerCase().includes('treffen') || f.question.toLowerCase().includes('tandem'))
+            );
+
+            if (time1Field && time2Field) {
+                const time1 = time1Field.answer.toLowerCase();
+                const time2 = time2Field.answer.toLowerCase();
+
+                // Zeitoptionen
+                const timeOptions = ['morgens', 'mittags', 'nachmittags', 'abends', 'unter der woche', 'wochenende', 'flexibel'];
+
+                // Prüfe auf "sonstiges" mit Kommentar
+                if (time1.includes('sonstiges') || time2.includes('sonstiges')) {
+                    details.warnings.push('Zeitangabe enthält "sonstiges" - manuelle Prüfung erforderlich');
+                }
+
+                // Prüfe ob "flexibel" dabei ist
+                const flexible1 = time1.includes('flexibel');
+                const flexible2 = time2.includes('flexibel');
+
+                if (flexible1 || flexible2) {
+                    // Wenn einer flexibel ist, gibt es immer Überschneidung
+                    details.reasons.push('Flexible Zeiteinteilung');
+                } else {
+                    // Prüfe auf gemeinsame Zeitfenster
+                    const commonTimes = timeOptions.filter(t =>
+                        time1.includes(t) && time2.includes(t)
+                    );
+
+                    if (commonTimes.length === 0) {
+                        details.hardFactsFailed.push('Keine gemeinsamen Zeitfenster gefunden');
+                    } else {
+                        details.reasons.push(`Gemeinsame Zeit: ${commonTimes.join(', ')}`);
+                    }
+                }
+            }
+
+            // Wenn Hard Facts nicht erfüllt sind, Score = 0 zurückgeben
+            if (details.hardFactsFailed.length > 0) {
+                return {
+                    score: 0,
+                    details: details
+                };
+            }
+
+            // ==========================================
+            // SOFT FACTS - Beeinflussen den Match-Score
+            // ==========================================
 
             // 1. PLZ-Distanz (max 3 Punkte - HÖCHSTE PRIORITÄT!)
             maxScore += 3;
@@ -4602,13 +4834,10 @@
                     details.plz1 = plz1;
                     details.plz2 = plz2;
 
-                    // Berechne geschätzte Distanz basierend auf PLZ
                     const plz1First2 = parseInt(plz1.substring(0, 2));
                     const plz2First2 = parseInt(plz2.substring(0, 2));
                     const plzDiff = Math.abs(plz1First2 - plz2First2);
-
-                    // Schätze Distanz (sehr grob)
-                    let estimatedKm = plzDiff * 50; // Ca. 50km pro PLZ-Region-Differenz
+                    let estimatedKm = plzDiff * 50;
 
                     if (plz1 === plz2) {
                         score += 3;
@@ -4639,27 +4868,10 @@
                 }
             }
 
-            // 2. Altersdifferenz (max 2 Punkte)
+            // 2. Alter-Bonus (max 2 Punkte) - je näher, desto besser
             maxScore += 2;
-            const age1Field = profile1.fields.find(f =>
-                f.question.toLowerCase() === 'alter' ||
-                (f.question.toLowerCase().includes('alter') &&
-                 !f.question.toLowerCase().includes('unterschied') &&
-                 !f.question.toLowerCase().includes('groß'))
-            );
-            const age2Field = profile2.fields.find(f =>
-                f.question.toLowerCase() === 'alter' ||
-                (f.question.toLowerCase().includes('alter') &&
-                 !f.question.toLowerCase().includes('unterschied') &&
-                 !f.question.toLowerCase().includes('groß'))
-            );
-            if (age1Field && age2Field) {
-                const age1 = parseInt(age1Field.answer) || 0;
-                const age2 = parseInt(age2Field.answer) || 0;
-                const ageDiff = Math.abs(age1 - age2);
-                details.age = { age1, age2 };
-                details.ageDiff = ageDiff;
-
+            if (details.ageDiff !== null) {
+                const ageDiff = details.ageDiff;
                 if (ageDiff <= 3) {
                     score += 2;
                     details.reasons.push(`Sehr ähnliches Alter (±${ageDiff} Jahre)`);
@@ -4671,47 +4883,19 @@
                     details.reasons.push(`Nahes Alter (±${ageDiff} Jahre)`);
                 } else if (ageDiff <= 15) {
                     score += 1;
-                    details.reasons.push(`Moderate Altersdifferenz (±${ageDiff} Jahre)`);
                 } else if (ageDiff <= 20) {
                     score += 0.5;
-                } else {
-                    details.reasons.push(`Große Altersdifferenz (±${ageDiff} Jahre)`);
                 }
             }
 
-            // 3. Geschlechtspräferenz (max 1 Punkt)
+            // 3. Geschlechtspräferenz erfüllt (Bonus)
             maxScore += 1;
-            const genderPref1 = profile1.fields.find(f =>
-                f.question.toLowerCase().includes('geschlecht') &&
-                (f.question.toLowerCase().includes('tandem') || f.question.toLowerCase().includes('partner'))
-            );
-            const genderPref2 = profile2.fields.find(f =>
-                f.question.toLowerCase().includes('geschlecht') &&
-                (f.question.toLowerCase().includes('tandem') || f.question.toLowerCase().includes('partner'))
-            );
-
-            const gender1 = profile1.fields.find(f => f.question.toLowerCase().includes('geschlecht') && !f.question.toLowerCase().includes('tandem') && !f.question.toLowerCase().includes('partner'));
-            const gender2 = profile2.fields.find(f => f.question.toLowerCase().includes('geschlecht') && !f.question.toLowerCase().includes('tandem') && !f.question.toLowerCase().includes('partner'));
-
-            if (gender1 && gender2 && (genderPref1 || genderPref2)) {
-                const g1 = gender1.answer.toLowerCase();
-                const g2 = gender2.answer.toLowerCase();
-                const pref1 = genderPref1 ? genderPref1.answer.toLowerCase() : 'egal';
-                const pref2 = genderPref2 ? genderPref2.answer.toLowerCase() : 'egal';
-
-                // Prüfe ob Präferenzen erfüllt sind
-                const pref1Match = pref1.includes('egal') || pref1.includes('keine') || pref1.includes(g2);
-                const pref2Match = pref2.includes('egal') || pref2.includes('keine') || pref2.includes(g1);
-
-                if (pref1Match && pref2Match) {
+            if (details.hardFactsFailed.length === 0) {
+                // Wenn keine Hard Facts fehlgeschlagen sind, wurde die Geschlechtspräferenz erfüllt
+                if ((genderPref1 || genderPref2) && gender1 && gender2) {
                     score += 1;
                     details.genderPreference = 'match';
                     details.reasons.push('Geschlechtspräferenz erfüllt');
-                } else if (pref1Match || pref2Match) {
-                    score += 0.5;
-                    details.genderPreference = 'partial';
-                } else {
-                    details.genderPreference = 'mismatch';
                 }
             }
 
