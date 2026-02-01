@@ -3142,7 +3142,9 @@
             // "Mustafa Dökmeci" → "Mustafa", "Cornelius Schöler" → "Cornelius"
             const firstName = normalized.split(/\s+/)[0];
 
-            return firstName || normalized;
+            const result = firstName || normalized;
+            console.log(`🏷️ Normalisierung: "${name}" → "${result}"`);
+            return result;
         }
 
         function countUniquePersons(profiles) {
@@ -3249,13 +3251,15 @@
             const personGroups = {};
             batchProfiles.forEach(profile => {
                 const baseName = normalizeNameForGrouping(profile.name);
+                console.log(`📝 Profil "${profile.name}" (${profile.pageType}) → Gruppe "${baseName}"`);
                 if (!personGroups[baseName]) {
                     personGroups[baseName] = [];
                 }
                 personGroups[baseName].push(profile);
             });
-            
+
             console.log('👥 Gruppiert in', Object.keys(personGroups).length, 'Personen');
+            console.log('👥 Gruppen:', Object.keys(personGroups));
             
             // Verarbeite jede Person
             Object.entries(personGroups).forEach(([baseName, personProfiles]) => {
