@@ -2856,40 +2856,39 @@
         function processClipboardProfileData(text) {
             try {
                 console.log('🔍 Verarbeite Zwischenablage-Daten...');
-                
+
                 const startMarker = 'SWAF_PROFILE_START';
                 const endMarker = 'SWAF_PROFILE_END';
-                
+
                 // Prüfe ob mehrere Profile vorhanden sind
                 const matches = text.match(/SWAF_PROFILE_START(.*?)SWAF_PROFILE_END/gs);
-                
+
                 if (!matches || matches.length === 0) {
                     throw new Error('Keine gültigen SWAF-Profildaten gefunden');
                 }
-                
+
                 console.log(`📦 ${matches.length} Profil(e) gefunden`);
-                
-                let imported = 0;
-                
+
+                // Sammle alle Profile
+                const profiles = [];
                 matches.forEach((match, index) => {
                     try {
                         const jsonStr = match.replace(startMarker, '').replace(endMarker, '');
                         const profileData = JSON.parse(jsonStr);
-                        
-                        console.log(`📥 Importiere Profil ${index + 1}:`, profileData.name);
-                        receiveProfileData(profileData);
-                        imported++;
+                        console.log(`📥 Profil ${index + 1} geparst:`, profileData.name, `(${profileData.pageType})`);
+                        profiles.push(profileData);
                     } catch (err) {
                         console.error(`❌ Fehler bei Profil ${index + 1}:`, err);
                     }
                 });
-                
-                showNotification(
-                    `✅ ${imported} von ${matches.length} Profil(en) erfolgreich importiert!`,
-                    'success',
-                    5000
-                );
-                                
+
+                if (profiles.length === 0) {
+                    throw new Error('Keine Profile konnten geparst werden');
+                }
+
+                // Verwende importBatchProfiles für Gruppierung und Zusammenführung
+                importBatchProfiles(profiles);
+
                 // Leere die Zwischenablage
                 try {
                     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2902,7 +2901,7 @@
                 } catch (e) {
                     console.log('ℹ️ Zwischenablage konnte nicht geleert werden');
                 }
-                
+
             } catch (error) {
                 console.error('❌ Fehler beim Verarbeiten der Profildaten:', error);
                 showDebugClipboardData(text, error.message);
