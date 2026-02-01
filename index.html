@@ -3125,13 +3125,24 @@
 
         function normalizeNameForGrouping(name) {
             if (!name) return '';
-            // Entferne Klammern und deren Inhalt
-            let normalized = name.replace(/\s*\(.*?\)\s*/g, '').trim();
-            // Entferne Interview-Präfixe (deutsch)
-            normalized = normalized.replace(/^(Aufnahmegespräch|Interview\s+mit|Interview)\s+/i, '').trim();
-            // Entferne Interview-Suffixe
-            normalized = normalized.replace(/\s+(Aufnahmegespräch|Interview)$/i, '').trim();
-            return normalized;
+
+            let normalized = name;
+
+            // Wenn Klammern vorhanden sind, extrahiere den Namen daraus
+            // z.B. "Aufnahmegespräch Einwander*innen (Mustafa Dökmeci)" → "Mustafa Dökmeci"
+            const bracketMatch = name.match(/\(([^)]+)\)/);
+            if (bracketMatch && bracketMatch[1]) {
+                normalized = bracketMatch[1].trim();
+            } else {
+                // Keine Klammern - entferne Präfixe
+                normalized = normalized.replace(/^(Aufnahmegespräch\s+\S+|Aufnahmegespräch|Interview\s+mit|Interview)\s+/i, '').trim();
+            }
+
+            // Extrahiere nur den Vornamen für besseren Vergleich
+            // "Mustafa Dökmeci" → "Mustafa", "Cornelius Schöler" → "Cornelius"
+            const firstName = normalized.split(/\s+/)[0];
+
+            return firstName || normalized;
         }
 
         function countUniquePersons(profiles) {
@@ -3321,7 +3332,7 @@
                 5000
             );
 
-            renderProfiles();
+            loadAvailableProfiles();
         }
 
         function receiveProfileData(data) {
