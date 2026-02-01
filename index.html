@@ -12534,12 +12534,26 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
 
         function analyzeBothAnswersIntelligently(question, name1, name2, answer1, answer2) {
             const q = question.toLowerCase();
-            
+
             console.log(`🧠 Detaillierte Analyse für: "${question}"`);
             console.log(`📝 Antworten: "${answer1}" vs "${answer2}"`);
-            
+
+            // Ignoriere leere oder nicht-aussagekräftige Antworten
+            const emptyAnswers = ['übersprungen', 'keine angabe', 'k.a.', 'n/a', '-', ''];
+            const isEmptyAnswer = (ans) => emptyAnswers.some(empty => ans.toLowerCase().trim() === empty);
+
+            if (isEmptyAnswer(answer1) || isEmptyAnswer(answer2)) {
+                return ''; // Keine Gemeinsamkeit anzeigen
+            }
+
             // 1. EXAKTE ÜBEREINSTIMMUNGEN zuerst prüfen
             if (answer1.toLowerCase().trim() === answer2.toLowerCase().trim()) {
+                // Keine "perfekte Übereinstimmung" für triviale Felder
+                const trivialFields = ['status', 'terminart', 'durchgeführt', 'vermittler', 'region', 'standort', 'gruppe'];
+                if (trivialFields.some(f => q.includes(f))) {
+                    return ''; // Keine Gemeinsamkeit für administrative Felder
+                }
+
                 if (q.includes('wichtig') || q.includes('freundschaft')) {
                     return `Gemeinsamer Wert: ${answer1}! Das ist eine starke Basis für eure Freundschaft`;
                 }
@@ -12549,7 +12563,7 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
                 if (q.includes('deutschland') && answer1.toLowerCase().includes('nein')) {
                     return 'Ihr seid beide nicht in Deutschland geboren - ähnliche Erfahrungen!';
                 }
-                return `Identisch: ${answer1} - perfekte Übereinstimmung!`;
+                return '';
             }
             
             // 2. ALTERS-ANALYSE
@@ -13399,24 +13413,36 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
             }
 
             // Branchenanalyse (falls Details vorhanden)
+            // WICHTIG: Verwende Wortgrenzen, um false positives zu vermeiden (z.B. 'it' in 'arbeitet')
             const commonBranches = [
-                { keywords: ['it', 'software', 'programm', 'entwickl'], name: 'IT/Tech' },
-                { keywords: ['medizin', 'pflege', 'arzt', 'kranken', 'gesundheit'], name: 'Medizin/Pflege' },
-                { keywords: ['lehrer', 'bildung', 'schule', 'pädagog'], name: 'Bildung' },
-                { keywords: ['ingenieur', 'technik', 'maschinenbau'], name: 'Ingenieurwesen' },
-                { keywords: ['sozial', 'beratung', 'coach'], name: 'Soziales' },
-                { keywords: ['handel', 'verkauf', 'einzelhandel'], name: 'Handel' }
+                { keywords: ['\\bit\\b', '\\bsoftware\\b', 'programm', 'entwickl', 'informatik', 'computer'], name: 'IT/Tech' },
+                { keywords: ['medizin', 'pflege', 'arzt', 'kranken', 'gesundheit', 'klinik', 'praxis'], name: 'Medizin/Pflege' },
+                { keywords: ['lehrer', 'unterricht', 'bildung', 'schule', 'pädagog', 'dozent'], name: 'Bildung/Lehre' },
+                { keywords: ['ingenieur', 'maschinenbau', 'elektro', 'bau'], name: 'Ingenieurwesen' },
+                { keywords: ['sozial', 'beratung', 'coach', 'therapeut'], name: 'Soziales' },
+                { keywords: ['handel', 'verkauf', 'einzelhandel', 'vertrieb'], name: 'Handel' },
+                { keywords: ['kunst', 'künstler', 'musik', 'musiker', 'kreativ', 'design'], name: 'Kunst/Kreativ' },
+                { keywords: ['gastro', 'koch', 'küche', 'restaurant', 'hotel'], name: 'Gastronomie' }
             ];
 
             for (const branch of commonBranches) {
-                const both = branch.keywords.some(kw => occ1.includes(kw)) &&
-                             branch.keywords.some(kw => occ2.includes(kw));
+                const matchesBranch = (text, keywords) => {
+                    return keywords.some(kw => {
+                        if (kw.startsWith('\\b')) {
+                            // Regex mit Wortgrenzen
+                            return new RegExp(kw, 'i').test(text);
+                        }
+                        return text.includes(kw);
+                    });
+                };
+
+                const both = matchesBranch(occ1, branch.keywords) && matchesBranch(occ2, branch.keywords);
                 if (both) {
                     return `Beide im Bereich ${branch.name} - gemeinsame Berufswelt!`;
                 }
             }
 
-            return 'Verschiedene berufliche Wege - viel Neues voneinander zu lernen!';
+            return 'Unterschiedliche Wege - viel Neues voneinander zu lernen!';
         }
 
         function analyzeEducationIntelligently(edu1, edu2) {
@@ -14102,39 +14128,19 @@ ${selectedProfiles.some(id => !profiles.find(p => p.id == id)) ? '❌ Nicht alle
         }
 
         function getDifferenceTextImproved(question, name1, name2, answer1, answer2) {
+            // Generische "ermutigende" Texte werden NICHT mehr angezeigt
+            // Stattdessen: Nur bei wirklichen Gemeinsamkeiten einen Text zeigen
+            // Diese Funktion sollte nur als Fallback aufgerufen werden und gibt meist leer zurück
+
             const q = question.toLowerCase();
 
-            // Bei sehr langen Antworten (>150 Zeichen) oder unsinnigen Inhalten: leer lassen
-            if (answer1.length > 150 || answer2.length > 150) {
+            // Bei sehr langen Antworten: leer lassen
+            if (answer1.length > 100 || answer2.length > 100) {
                 return '';
             }
 
-            // Spezifische Unterschieds-Texte nur für kurze, sinnvolle Antworten
-            if (q.includes('beruf') || q.includes('arbeit')) {
-                if (answer1.length < 50 && answer2.length < 50) {
-                    return 'Verschiedene berufliche Wege - unterschiedliche Perspektiven';
-                }
-                return '';
-            }
-
-            if (q.includes('studium') || q.includes('ausbildung')) {
-                return 'Verschiedene Bildungswege - viel zu erzählen!';
-            }
-
-            if (q.includes('geboren') || q.includes('herkunft')) {
-                return 'Verschiedene Hintergründe - perfekt für kulturellen Austausch!';
-            }
-
-            // Für andere Felder: Neutrale, generische Texte
-            const encouragingTexts = [
-                'Unterschiede machen Freundschaften spannend!',
-                'Perfekt zum Voneinander-Lernen!',
-                'Verschiedene Perspektiven bereichern!',
-                'Gegensätze können sich gut ergänzen!'
-            ];
-
-            const index = (question.length + answer1.length + answer2.length) % encouragingTexts.length;
-            return encouragingTexts[index];
+            // Keine generischen Texte mehr - nur spezifische Analysen
+            return '';
         }
 
         function splitAndNormalize(text) {
