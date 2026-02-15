@@ -68,173 +68,169 @@ export async function findBestModel(): Promise<string | null> {
 
 // Category-specific prompts for better AI responses
 // WICHTIG: Aus Sicht des VERMITTLERS schreiben, der die Gemeinsamkeiten beschreibt!
+// Nur ein Abschnitt einer größeren E-Mail - keine Anrede/Abschluss nötig!
 const CATEGORY_PROMPTS: Record<string, string> = {
-  hobbys: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Du schreibst eine E-Mail an zwei Personen, die du als Tandem zusammenbringen möchtest. Beschreibe ihre Hobby-Gemeinsamkeiten.
+  hobbys: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail. Dieser Abschnitt beschreibt die Hobby-Gemeinsamkeiten zweier Tandem-Partner.
 
-DEINE ROLLE: Du bist der Vermittler, der die beiden vorstellt.
-SCHREIBSTIL: Beschreibe von außen, was beide gemeinsam haben.
+WICHTIG: Du schreibst NUR einen Abschnitt, NICHT die ganze E-Mail!
+- KEINE Anrede ("Hallo", "Liebe...")
+- KEINE Einleitung ("Ich freue mich...", "Hier ist...")
+- KEIN Abschluss ("Viele Grüße", "Ich hoffe...")
+- Starte direkt mit dem Inhalt!
 
-BEISPIELE für guten Stil:
-- "Ihr beide interessiert euch für Sport und Fitness."
-- "Kochen ist eine Leidenschaft, die ihr teilt."
-- "Ihr könntet zusammen wandern gehen."
+DEINE ROLLE: Vermittler, der von außen beschreibt.
+STIL: "Ihr beide...", "Gemeinsam könntet ihr...", "Euch verbindet..."
 
-VERMEIDE:
-- Schreibe NICHT aus Sicht der Tandem-Partner selbst
-- Keine Ich-Form, keine Wir-Form aus Sicht der Partner
-- NIEMALS "Person 1" oder "Person 2"
-- Keine Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Gemeinsamkeit (2-3 Sätze):`,
+Abschnitt (2-3 Sätze, direkt starten):`,
 
-  freizeit: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die Freizeit-Gemeinsamkeiten zweier Personen, die du zusammenbringen möchtest.
+  freizeit: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Freizeit-Gemeinsamkeiten.
 
-DEINE ROLLE: Du beschreibst von außen, was beide verbindet.
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
 
-BEISPIELE für guten Stil:
-- "In eurer Freizeit macht ihr beide gerne..."
-- "Ihr könntet gemeinsam..."
-- "Das verbindet euch: ..."
-
-VERMEIDE: Ich-Form, Wir-Form aus Partnersicht, "Person 1/2", Emojis
+STIL: "Ihr beide...", "Gemeinsam könntet ihr...", "In eurer Freizeit..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Gemeinsamkeit (2-3 Sätze):`,
+Abschnitt (2-3 Sätze):`,
 
-  interessen: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die gemeinsamen Interessen zweier Personen.
+  interessen: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über gemeinsame Interessen.
 
-DEINE ROLLE: Du beschreibst von außen, was beide interessiert.
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
 
-BEISPIELE: "Ihr interessiert euch beide für...", "Ein gemeinsames Interesse ist..."
-
-VERMEIDE: Ich-Form, Wir-Form aus Partnersicht, "Person 1/2", Emojis
-
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
-
-Gemeinsamkeit (2-3 Sätze):`,
-
-  sprachen: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe, welche Sprachen beide sprechen und wie sie kommunizieren können.
-
-DEINE ROLLE: Du beschreibst die sprachliche Basis für das Tandem.
-
-BEISPIELE: "Ihr sprecht beide Deutsch und Englisch.", "Deutsch könnt ihr gemeinsam üben."
-
-VERMEIDE: Ich-Form aus Partnersicht (wie "Ich spreche..."), "Person 1/2", Emojis
+STIL: "Ihr interessiert euch beide für...", "Ein gemeinsames Interesse..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Sprachliche Basis (1-2 Sätze):`,
+Abschnitt (2-3 Sätze):`,
 
-  beruf: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe berufliche Gemeinsamkeiten oder interessante Unterschiede.
+  sprachen: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Sprachkenntnisse.
 
-DEINE ROLLE: Du beschreibst von außen die beruflichen Hintergründe.
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
 
-BEISPIELE: "Beruflich seid ihr beide im sozialen Bereich.", "Eure unterschiedlichen Branchen könnten für spannende Gespräche sorgen."
-
-VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
-
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
-
-Berufliche Verbindung (2-3 Sätze):`,
-
-  vorher: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die bisherigen Erfahrungen und Wege beider Personen.
-
-DEINE ROLLE: Du beschreibst von außen die Lebensgeschichten.
-
-BEISPIELE: "Ihr habt beide schon viel erlebt.", "Eure unterschiedlichen Wege machen das Tandem interessant."
-
-VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+STIL: "Ihr sprecht beide...", "Deutsch könnt ihr gemeinsam üben."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Verbindung (2-3 Sätze):`,
+Abschnitt (1-2 Sätze):`,
 
-  zukunft: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die Zukunftspläne und wie beide voneinander profitieren könnten.
+  beruf: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über berufliche Verbindungen.
 
-DEINE ROLLE: Du beschreibst von außen die Ziele und Synergien.
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
 
-BEISPIELE: "Ihr habt beide Pläne für...", "Dabei könntet ihr euch gegenseitig unterstützen."
-
-VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
-
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
-
-Zukunftsperspektive (2-3 Sätze):`,
-
-  tandem_motivation: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe, warum die Motivationen beider gut zusammenpassen.
-
-DEINE ROLLE: Du erklärst, warum dieses Match gut ist.
-
-BEISPIELE: "Eure Motivationen ergänzen sich gut:", "Ihr wollt beide..."
-
-VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+STIL: "Beruflich verbindet euch...", "Eure unterschiedlichen Branchen..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Motivation (2-3 Sätze):`,
+Abschnitt (2-3 Sätze):`,
 
-  freundschaft_werte: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die gemeinsamen Werte in Bezug auf Freundschaft.
+  vorher: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über bisherige Erfahrungen.
 
-DEINE ROLLE: Du beschreibst von außen, was beiden wichtig ist.
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
 
-BEISPIELE: "Euch beiden ist wichtig:", "Ihr teilt ähnliche Werte wie..."
-
-VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
-
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
-
-Gemeinsame Werte (2-3 Sätze):`,
-
-  events: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe, welche Events oder Aktivitäten beide gemeinsam machen könnten.
-
-DEINE ROLLE: Du machst Vorschläge für gemeinsame Unternehmungen.
-
-BEISPIELE: "Ihr könntet zusammen...", "Events wie ... interessieren euch beide."
-
-VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+STIL: "Ihr habt beide...", "Eure unterschiedlichen Wege..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Aktivitäts-Vorschläge (2-3 Sätze):`,
+Abschnitt (2-3 Sätze):`,
 
-  verfuegbarkeit: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Analysiere die Verfügbarkeit und schlage einen passenden Zeitpunkt fürs erste Treffen vor.
+  zukunft: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Zukunftspläne.
 
-DEINE ROLLE: Du findest eine gemeinsame Zeit.
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
 
-BEISPIELE: "Ihr seid beide abends verfügbar.", "Ein Treffen am Wochenende würde gut passen."
-
-VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+STIL: "Ihr habt beide Pläne für...", "Dabei könntet ihr euch unterstützen."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Zeitvorschlag (1-2 Sätze):`,
+Abschnitt (2-3 Sätze):`,
 
-  default: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die Gemeinsamkeit zur Frage "{Frage}".
+  tandem_motivation: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über die Tandem-Motivation.
 
-DEINE ROLLE: Du beschreibst von außen, was beide verbindet.
-SCHREIBSTIL: "Ihr beide...", "Euch verbindet...", "Gemeinsam könntet ihr..."
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
 
-VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+STIL: "Eure Motivationen ergänzen sich...", "Ihr wollt beide..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Abschnitt (2-3 Sätze):`,
+
+  freundschaft_werte: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Freundschafts-Werte.
+
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
+
+STIL: "Euch beiden ist wichtig...", "Ihr teilt ähnliche Werte..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Abschnitt (2-3 Sätze):`,
+
+  events: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über gemeinsame Aktivitäten.
+
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
+
+STIL: "Ihr könntet zusammen...", "Events wie ... interessieren euch beide."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Abschnitt (2-3 Sätze):`,
+
+  verfuegbarkeit: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über die zeitliche Verfügbarkeit.
+
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
+
+STIL: "Ihr seid beide abends verfügbar.", "Ein Treffen am Wochenende würde passen."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Abschnitt (1-2 Sätze):`,
+
+  default: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail zur Frage "{Frage}".
+
+WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
+Starte direkt mit dem Inhalt.
+
+STIL: "Ihr beide...", "Euch verbindet...", "Gemeinsam könntet ihr..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
 Falls keine Gemeinsamkeit: antworte nur "---"
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Gemeinsamkeit (1-2 Sätze):`
+Abschnitt (1-2 Sätze):`
 };
 
 // Detect category from question text
