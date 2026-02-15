@@ -18,13 +18,16 @@ function getHeaders(): HeadersInit {
 // Check if Ollama is running
 export async function isOllamaAvailable(): Promise<boolean> {
   try {
+    console.log('🤖 Prüfe Ollama-Verfügbarkeit...');
     const response = await fetch(`${OLLAMA_URL}/api/tags`, {
       method: 'GET',
       headers: getHeaders(),
       signal: AbortSignal.timeout(5000), // 5 second timeout for remote
     });
+    console.log(`🤖 Ollama Response: ${response.status} ${response.statusText}`);
     return response.ok;
-  } catch {
+  } catch (error) {
+    console.warn('🤖 Ollama nicht erreichbar:', error);
     return false;
   }
 }
