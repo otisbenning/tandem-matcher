@@ -67,90 +67,169 @@ export async function findBestModel(): Promise<string | null> {
 }
 
 // Category-specific prompts for better AI responses
+// WICHTIG: Niemals "Person 1" oder "Person 2" schreiben! Immer direkt "Ihr" verwenden.
 const CATEGORY_PROMPTS: Record<string, string> = {
-  hobbys: `Analysiere diese Hobby-Angaben und schreibe auf, was beide Personen gemeinsam haben – oder wie man die Hobbies verbinden kann. Möglichst ausführlich (200-300 Zeichen). Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+  hobbys: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Hobby-Angaben und schreibe, was beide gemeinsam haben oder wie sie die Hobbies verbinden können.
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euch", "gemeinsam"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- NIEMALS "Die erste Person" oder "Die zweite Person"!
+- Keine Emojis
+- Locker und freundlich, nicht förmlich
 
-Antwort:`,
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-  freizeit: `Analysiere diese Freizeit-Angaben und schreibe auf, was beide Personen gemeinsam haben – oder wie man die Freizeit gemeinsam gestalten kann. Möglichst ausführlich (200-300 Zeichen). Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+Text:`,
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+  freizeit: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Freizeit-Angaben und schreibe, was beide gemeinsam machen können.
 
-Antwort:`,
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euch", "gemeinsam"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
+- Locker und freundlich
 
-  interessen: `Analysiere diese Interessen und schreibe auf, was beide Personen gemeinsam haben – oder wie man die Interessen gemeinsam gestalten kann. Möglichst ausführlich (200-300 Zeichen). Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+Text:`,
 
-Antwort:`,
+  interessen: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Interessen und schreibe, was beide verbindet.
 
-  sprachen: `Analysiere diese Sprachkenntnisse und schreibe auf, wie die beiden miteinander kommunizieren können. Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euch", "gemeinsam"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
+- Locker und freundlich
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-Antwort:`,
+Text:`,
 
-  beruf: `Analysiere diese Berufs-/Arbeitsangaben und schreibe auf, was die Berufe/Arbeit der Personen gemeinsam haben. Oder warum Unterschiede spannend sein können. Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+  sprachen: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Sprachkenntnisse und schreibe, wie beide miteinander kommunizieren können.
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+REGELN:
+- Schreibe 2-3 Sätze (100-200 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euch"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
 
-Antwort:`,
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-  vorher: `Analysiere diese Angaben zu früheren Tätigkeiten. Gehe kurz auf beide Geschichten ein. Sage, dass das spannend ist / interessant ist / der unterschiedliche oder gleiche Weg interessant ist. Keine Emojis.
+Text:`,
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+  beruf: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Berufs-Angaben und schreibe, was beide beruflich verbindet oder warum die Unterschiede spannend sind.
 
-Antwort:`,
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euch"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
+- Locker und freundlich
 
-  zukunft: `Analysiere diese Zukunftspläne und schreibe, wie beide Personen voneinander profitieren könnten – basierend auf ihren Erfahrungen und Plänen. Keine Emojis.
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+Text:`,
 
-Antwort:`,
+  vorher: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Angaben zu früheren Tätigkeiten und schreibe, was beide verbindet oder warum die unterschiedlichen Wege interessant sind.
 
-  tandem_motivation: `Analysiere diese Motivationen für das Tandem-Programm und schreibe, warum sich die Motivationen gut ergänzen. Keine Emojis.
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euer Weg", "eure Erfahrungen"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-Antwort:`,
+Text:`,
 
-  freundschaft_werte: `Analysiere diese Angaben zu wichtigen Werten in einer Freundschaft und schreibe, warum sich die Vorstellungen gut ergänzen. Keine Emojis.
+  zukunft: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Zukunftspläne und schreibe, wie beide voneinander profitieren können.
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr", "eure Pläne", "gemeinsam"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
 
-Antwort:`,
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-  events: `Analysiere diese Event-/Aktivitäten-Angaben und schreibe auf, was beide Personen gemeinsam haben – oder wie man Events/Aktivitäten gemeinsam gestalten kann. Möglichst ausführlich (200-300 Zeichen). Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+Text:`,
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+  tandem_motivation: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Motivationen fürs Tandem-Programm und schreibe, warum sich die Motivationen gut ergänzen.
 
-Antwort:`,
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euch", "eure Motivation"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
 
-  verfuegbarkeit: `Analysiere diese Verfügbarkeits-Angaben und mache einen konkreten Vorschlag für ein erstes Treffen – einen ersten Termin (kein Datum, aber Wochentag/Tageszeit basierend auf den Überschneidungen). Keine Emojis.
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+Text:`,
 
-Antwort:`,
+  freundschaft_werte: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Werte-Angaben und schreibe, warum sich die Vorstellungen gut ergänzen.
 
-  default: `Du bist ein freundlicher Tandem-Vermittler bei "Start with a Friend". Analysiere die folgenden zwei Antworten auf die Frage "{Frage}" und schreibe einen kurzen Text (100-200 Zeichen) der die Gemeinsamkeit oder Verbindung beschreibt. Schreibe natürlich und persönlich, ohne Emojis. Wenn es keine erkennbare Gemeinsamkeit gibt, antworte nur mit "---".
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euch", "euch beiden"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
 
-Person 1: "{Antwort1}"
-Person 2: "{Antwort2}"
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
 
-Antwort:`
+Text:`,
+
+  events: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Event-/Aktivitäten-Angaben und schreibe, was beide gemeinsam unternehmen können.
+
+REGELN:
+- Schreibe 2-3 Sätze (150-250 Zeichen)
+- Sprich beide direkt an mit "Ihr könnt", "gemeinsam", "zusammen"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Text:`,
+
+  verfuegbarkeit: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Verfügbarkeits-Angaben und mache einen konkreten Vorschlag für ein erstes Treffen.
+
+REGELN:
+- Schreibe 2-3 Sätze mit einem konkreten Zeitvorschlag (Wochentag/Tageszeit)
+- Sprich beide direkt an mit "Ihr könntet", "euer erstes Treffen"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Text:`,
+
+  default: `Du schreibst einen freundlichen Text für zwei Tandem-Partner bei "Start with a Friend". Analysiere die Antworten zur Frage "{Frage}" und schreibe, was beide verbindet.
+
+REGELN:
+- Schreibe 1-2 Sätze (100-200 Zeichen)
+- Sprich beide direkt an mit "Ihr", "euch", "gemeinsam"
+- NIEMALS "Person 1" oder "Person 2" schreiben!
+- Keine Emojis
+- Wenn keine Gemeinsamkeit erkennbar: antworte nur "---"
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Text:`
 };
 
 // Detect category from question text

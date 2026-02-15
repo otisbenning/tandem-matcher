@@ -693,30 +693,18 @@ function attachEventListeners(container: HTMLElement): void {
 
   ollamaBtn?.addEventListener('click', async () => {
     ollamaBtn.disabled = true;
-    ollamaBtn.textContent = 'Generiere...';
+    ollamaBtn.textContent = 'KI läuft...';
 
     // Filter out simple fact fields that don't need AI generation
     const fieldsToGenerate = rows
       .filter(r => r.answer1 && r.answer2 && !shouldSkipAIGeneration(r.question))
       .map(r => ({ question: r.question, answer1: r.answer1, answer2: r.answer2, rowId: r.id }));
 
-    try {
-      const results = await generateAllCommonalities(
-        fieldsToGenerate.map(f => ({ question: f.question, answer1: f.answer1, answer2: f.answer2 })),
-        (current, total) => {
-          ollamaBtn.textContent = `Generiere ${current}/${total}...`;
-        }
-      );
-
-      // Show preview modal with all generated texts
-      showAIPreviewModal(results, fieldsToGenerate, container);
-    } catch (error) {
-      console.error('Ollama generation failed:', error);
-      alert('Fehler bei der KI-Generierung. Ist der KI-Server erreichbar?');
-    }
-
-    ollamaBtn.disabled = false;
-    ollamaBtn.textContent = 'KI generieren';
+    // Show live preview modal immediately
+    showLiveAIPreviewModal(fieldsToGenerate, container, () => {
+      ollamaBtn.disabled = false;
+      ollamaBtn.textContent = 'KI generieren';
+    });
   });
 
   // Copy email (with HTML table for Word compatibility)
@@ -1517,6 +1505,247 @@ function showToast(message: string): void {
   toast.textContent = message;
   toast.classList.add('visible');
   setTimeout(() => toast?.classList.remove('visible'), 3000);
+}
+
+// Live AI Preview Modal - shows responses as they're generated in real-time
+function showLiveAIPreviewModal(
+  fields: Array<{ question: string; answer1: string; answer2: string; rowId: string }>,
+  container: HTMLElement,
+  onComplete: () => void
+): void {
+  // Track state for each field
+  const fieldStates: Array<{
+    rowId: string;
+    question: string;
+    answer1: string;
+    answer2: string;
+    generated: string;
+    status: 'pending' | 'generating' | 'done' | 'error';
+    selected: boolean;
+  }> = fields.map(f => ({
+    ...f,
+    generated: '',
+    status: 'pending',
+    selected: true
+  }));
+
+  let isGenerating = true;
+  let abortRequested = false;
+
+  // Create modal
+  const modal = document.createElement('div');
+  modal.className = 'ai-modal-overlay';
+
+  function renderModalContent(): string {
+    const doneCount = fieldStates.filter(f => f.status === 'done').length;
+    const generatingIndex = fieldStates.findIndex(f => f.status === 'generating');
+    const selectedCount = fieldStates.filter(f => f.selected && f.status === 'done').length;
+
+    return `
+      <div class="ai-modal ai-preview-modal ai-live-modal">
+        <div class="ai-modal-header">
+          <h3>KI-Generierung</h3>
+          <div class="ai-progress-info">
+            ${isGenerating
+              ? `<span class="ai-progress-spinner"></span> ${doneCount}/${fields.length} generiert`
+              : `${doneCount} Vorschläge generiert`
+            }
+          </div>
+          <button class="close-modal">&times;</button>
+        </div>
+        <div class="ai-modal-body">
+          <p class="ai-preview-intro">
+            ${isGenerating
+              ? '<strong>Generiere Vorschläge...</strong> Du kannst bereits fertige Texte bearbeiten und auswählen.'
+              : `<strong>${doneCount} Vorschläge generiert.</strong> Wähle aus, welche du übernehmen möchtest:`
+            }
+          </p>
+
+          <div class="ai-preview-actions-top">
+            <button class="btn btn-sm" id="selectAllBtn">Alle auswählen</button>
+            <button class="btn btn-sm btn-outline" id="selectNoneBtn">Keine auswählen</button>
+            ${isGenerating ? '<button class="btn btn-sm btn-danger" id="stopGenerationBtn">Generation stoppen</button>' : ''}
+          </div>
+
+          <div class="ai-preview-list ai-live-list">
+            ${fieldStates.map((item, index) => `
+              <div class="ai-preview-item ${item.status}" data-index="${index}">
+                <label class="ai-preview-checkbox">
+                  <input type="checkbox" ${item.selected ? 'checked' : ''} ${item.status !== 'done' ? 'disabled' : ''} data-index="${index}">
+                  <span class="checkmark"></span>
+                </label>
+                <div class="ai-preview-content">
+                  <div class="ai-preview-question">${escapeHtml(item.question)}</div>
+                  <div class="ai-preview-answers">
+                    <span class="answer-snippet" title="${escapeHtml(item.answer1)}">${escapeHtml(truncateText(item.answer1, 30))}</span>
+                    <span class="answer-vs">+</span>
+                    <span class="answer-snippet" title="${escapeHtml(item.answer2)}">${escapeHtml(truncateText(item.answer2, 30))}</span>
+                  </div>
+                  ${item.status === 'pending'
+                    ? '<div class="ai-preview-pending">Wartet...</div>'
+                    : item.status === 'generating'
+                    ? '<div class="ai-preview-generating"><span class="ai-mini-spinner"></span> Generiere...</div>'
+                    : item.status === 'error'
+                    ? '<div class="ai-preview-error">Fehler bei der Generierung</div>'
+                    : `<textarea class="ai-preview-textarea" data-index="${index}" rows="3">${escapeHtml(item.generated)}</textarea>`
+                  }
+                  <details class="ai-item-prompt">
+                    <summary>Prompt anzeigen</summary>
+                    <pre class="ai-prompt-mini">${escapeHtml(buildPrompt(item.question, item.answer1, item.answer2))}</pre>
+                  </details>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="ai-preview-actions">
+            <button class="btn btn-secondary" id="cancelPreviewBtn">Abbrechen</button>
+            <button class="btn btn-primary" id="applyPreviewBtn" ${selectedCount === 0 ? 'disabled' : ''}>
+              Ausgewählte übernehmen (<span id="selectedCount">${selectedCount}</span>)
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function updateModal(): void {
+    modal.innerHTML = renderModalContent();
+    attachModalListeners();
+  }
+
+  function attachModalListeners(): void {
+    // Close modal
+    modal.querySelector('.close-modal')?.addEventListener('click', () => {
+      abortRequested = true;
+      modal.remove();
+      onComplete();
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        abortRequested = true;
+        modal.remove();
+        onComplete();
+      }
+    });
+
+    // Cancel button
+    modal.querySelector('#cancelPreviewBtn')?.addEventListener('click', () => {
+      abortRequested = true;
+      modal.remove();
+      onComplete();
+    });
+
+    // Stop generation button
+    modal.querySelector('#stopGenerationBtn')?.addEventListener('click', () => {
+      abortRequested = true;
+      isGenerating = false;
+      updateModal();
+    });
+
+    // Select all/none
+    modal.querySelector('#selectAllBtn')?.addEventListener('click', () => {
+      fieldStates.forEach(f => { if (f.status === 'done') f.selected = true; });
+      updateModal();
+    });
+    modal.querySelector('#selectNoneBtn')?.addEventListener('click', () => {
+      fieldStates.forEach(f => f.selected = false);
+      updateModal();
+    });
+
+    // Individual checkboxes
+    modal.querySelectorAll('.ai-preview-item input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const target = e.target as HTMLInputElement;
+        const index = parseInt(target.dataset.index || '0', 10);
+        fieldStates[index].selected = target.checked;
+        updateSelectedCount();
+      });
+    });
+
+    // Editable textareas
+    modal.querySelectorAll('.ai-preview-textarea').forEach(textarea => {
+      textarea.addEventListener('input', (e) => {
+        const target = e.target as HTMLTextAreaElement;
+        const index = parseInt(target.dataset.index || '0', 10);
+        fieldStates[index].generated = target.value;
+      });
+    });
+
+    // Apply button
+    modal.querySelector('#applyPreviewBtn')?.addEventListener('click', () => {
+      abortRequested = true;
+      applySelectedItems();
+      modal.remove();
+      onComplete();
+    });
+  }
+
+  function updateSelectedCount(): void {
+    const selectedCount = fieldStates.filter(f => f.selected && f.status === 'done').length;
+    const countEl = modal.querySelector('#selectedCount');
+    if (countEl) countEl.textContent = String(selectedCount);
+    const applyBtn = modal.querySelector('#applyPreviewBtn') as HTMLButtonElement;
+    if (applyBtn) applyBtn.disabled = selectedCount === 0;
+  }
+
+  function applySelectedItems(): void {
+    let appliedCount = 0;
+    for (const item of fieldStates) {
+      if (item.selected && item.status === 'done' && item.generated) {
+        const row = rows.find(r => r.id === item.rowId);
+        if (row) {
+          row.comment = item.generated;
+          row.included = true;
+          appliedCount++;
+        }
+      }
+    }
+    renderEditor(container);
+    if (appliedCount > 0) {
+      showToast(`${appliedCount} KI-Vorschläge übernommen`);
+    }
+  }
+
+  // Show modal immediately
+  modal.innerHTML = renderModalContent();
+  document.body.appendChild(modal);
+  attachModalListeners();
+
+  // Start generating in background
+  async function generateAll(): Promise<void> {
+    for (let i = 0; i < fieldStates.length; i++) {
+      if (abortRequested) break;
+
+      const item = fieldStates[i];
+      item.status = 'generating';
+      updateModal();
+
+      try {
+        const result = await generateCommonality(item.question, item.answer1, item.answer2);
+        if (abortRequested) break;
+
+        if (result) {
+          item.generated = result;
+          item.status = 'done';
+        } else {
+          item.status = 'error';
+          item.selected = false;
+        }
+      } catch (error) {
+        console.warn('Generation error:', error);
+        item.status = 'error';
+        item.selected = false;
+      }
+
+      updateModal();
+    }
+
+    isGenerating = false;
+    updateModal();
+  }
+
+  generateAll();
 }
 
 export function getEditorContent(): string {
