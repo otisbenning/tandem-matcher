@@ -1,17 +1,21 @@
 // Settings Component - Export & Settings Tab
-import { getTandems, getProfiles, createBackup, restoreBackup, getGamificationStats } from '../services/storage';
-import type { Tandem } from '@shared/types';
+import { getTandems, getProfiles, createBackup, restoreBackup, getGamificationStats, deleteProfile, clearProfiles, getMatchedProfileIds } from '../services/storage';
+import type { Tandem, Profile } from '@shared/types';
 
 export function initSettings(): void {
   const exportExcelBtn = document.getElementById('exportExcel');
   const exportCSVBtn = document.getElementById('exportCSV');
   const exportJSONBtn = document.getElementById('exportJSON');
   const importBackupBtn = document.getElementById('importBackup');
+  const manageProfilesBtn = document.getElementById('manageProfilesBtn');
+  const deleteAllProfilesBtn = document.getElementById('deleteAllProfilesBtn');
 
   exportExcelBtn?.addEventListener('click', exportAsExcel);
   exportCSVBtn?.addEventListener('click', exportAsCSV);
   exportJSONBtn?.addEventListener('click', exportAsJSON);
   importBackupBtn?.addEventListener('click', importBackupFile);
+  manageProfilesBtn?.addEventListener('click', showProfileManageModal);
+  deleteAllProfilesBtn?.addEventListener('click', deleteAllProfiles);
 
   renderStats();
   window.addEventListener('tandems-updated', renderStats);
@@ -154,4 +158,156 @@ function downloadFile(content: string, filename: string, mimeType: string): void
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// Delete all profiles
+function deleteAllProfiles(): void {
+  const profiles = getProfiles();
+  if (profiles.length === 0) {
+    alert('Keine Profile vorhanden.');
+    return;
+  }
+
+  const confirmed = confirm(`Möchtest du wirklich ALLE ${profiles.length} Profile löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden!`);
+  if (confirmed) {
+    const doubleConfirm = confirm('Bist du sicher? Alle Profile werden unwiderruflich gelöscht.');
+    if (doubleConfirm) {
+      clearProfiles();
+      window.dispatchEvent(new Event('profiles-updated'));
+      alert('Alle Profile wurden gelöscht.');
+    }
+  }
+}
+
+// Show modal for managing individual profiles
+function showProfileManageModal(): void {
+  const profiles = getProfiles();
+  const matchedIds = getMatchedProfileIds();
+
+  if (profiles.length === 0) {
+    alert('Keine Profile vorhanden.');
+    return;
+  }
+
+  // Create modal
+  const modal = document.createElement('div');
+  modal.className = 'modal visible';
+  modal.id = 'profileManageModal';
+
+  function renderProfileList(): string {
+    const currentProfiles = getProfiles();
+    const currentMatchedIds = getMatchedProfileIds();
+
+    return currentProfiles.map(profile => {
+      const isMatched = currentMatchedIds.has(profile.id);
+      const group = profile.group === 'local' ? 'Local' : 'Newcomer';
+      const groupClass = profile.group === 'local' ? 'local' : 'newcomer';
+
+      return `
+        <div class="profile-manage-item ${isMatched ? 'matched' : ''}" data-id="${profile.id}">
+          <div class="profile-manage-info">
+            <span class="profile-manage-name">${escapeHtml(profile.name)}</span>
+            <span class="profile-manage-group ${groupClass}">${group}</span>
+            ${isMatched ? '<span class="profile-manage-badge">In Tandem</span>' : ''}
+          </div>
+          <button class="btn btn-sm btn-danger profile-delete-btn" data-id="${profile.id}" ${isMatched ? 'disabled title="Profil ist in einem Tandem"' : ''}>
+            Löschen
+          </button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  modal.innerHTML = `
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h2>Profile verwalten</h2>
+        <button class="close-btn" id="closeProfileManageModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-manage-header">
+          <p><strong>${profiles.length}</strong> Profile geladen</p>
+          <div class="profile-manage-actions">
+            <input type="text" id="profileSearchInput" placeholder="Name suchen..." class="profile-search-input">
+          </div>
+        </div>
+        <div class="profile-manage-list" id="profileManageList">
+          ${renderProfileList()}
+        </div>
+        <div class="profile-manage-footer">
+          <button class="btn btn-secondary" id="closeProfileManageBtn">Schließen</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // Event listeners
+  const closeBtn = modal.querySelector('#closeProfileManageModal');
+  const closeFooterBtn = modal.querySelector('#closeProfileManageBtn');
+  const searchInput = modal.querySelector('#profileSearchInput') as HTMLInputElement;
+  const listContainer = modal.querySelector('#profileManageList');
+
+  function closeModal(): void {
+    modal.remove();
+  }
+
+  closeBtn?.addEventListener('click', closeModal);
+  closeFooterBtn?.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // Search functionality
+  searchInput?.addEventListener('input', () => {
+    const query = searchInput.value.toLowerCase();
+    const items = listContainer?.querySelectorAll('.profile-manage-item');
+    items?.forEach(item => {
+      const name = item.querySelector('.profile-manage-name')?.textContent?.toLowerCase() || '';
+      (item as HTMLElement).style.display = name.includes(query) ? 'flex' : 'none';
+    });
+  });
+
+  // Delete buttons
+  listContainer?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('profile-delete-btn') && !target.hasAttribute('disabled')) {
+      const profileId = target.dataset.id;
+      if (!profileId) return;
+
+      const profileName = target.closest('.profile-manage-item')?.querySelector('.profile-manage-name')?.textContent || 'Unbekannt';
+      const confirmed = confirm(`Profil "${profileName}" wirklich löschen?`);
+
+      if (confirmed) {
+        deleteProfile(profileId);
+        window.dispatchEvent(new Event('profiles-updated'));
+
+        // Update the list
+        if (listContainer) {
+          listContainer.innerHTML = renderProfileList();
+        }
+
+        // Update header count
+        const header = modal.querySelector('.profile-manage-header p');
+        const remainingProfiles = getProfiles();
+        if (header) {
+          header.innerHTML = `<strong>${remainingProfiles.length}</strong> Profile geladen`;
+        }
+
+        // Close modal if no profiles left
+        if (remainingProfiles.length === 0) {
+          closeModal();
+          alert('Alle Profile wurden gelöscht.');
+        }
+      }
+    }
+  });
+}
+
+function escapeHtml(text: string): string {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }

@@ -2603,6 +2603,182 @@ body {
   background: #dc2626;
 }
 
+/* Profile Management Modal */
+.profile-manage-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.profile-manage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.profile-search-input {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 200px;
+}
+
+.profile-manage-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.profile-manage-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border);
+  gap: var(--spacing-sm);
+}
+
+.profile-manage-item:last-child {
+  border-bottom: none;
+}
+
+.profile-manage-item.matched {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.profile-manage-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-manage-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-manage-group {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.profile-manage-group.local {
+  background: var(--color-local);
+  color: #000;
+}
+
+.profile-manage-group.newcomer {
+  background: var(--color-newcomer);
+  color: #fff;
+}
+
+.profile-manage-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--success);
+  color: white;
+  white-space: nowrap;
+}
+
+.profile-manage-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border);
+}
+
+.profile-delete-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-info {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Workflow Steps in Help Modal */
+.guide-workflow {
+  margin-bottom: var(--spacing-xl);
+}
+
+.guide-workflow h3 {
+  margin-bottom: var(--spacing-md);
+  color: var(--primary);
+}
+
+.workflow-step {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background: var(--bg);
+  border-radius: 8px;
+  border-left: 4px solid var(--primary);
+}
+
+.workflow-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  background: var(--primary);
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border-radius: 50%;
+}
+
+.workflow-content {
+  flex: 1;
+}
+
+.workflow-content h4 {
+  margin-bottom: var(--spacing-sm);
+  color: var(--text);
+}
+
+.workflow-content ol {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+}
+
+.workflow-content ol li {
+  margin-bottom: var(--spacing-xs);
+  line-height: 1.5;
+}
+
+.workflow-tip {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: rgba(37, 99, 235, 0.1);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.guide-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: var(--spacing-xl) 0;
+}
+
 /* Email section title */
 .email-section-title {
   margin: var(--spacing-md) 0;

@@ -151,6 +151,14 @@
             <button class="btn" id="importBackup">Backup wiederherstellen</button>
           </div>
           <div class="settings-card">
+            <h3>Profile verwalten</h3>
+            <p class="settings-info">Hier kannst du geladene Profile löschen.</p>
+            <div class="profile-manage-buttons">
+              <button class="btn" id="manageProfilesBtn">Einzelne Profile verwalten</button>
+              <button class="btn btn-danger" id="deleteAllProfilesBtn">Alle Profile löschen</button>
+            </div>
+          </div>
+          <div class="settings-card">
             <h3>Statistiken</h3>
             <div id="statsContainer">
               <!-- Statistiken werden hier eingefügt -->
@@ -199,37 +207,111 @@
     <div class="modal" id="helpModal">
       <div class="modal-content modal-lg">
         <div class="modal-header">
-          <h2>Kurzanleitung Tandem-Matcher</h2>
+          <h2>Anleitung Tandem-Matcher</h2>
           <button class="close-btn" id="closeHelpModal">&times;</button>
         </div>
         <div class="modal-body">
           <div class="guide-content">
-            <div class="guide-section">
-              <h3>1. Profile sammeln</h3>
-              <div class="guide-step">
-                <span class="step-icon">🧩</span>
-                <div class="step-text">
-                  <strong>Chrome Extension (empfohlen)</strong><br>
-                  Installiere die Extension und sammle Profile direkt vom Portal.
+            <!-- Step-by-Step Workflow -->
+            <div class="guide-workflow">
+              <h3>Schritt-für-Schritt Anleitung</h3>
+
+              <div class="workflow-step">
+                <div class="workflow-number">1</div>
+                <div class="workflow-content">
+                  <h4>Chrome Extension installieren</h4>
+                  <ol>
+                    <li>Gehe zu <strong>"Export & Einstellungen"</strong></li>
+                    <li>Klicke auf <strong>"Extension herunterladen"</strong></li>
+                    <li>Entpacke die ZIP-Datei</li>
+                    <li>Öffne Chrome → <code>chrome://extensions</code></li>
+                    <li>Aktiviere <strong>"Entwicklermodus"</strong> (oben rechts)</li>
+                    <li>Klicke <strong>"Entpackte Erweiterung laden"</strong></li>
+                    <li>Wähle den entpackten Ordner aus</li>
+                  </ol>
                 </div>
               </div>
-              <div class="guide-step">
-                <span class="step-icon">📋</span>
-                <div class="step-text">
-                  <strong>Import</strong><br>
-                  Klicke auf "Profile importieren" und füge JSON-Daten ein.
+
+              <div class="workflow-step">
+                <div class="workflow-number">2</div>
+                <div class="workflow-content">
+                  <h4>Profile sammeln</h4>
+                  <ol>
+                    <li>Öffne das <strong>SwaF-Portal</strong> (portal.startwithafriend.de)</li>
+                    <li>Öffne ein Profil, das du matchen möchtest</li>
+                    <li>Die Extension sammelt das Profil automatisch</li>
+                    <li>Wiederhole für alle Profile, die du matchen möchtest</li>
+                    <li>Klicke auf das <strong>Extension-Icon</strong> in der Toolbar</li>
+                    <li>Klicke <strong>"In Zwischenablage kopieren"</strong></li>
+                  </ol>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="workflow-number">3</div>
+                <div class="workflow-content">
+                  <h4>Profile importieren</h4>
+                  <ol>
+                    <li>Öffne den <strong>Tandem-Matcher</strong></li>
+                    <li>Klicke auf <strong>"+ Profile importieren"</strong></li>
+                    <li>Klicke auf <strong>"Aus Zwischenablage einfügen"</strong></li>
+                    <li>Prüfe die Vorschau und klicke <strong>"Importieren"</strong></li>
+                  </ol>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="workflow-number">4</div>
+                <div class="workflow-content">
+                  <h4>Tandem matchen</h4>
+                  <ol>
+                    <li>Klicke auf ein Profil in der Liste oder auf der Karte</li>
+                    <li>Das <strong>Smart Match Panel</strong> zeigt passende Partner</li>
+                    <li>Sterne zeigen die Match-Qualität (mehr = besser)</li>
+                    <li>Klicke auf einen Vorschlag um das Tandem zu erstellen</li>
+                  </ol>
+                  <p class="workflow-tip"><strong>Tipp:</strong> Gelb = Local, Türkis = Newcomer, Grün = bereits vermittelt</p>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="workflow-number">5</div>
+                <div class="workflow-content">
+                  <h4>Gemeinsamkeiten bearbeiten</h4>
+                  <ol>
+                    <li>Im Editor siehst du alle Felder beider Profile</li>
+                    <li>Klicke <strong>"KI generieren"</strong> für automatische Textvorschläge</li>
+                    <li>Bearbeite die Texte nach Bedarf</li>
+                    <li>Aktiviere/deaktiviere Felder mit dem Schalter links</li>
+                    <li>Klicke <strong>"Kopieren"</strong> für die Word-kompatible Tabelle</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div class="workflow-step">
+                <div class="workflow-number">6</div>
+                <div class="workflow-content">
+                  <h4>E-Mail versenden</h4>
+                  <ol>
+                    <li>Öffne dein E-Mail-Programm</li>
+                    <li>Füge die kopierte Tabelle ein (Strg+V)</li>
+                    <li>Ergänze Anrede und Grußformel</li>
+                    <li>Sende die E-Mail an beide Tandem-Partner</li>
+                  </ol>
                 </div>
               </div>
             </div>
 
+            <hr class="guide-divider">
+
+            <!-- Quick Reference -->
             <div class="guide-section">
-              <h3>2. Tandems matchen</h3>
+              <h3>Kurzübersicht</h3>
               <div class="guide-step">
                 <span class="step-icon">🗺️</span>
                 <div class="step-text">
                   <strong>Karte & Liste</strong><br>
                   Profile werden auf der Karte und in der Liste angezeigt.
-                  Gelb = Local, Türkis = Newcomer.
                 </div>
               </div>
               <div class="guide-step">
@@ -237,55 +319,20 @@
                 <div class="step-text">
                   <strong>Smart Match</strong><br>
                   Klicke auf ein Profil für automatische Match-Vorschläge.
-                  Sterne zeigen die Match-Qualität (1-5).
                 </div>
               </div>
               <div class="guide-step">
-                <span class="step-icon">👆</span>
+                <span class="step-icon">🤖</span>
                 <div class="step-text">
-                  <strong>Manuelles Matchen</strong><br>
-                  Klicke "Manuell matchen" und wähle zwei Profile aus.
-                </div>
-              </div>
-            </div>
-
-            <div class="guide-section">
-              <h3>3. Tandem bearbeiten</h3>
-              <div class="guide-step">
-                <span class="step-icon">📝</span>
-                <div class="step-text">
-                  <strong>Textvorschlag anpassen</strong><br>
-                  Im Editor kannst du Antworten bearbeiten und
-                  Kommentare hinzufügen. Nutze 💡 für Vorschläge
-                  oder 🤖 für KI-Unterstützung.
+                  <strong>KI-Unterstützung</strong><br>
+                  "KI generieren" erstellt automatisch Gemeinsamkeiten-Texte.
                 </div>
               </div>
               <div class="guide-step">
-                <span class="step-icon">📋</span>
+                <span class="step-icon">🗑️</span>
                 <div class="step-text">
-                  <strong>In Word kopieren</strong><br>
-                  Klicke "Kopieren" - die Tabelle wird formatiert
-                  in die Zwischenablage kopiert.
-                </div>
-              </div>
-            </div>
-
-            <div class="guide-section">
-              <h3>4. Verwaltung</h3>
-              <div class="guide-step">
-                <span class="step-icon">✅</span>
-                <div class="step-text">
-                  <strong>Bereits vermittelt</strong><br>
-                  Grüne Profile sind bereits in einem Tandem.
-                  Klicke darauf zum Bearbeiten oder Auflösen.
-                </div>
-              </div>
-              <div class="guide-step">
-                <span class="step-icon">💾</span>
-                <div class="step-text">
-                  <strong>Export</strong><br>
-                  Im Tab "Export & Einstellungen" kannst du
-                  Tandems als Excel exportieren und Backups erstellen.
+                  <strong>Profile löschen</strong><br>
+                  Unter "Export & Einstellungen" kannst du einzelne oder alle Profile löschen.
                 </div>
               </div>
             </div>
@@ -295,8 +342,9 @@
               <ul>
                 <li>📍 Profile werden nach PLZ auf der Karte gruppiert</li>
                 <li>🔴 Rot markierte Profile sind ausgewählt</li>
-                <li>⚠️ Bei unpassenden Matches siehst du den Grund</li>
+                <li>⚠️ Ausgegraute Matches haben inkompatible Präferenzen</li>
                 <li>📱 Auf Mobilgeräten: Wechsle zwischen Karte und Liste</li>
+                <li>💾 Erstelle regelmäßig Backups unter "Export & Einstellungen"</li>
               </ul>
             </div>
           </div>
