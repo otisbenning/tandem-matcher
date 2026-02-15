@@ -70,144 +70,142 @@ export async function findBestModel(): Promise<string | null> {
 // WICHTIG:
 // - Aus Sicht des VERMITTLERS schreiben
 // - Die Lesenden sehen die Original-Antworten in einer Tabelle daneben!
-// - Der KI-Text soll NUR die Verbindung/Gemeinsamkeit beschreiben, NICHT die Inhalte wiederholen
-// - Kurz und knapp halten!
+// - Gemeinsamkeiten herausstellen, aber NICHT wortwörtlich wiederholen
+// - Alle duzen sich!
 const CATEGORY_PROMPTS: Record<string, string> = {
-  hobbys: `Schreibe einen KURZEN Kommentar zur Gemeinsamkeit bei Hobbys.
+  hobbys: `Schreibe einen Kommentar zu Hobby-Gemeinsamkeiten.
 
-KONTEXT: Die Lesenden sehen die Original-Antworten bereits in einer Tabelle. Dein Text steht daneben als Kommentar.
-
-AUFGABE: Beschreibe NUR die Verbindung/Gemeinsamkeit - NICHT die Inhalte wiederholen!
-STIL: "Hier gibt es Anknüpfungspunkte!", "Das passt gut zusammen.", "Gemeinsam könntet ihr..."
+KONTEXT: Die Original-Antworten stehen bereits in einer Tabelle daneben - du musst sie nicht wortwörtlich wiederholen.
+AUFGABE: Hebe die Gemeinsamkeiten hervor und gib ggf. Vorschläge was man zusammen machen könnte.
 DUZEN: Immer "ihr/euch" - niemals "Sie"
-VERMEIDE: Inhalte der Antworten wiederholen, Emojis, "Person 1/2"
+VERMEIDE: Wortwörtliche Wiederholungen, Emojis, "Person 1/2"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  freizeit: `Schreibe einen KURZEN Kommentar zur Gemeinsamkeit bei Freizeitaktivitäten.
+  freizeit: `Schreibe einen Kommentar zu Freizeit-Gemeinsamkeiten.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR die Verbindung beschreiben, KEINE Inhalte wiederholen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Gemeinsamkeiten hervorheben, ggf. Vorschläge machen.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  interessen: `Schreibe einen KURZEN Kommentar zu gemeinsamen Interessen.
+  interessen: `Schreibe einen Kommentar zu gemeinsamen Interessen.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR die Verbindung beschreiben, KEINE Inhalte wiederholen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Gemeinsamkeiten hervorheben, verbindende Elemente betonen.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  sprachen: `Schreibe einen KURZEN Kommentar zu Sprachkenntnissen.
+  sprachen: `Schreibe einen Kommentar zu Sprachkenntnissen.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR beschreiben wie die Sprachen zusammenpassen - KEINE Liste wiederholen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben.
+AUFGABE: Beschreibe wie die Sprachen zusammenpassen und was das fürs Tandem bedeutet.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  beruf: `Schreibe einen KURZEN Kommentar zu beruflichen Verbindungen.
+  beruf: `Schreibe einen Kommentar zu beruflichen Verbindungen.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR die Verbindung/Synergie beschreiben, KEINE Berufe wiederholen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Synergien und Verbindungspunkte hervorheben.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  vorher: `Schreibe einen KURZEN Kommentar zu bisherigen Erfahrungen.
+  vorher: `Schreibe einen Kommentar zu bisherigen Erfahrungen.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR die Verbindung beschreiben, KEINE Inhalte wiederholen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Verbindende Elemente und gemeinsame Erfahrungen hervorheben.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  zukunft: `Schreibe einen KURZEN Kommentar zu Zukunftsplänen.
+  zukunft: `Schreibe einen Kommentar zu Zukunftsplänen.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR beschreiben wie ihr euch unterstützen könnt, KEINE Pläne wiederholen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Beschreibe wie sich die Pläne ergänzen oder wie man sich unterstützen könnte.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  tandem_motivation: `Schreibe einen KURZEN Kommentar zur Tandem-Motivation.
+  tandem_motivation: `Schreibe einen Kommentar zur Tandem-Motivation.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR beschreiben wie die Motivationen zusammenpassen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Beschreibe wie die Motivationen zusammenpassen.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  freundschaft_werte: `Schreibe einen KURZEN Kommentar zu Freundschafts-Werten.
+  freundschaft_werte: `Schreibe einen Kommentar zu Freundschafts-Werten.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR die gemeinsame Basis beschreiben, KEINE Werte auflisten!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Die gemeinsame Wertebasis hervorheben.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  events: `Schreibe einen KURZEN Kommentar zu gemeinsamen Aktivitäten/Events.
+  events: `Schreibe einen Kommentar zu gemeinsamen Aktivitäten/Events.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR einen Vorschlag oder die Passung beschreiben!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Gemeinsame Interessen hervorheben, konkrete Vorschläge machen.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1-2 Sätze):`,
 
-  verfuegbarkeit: `Schreibe einen KURZEN Kommentar zur zeitlichen Verfügbarkeit.
+  verfuegbarkeit: `Schreibe einen Kommentar zur zeitlichen Verfügbarkeit.
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR beschreiben ob/wie die Zeiten passen - KEINE Zeiten wiederholen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben.
+AUFGABE: Beschreibe ob und wie die Zeiten zusammenpassen.
 DUZEN: "ihr/euch" - nie "Sie"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz):`,
+Kommentar (1 Satz):`,
 
-  default: `Schreibe einen KURZEN Kommentar zur Frage "{Frage}".
+  default: `Schreibe einen Kommentar zur Frage "{Frage}".
 
-KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
-AUFGABE: NUR die Gemeinsamkeit/Verbindung beschreiben, KEINE Inhalte wiederholen!
+KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
+AUFGABE: Gemeinsamkeiten und Verbindungspunkte hervorheben.
 DUZEN: "ihr/euch" - nie "Sie"
 Falls keine Gemeinsamkeit erkennbar: antworte nur "---"
 
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 kurzer Satz oder "---"):`
+Kommentar (1-2 Sätze oder "---"):`
 };
 
 // Detect category from question text
@@ -262,7 +260,7 @@ export async function generateCommonality(
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 100, // Kurze Kommentare - nur 1 Satz
+          num_predict: 200, // 1-2 Sätze
         },
       }),
     });
