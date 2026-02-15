@@ -67,8 +67,15 @@ export function initImportModal(): void {
   confirmBtn?.addEventListener('click', () => {
     if (pendingImport) {
       try {
-        const count = importData(pendingImport);
-        alert(`${count} neue Profile importiert!`);
+        const totalInImport = pendingImport.profiles.length;
+        const countNew = importData(pendingImport);
+        const countSkipped = totalInImport - countNew;
+
+        let message = `${countNew} neue Profile importiert!`;
+        if (countSkipped > 0) {
+          message += `\n${countSkipped} Duplikate übersprungen (bereits vorhanden).`;
+        }
+        alert(message);
         hideModal();
       } catch (error) {
         alert('Fehler beim Import: ' + (error as Error).message);

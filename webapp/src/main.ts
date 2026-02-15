@@ -141,22 +141,38 @@ function initHelpModal() {
   }
 }
 
-// Auto-clipboard detection when window gains focus
+// Auto-clipboard detection - only once at startup, not on every focus
+// (to avoid repeated permission prompts)
 function initAutoClipboard() {
-  window.addEventListener('focus', async () => {
+  // Only check once at startup, not repeatedly
+  let hasChecked = false;
+
+  // Check after a short delay to let the page settle
+  setTimeout(async () => {
+    if (hasChecked) return;
+    hasChecked = true;
+
     try {
-      const text = await navigator.clipboard.readText();
-      if (text && text.includes('"version"') && text.includes('"profiles"')) {
-        // Looks like profile export data
-        const shouldImport = confirm('Profile-Daten in der Zwischenablage erkannt. Importieren?');
-        if (shouldImport) {
-          window.dispatchEvent(new CustomEvent('import-from-clipboard', { detail: text }));
+      // Use Permissions API to check if we already have clipboard access
+      // This avoids triggering a permission prompt
+      const permissionStatus = await navigator.permissions.query({
+        name: 'clipboard-read' as PermissionName
+      });
+
+      // Only try to read if permission is already granted
+      if (permissionStatus.state === 'granted') {
+        const text = await navigator.clipboard.readText();
+        if (text && text.includes('"version"') && text.includes('"profiles"')) {
+          const shouldImport = confirm('Profile-Daten in der Zwischenablage erkannt. Importieren?');
+          if (shouldImport) {
+            window.dispatchEvent(new CustomEvent('import-from-clipboard', { detail: text }));
+          }
         }
       }
     } catch {
-      // Clipboard access denied or empty - that's fine
+      // Permissions API not supported or clipboard access denied - that's fine
     }
-  });
+  }, 1000);
 }
 
 // Export for debugging
