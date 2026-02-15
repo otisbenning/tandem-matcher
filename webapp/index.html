@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tandem-Matcher | Start with a Friend</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="src/styles/main.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1 class="logo">Tandem-Matcher</h1>
+        <nav class="tabs">
+          <button class="tab active" data-tab="matching">Tandems matchen</button>
+          <button class="tab" data-tab="tandems">Tandems verwalten</button>
+          <button class="tab" data-tab="settings">Export & Einstellungen</button>
+        </nav>
+        <button class="import-btn" id="importBtn">
+          <span class="icon">+</span>
+          Profile importieren
+        </button>
+        <button class="help-btn" id="helpBtn" title="Hilfe & Anleitung">?</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Tab 1: Matching -->
+      <section id="matching-tab" class="tab-content active">
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label for="filter-gender">Geschlecht:</label>
+            <select id="filter-gender">
+              <option value="all">Alle</option>
+              <option value="male">Männlich</option>
+              <option value="female">Weiblich</option>
+              <option value="other">Divers</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-group">Gruppe:</label>
+            <select id="filter-group">
+              <option value="all">Alle</option>
+              <option value="local">Locals</option>
+              <option value="newcomer">Newcomer</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <input type="text" id="filter-search" placeholder="Name oder PLZ suchen...">
+          </div>
+          <div class="view-toggle mobile-only">
+            <button class="view-btn active" data-view="map">Karte</button>
+            <button class="view-btn" data-view="list">Liste</button>
+          </div>
+        </div>
+
+        <!-- Desktop: Sidebar + Map Layout -->
+        <div class="matching-layout">
+          <!-- Profile List Sidebar -->
+          <aside class="profile-sidebar" id="profileSidebar">
+            <div class="sidebar-header">
+              <h2>Profile (<span id="profileCount">0</span>)</h2>
+            </div>
+            <div class="profile-list" id="profileList">
+              <!-- Profiles werden hier eingefügt -->
+              <p class="empty-state">Keine Profile geladen. Importiere Profile über den Button oben.</p>
+            </div>
+          </aside>
+
+          <!-- Map View -->
+          <div class="map-container" id="mapContainer">
+            <div id="map"></div>
+          </div>
+        </div>
+
+        <!-- Smart Match Panel -->
+        <div class="smart-match-panel" id="smartMatchPanel">
+          <div class="smart-match-header">
+            <h3>Smart Matches für <span id="selectedProfileName">-</span></h3>
+            <button class="close-btn" id="closeSmartMatch">&times;</button>
+          </div>
+          <div class="smart-match-content" id="smartMatchContent">
+            <!-- Smart Match Vorschläge werden hier eingefügt -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Tandems verwalten -->
+      <section id="tandems-tab" class="tab-content">
+        <div class="tandem-list" id="tandemList">
+          <p class="empty-state">Noch keine Tandems erstellt.</p>
+        </div>
+      </section>
+
+      <!-- Tab 3: Export & Einstellungen -->
+      <section id="settings-tab" class="tab-content">
+        <div class="settings-grid">
+          <!-- Chrome Extension Card (Desktop only) -->
+          <div class="settings-card extension-card desktop-only">
+            <h3>Chrome Extension</h3>
+            <div class="extension-info">
+              <div class="extension-icon">🧩</div>
+              <div class="extension-text">
+                <p>Installiere die Chrome Extension, um Profile direkt vom Portal zu sammeln.</p>
+                <a href="../extension/" class="btn btn-primary" id="downloadExtension">Extension herunterladen</a>
+              </div>
+            </div>
+            <details class="extension-instructions">
+              <summary>Installationsanleitung</summary>
+              <ol>
+                <li>Lade den Extension-Ordner herunter</li>
+                <li>Öffne Chrome und gehe zu <code>chrome://extensions</code></li>
+                <li>Aktiviere oben rechts den <strong>Entwicklermodus</strong></li>
+                <li>Klicke auf <strong>"Entpackte Erweiterung laden"</strong></li>
+                <li>Wähle den <code>extension</code>-Ordner aus</li>
+                <li>Die Extension erscheint jetzt in deiner Toolbar</li>
+              </ol>
+              <p class="tip"><strong>Tipp:</strong> Pinne die Extension für schnellen Zugriff an die Toolbar.</p>
+            </details>
+          </div>
+
+          <!-- KI Card -->
+          <div class="settings-card ollama-card">
+            <h3>KI-Textgenerierung</h3>
+            <div class="ollama-info">
+              <div class="ollama-icon">🤖</div>
+              <div class="ollama-text">
+                <p>Nutze KI (Mistral) für bessere Textvorschläge - DSGVO-konform auf eigenem Server.</p>
+                <div id="ollamaStatus" class="ollama-status">Prüfe Verfügbarkeit...</div>
+              </div>
+            </div>
+            <details class="ollama-instructions">
+              <summary>Wie funktioniert's?</summary>
+              <p>Die KI läuft auf dem SwaF-Server (api.swaf.koeln) und analysiert die Profilangaben, um passende Gemeinsamkeiten zu formulieren.</p>
+              <p class="tip"><strong>Im Editor:</strong> Klicke auf "KI generieren" um alle Felder automatisch auszufüllen, oder nutze den 💡-Button für einzelne Felder.</p>
+            </details>
+          </div>
+
+          <div class="settings-card">
+            <h3>Export</h3>
+            <button class="btn" id="exportExcel">Als Excel exportieren</button>
+            <button class="btn" id="exportCSV">Als CSV exportieren</button>
+            <button class="btn" id="exportJSON">Backup (JSON)</button>
+          </div>
+          <div class="settings-card">
+            <h3>Import</h3>
+            <button class="btn" id="importBackup">Backup wiederherstellen</button>
+          </div>
+          <div class="settings-card">
+            <h3>Statistiken</h3>
+            <div id="statsContainer">
+              <!-- Statistiken werden hier eingefügt -->
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Import Modal -->
+    <div class="modal" id="importModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Profile importieren</h2>
+          <button class="close-btn" id="closeImportModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="import-options">
+            <button class="import-option" id="pasteClipboard">
+              <span class="icon">📋</span>
+              <span>Aus Zwischenablage einfügen</span>
+              <small>Kopiere die Profile aus der Chrome Extension</small>
+            </button>
+            <div class="divider">oder</div>
+            <div class="drop-zone" id="dropZone">
+              <span class="icon">📁</span>
+              <span>JSON-Datei hierher ziehen</span>
+              <small>oder klicken zum Auswählen</small>
+              <input type="file" id="fileInput" accept=".json" hidden>
+            </div>
+          </div>
+          <div class="import-preview" id="importPreview" hidden>
+            <h3>Vorschau</h3>
+            <p><strong id="previewCount">0</strong> Profile gefunden</p>
+            <div class="preview-list" id="previewList"></div>
+            <div class="import-actions">
+              <button class="btn btn-secondary" id="cancelImport">Abbrechen</button>
+              <button class="btn btn-primary" id="confirmImport">Importieren</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help/Guide Modal -->
+    <div class="modal" id="helpModal">
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h2>Kurzanleitung Tandem-Matcher</h2>
+          <button class="close-btn" id="closeHelpModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="guide-content">
+            <div class="guide-section">
+              <h3>1. Profile sammeln</h3>
+              <div class="guide-step">
+                <span class="step-icon">🧩</span>
+                <div class="step-text">
+                  <strong>Chrome Extension (empfohlen)</strong><br>
+                  Installiere die Extension und sammle Profile direkt vom Portal.
+                </div>
+              </div>
+              <div class="guide-step">
+                <span class="step-icon">📋</span>
+                <div class="step-text">
+                  <strong>Import</strong><br>
+                  Klicke auf "Profile importieren" und füge JSON-Daten ein.
+                </div>
+              </div>
+            </div>
+
+            <div class="guide-section">
+              <h3>2. Tandems matchen</h3>
+              <div class="guide-step">
+                <span class="step-icon">🗺️</span>
+                <div class="step-text">
+                  <strong>Karte & Liste</strong><br>
+                  Profile werden auf der Karte und in der Liste angezeigt.
+                  Gelb = Local, Türkis = Newcomer.
+                </div>
+              </div>
+              <div class="guide-step">
+                <span class="step-icon">⭐</span>
+                <div class="step-text">
+                  <strong>Smart Match</strong><br>
+                  Klicke auf ein Profil für automatische Match-Vorschläge.
+                  Sterne zeigen die Match-Qualität (1-5).
+                </div>
+              </div>
+              <div class="guide-step">
+                <span class="step-icon">👆</span>
+                <div class="step-text">
+                  <strong>Manuelles Matchen</strong><br>
+                  Klicke "Manuell matchen" und wähle zwei Profile aus.
+                </div>
+              </div>
+            </div>
+
+            <div class="guide-section">
+              <h3>3. Tandem bearbeiten</h3>
+              <div class="guide-step">
+                <span class="step-icon">📝</span>
+                <div class="step-text">
+                  <strong>Textvorschlag anpassen</strong><br>
+                  Im Editor kannst du Antworten bearbeiten und
+                  Kommentare hinzufügen. Nutze 💡 für Vorschläge
+                  oder 🤖 für KI-Unterstützung.
+                </div>
+              </div>
+              <div class="guide-step">
+                <span class="step-icon">📋</span>
+                <div class="step-text">
+                  <strong>In Word kopieren</strong><br>
+                  Klicke "Kopieren" - die Tabelle wird formatiert
+                  in die Zwischenablage kopiert.
+                </div>
+              </div>
+            </div>
+
+            <div class="guide-section">
+              <h3>4. Verwaltung</h3>
+              <div class="guide-step">
+                <span class="step-icon">✅</span>
+                <div class="step-text">
+                  <strong>Bereits vermittelt</strong><br>
+                  Grüne Profile sind bereits in einem Tandem.
+                  Klicke darauf zum Bearbeiten oder Auflösen.
+                </div>
+              </div>
+              <div class="guide-step">
+                <span class="step-icon">💾</span>
+                <div class="step-text">
+                  <strong>Export</strong><br>
+                  Im Tab "Export & Einstellungen" kannst du
+                  Tandems als Excel exportieren und Backups erstellen.
+                </div>
+              </div>
+            </div>
+
+            <div class="guide-tips">
+              <h4>Tipps</h4>
+              <ul>
+                <li>📍 Profile werden nach PLZ auf der Karte gruppiert</li>
+                <li>🔴 Rot markierte Profile sind ausgewählt</li>
+                <li>⚠️ Bei unpassenden Matches siehst du den Grund</li>
+                <li>📱 Auf Mobilgeräten: Wechsle zwischen Karte und Liste</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match Modal -->
+    <div class="modal" id="matchModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Tandem erstellen</h2>
+          <button class="close-btn" id="closeMatchModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="match-preview" id="matchPreview">
+            <!-- Match-Vorschau wird hier eingefügt -->
+          </div>
+          <div class="match-actions">
+            <button class="btn btn-secondary" id="cancelMatch">Abbrechen</button>
+            <button class="btn btn-primary" id="confirmMatch">Tandem erstellen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="src/main.ts"></script>
+</body>
+</html>

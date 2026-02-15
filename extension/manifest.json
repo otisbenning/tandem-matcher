@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Tandem-Matcher Profil-Sammler",
+  "version": "1.0.0",
+  "description": "Sammelt Profile von portal.startwithafriend.de für den Tandem-Matcher",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://portal.startwithafriend.de/*"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    },
+    "default_title": "Tandem-Matcher Profil-Sammler"
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://portal.startwithafriend.de/*"],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

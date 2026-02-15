@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tandem-Matcher Profil-Sammler</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <h1>Tandem-Matcher</h1>
+      <span class="badge" id="profileCount">0</span>
+    </header>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn btn-primary" id="scanAllBtn">
+        <span class="icon">🔍</span>
+        Alle Tabs scannen
+      </button>
+      <button class="btn btn-secondary" id="scanCurrentBtn">
+        <span class="icon">📄</span>
+        Aktuelle Seite
+      </button>
+    </div>
+
+    <!-- Profile List -->
+    <div class="profile-list" id="profileList">
+      <p class="empty-state">Noch keine Profile gesammelt. Öffne Profile auf portal.startwithafriend.de und klicke "Scannen".</p>
+    </div>
+
+    <!-- Export Actions -->
+    <div class="export-actions">
+      <button class="btn btn-export" id="copyBtn" disabled>
+        <span class="icon">📋</span>
+        In Zwischenablage
+      </button>
+      <button class="btn btn-export" id="downloadBtn" disabled>
+        <span class="icon">💾</span>
+        Als Datei
+      </button>
+    </div>
+
+    <!-- Import Section -->
+    <div class="import-section">
+      <button class="btn btn-import" id="importBtn">
+        <span class="icon">📁</span>
+        Datei importieren
+      </button>
+      <input type="file" id="importInput" accept=".json" hidden>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="footer-actions">
+      <button class="btn btn-danger" id="clearBtn" disabled>
+        Alle löschen
+      </button>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status" id="status"></div>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
