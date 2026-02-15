@@ -204,18 +204,31 @@ export async function getCoordinatesForPLZ(plz: string): Promise<PLZCacheEntry |
   return null;
 }
 
-// Fallback using static region data
+// Fallback using static region data with PLZ-based offset for visual separation
 function getRegionFallback(plz: string): PLZCacheEntry | null {
   const region = plz.substring(0, 2);
   const regionData = PLZ_REGIONS[region];
 
   if (!regionData) return null;
 
-  console.log(`📍 Verwende statische Regionsdaten für PLZ ${plz}`);
+  // Add small offset based on full PLZ to spread out markers within a region
+  // This creates visual separation for different PLZ codes
+  let latOffset = 0;
+  let lngOffset = 0;
+
+  if (plz.length >= 5) {
+    // Use last 3 digits to create a deterministic but distributed offset
+    const plzNum = parseInt(plz.substring(2, 5), 10) || 0;
+    // Golden angle distribution for better visual spread
+    const angle = plzNum * 2.399963; // Golden angle in radians
+    const radius = 0.02 + (plzNum % 100) * 0.0003; // 2-5km radius variation
+    latOffset = radius * Math.cos(angle);
+    lngOffset = radius * Math.sin(angle) * 1.4; // Adjust for longitude compression
+  }
 
   const result: PLZCacheEntry = {
-    lat: regionData.lat,
-    lng: regionData.lng,
+    lat: regionData.lat + latOffset,
+    lng: regionData.lng + lngOffset,
     city: regionData.city,
   };
 
