@@ -700,9 +700,9 @@ function attachEventListeners(container: HTMLElement): void {
     ollamaBtn.disabled = true;
     ollamaBtn.textContent = 'KI läuft...';
 
-    // Filter out simple fact fields that don't need AI generation
+    // Filter: only included fields with both answers, skip simple facts
     const fieldsToGenerate = rows
-      .filter(r => r.answer1 && r.answer2 && !shouldSkipAIGeneration(r.question))
+      .filter(r => r.included && r.answer1 && r.answer2 && !shouldSkipAIGeneration(r.question))
       .map(r => ({ question: r.question, answer1: r.answer1, answer2: r.answer2, rowId: r.id }));
 
     // Show live preview modal immediately
