@@ -164,6 +164,9 @@ export function initTandemEditor(
   p1: Profile,
   p2: Profile
 ): void {
+  // Clear AI suggestions cache for fresh suggestions per tandem
+  localStorage.removeItem('swaf_ai_suggestions_cache');
+
   profile1Name = extractFirstName(p1.name);
   profile2Name = extractFirstName(p2.name);
 
