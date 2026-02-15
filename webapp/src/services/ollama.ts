@@ -5,7 +5,7 @@ const OLLAMA_URL = 'https://api.swaf.koeln/ollama';
 
 // Basic Auth credentials for Ollama API
 const OLLAMA_USER = 'ollama';
-const OLLAMA_PASS = 'FyALFDZvAIIX8Ia4ViGQ';
+const OLLAMA_PASS = 'Tandem2026Matcher';
 
 // Common headers for all requests
 function getHeaders(): HeadersInit {
