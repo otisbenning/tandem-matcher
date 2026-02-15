@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "npm run build:webapp && npm run build:extension",
     "build:webapp": "vite build",
-    "build:extension": "vite build --config vite.extension.config.ts",
+    "build:extension": "vite build --config vite.extension.config.ts && node scripts/copy-extension-static.js",
     "preview": "vite preview"
   },
   "devDependencies": {
