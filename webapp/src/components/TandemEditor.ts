@@ -12,6 +12,7 @@ interface EditableRow {
   selected: boolean;  // For merge selection
   included: boolean;  // Whether to include in email
   collapsed: boolean; // Whether details are collapsed
+  hidden?: boolean;   // Whether row was merged into another
   mergedWith?: string[];
   category: string;
 }
@@ -355,12 +356,13 @@ function getDisplayName(normalizedKey: string, originalQuestion: string): string
 
 function renderEditor(container: HTMLElement): void {
   const selectedCount = selectedRows.size;
-  const includedCount = rows.filter(r => r.included).length;
-  const excludedCount = rows.length - includedCount;
+  // Filter out hidden rows (merged into other rows)
+  const visibleRows = rows.filter(r => !r.hidden);
+  const includedCount = visibleRows.filter(r => r.included).length;
 
-  // Group by category
+  // Group by category (only visible rows)
   const byCategory = new Map<string, EditableRow[]>();
-  for (const row of rows) {
+  for (const row of visibleRows) {
     if (!byCategory.has(row.category)) {
       byCategory.set(row.category, []);
     }
@@ -379,7 +381,7 @@ function renderEditor(container: HTMLElement): void {
         <button class="btn btn-sm btn-ai" id="ollamaBtn" title="Mit lokalem LLM (Ollama) generieren" disabled>
           KI generieren...
         </button>
-        <span class="toolbar-info">${includedCount} von ${rows.length} Feldern</span>
+        <span class="toolbar-info">${includedCount} von ${visibleRows.length} Feldern</span>
       </div>
 
       <div class="editor-table">
