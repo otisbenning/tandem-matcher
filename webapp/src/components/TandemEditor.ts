@@ -1697,27 +1697,55 @@ function showLiveAIPreviewModal(
     if (stopBtn) (stopBtn as HTMLElement).style.display = 'none';
   }
 
-  function attachModalListeners(): void {
-    // Close modal
-    modal.querySelector('.close-modal')?.addEventListener('click', () => {
-      abortRequested = true;
-      modal.remove();
-      onComplete();
-    });
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        abortRequested = true;
-        modal.remove();
-        onComplete();
+  // Save suggestions to cache (localStorage)
+  function saveSuggestionsToCache(): void {
+    const cache: Record<string, string> = {};
+    for (const item of fieldStates) {
+      if (item.status === 'done' && item.generated) {
+        // Use question as key
+        cache[item.question] = item.generated;
       }
-    });
+    }
+    if (Object.keys(cache).length > 0) {
+      localStorage.setItem('swaf_ai_suggestions_cache', JSON.stringify(cache));
+    }
+  }
+
+  // Load cached suggestions
+  function loadSuggestionsFromCache(): void {
+    try {
+      const cached = localStorage.getItem('swaf_ai_suggestions_cache');
+      if (cached) {
+        const cache = JSON.parse(cached) as Record<string, string>;
+        for (const item of fieldStates) {
+          if (cache[item.question] && !item.generated) {
+            item.generated = cache[item.question];
+            item.status = 'done';
+            item.selected = false; // Don't auto-select cached items
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load AI suggestions cache:', e);
+    }
+  }
+
+  function closeModal(): void {
+    saveSuggestionsToCache();
+    abortRequested = true;
+    modal.remove();
+    onComplete();
+  }
+
+  function attachModalListeners(): void {
+    // Close modal - ONLY via X button, not backdrop click
+    modal.querySelector('.close-modal')?.addEventListener('click', closeModal);
+
+    // NO backdrop click closing - users were accidentally closing the modal!
+    // modal.addEventListener('click', ...) removed intentionally
 
     // Cancel button
-    modal.querySelector('#cancelPreviewBtn')?.addEventListener('click', () => {
-      abortRequested = true;
-      modal.remove();
-      onComplete();
-    });
+    modal.querySelector('#cancelPreviewBtn')?.addEventListener('click', closeModal);
 
     // Stop generation button
     modal.querySelector('#stopGenerationBtn')?.addEventListener('click', () => {
@@ -1775,6 +1803,7 @@ function showLiveAIPreviewModal(
 
     // Apply button
     modal.querySelector('#applyPreviewBtn')?.addEventListener('click', () => {
+      saveSuggestionsToCache();
       abortRequested = true;
       applySelectedItems();
       modal.remove();
@@ -1826,17 +1855,33 @@ function showLiveAIPreviewModal(
     }
   }
 
+  // Load any cached suggestions first
+  loadSuggestionsFromCache();
+
   // Show modal immediately
   modal.innerHTML = renderInitialModal();
   document.body.appendChild(modal);
   attachModalListeners();
 
-  // Start generating in background
+  // Update UI if we loaded cached items
+  for (let i = 0; i < fieldStates.length; i++) {
+    if (fieldStates[i].status === 'done') {
+      updateSingleItem(i);
+    }
+  }
+
+  // Start generating in background (skip already cached items)
   async function generateAll(): Promise<void> {
     for (let i = 0; i < fieldStates.length; i++) {
       if (abortRequested) break;
 
       const item = fieldStates[i];
+
+      // Skip items that already have cached content
+      if (item.status === 'done' && item.generated) {
+        continue;
+      }
+
       item.status = 'generating';
       updateSingleItem(i);
 

@@ -69,19 +69,18 @@ export async function findBestModel(): Promise<string | null> {
 // Category-specific prompts for better AI responses
 // WICHTIG: Aus Sicht des VERMITTLERS schreiben, der die Gemeinsamkeiten beschreibt!
 // Nur ein Abschnitt einer größeren E-Mail - keine Anrede/Abschluss nötig!
+// Alle duzen sich!
 const CATEGORY_PROMPTS: Record<string, string> = {
   hobbys: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail. Dieser Abschnitt beschreibt die Hobby-Gemeinsamkeiten zweier Tandem-Partner.
 
-WICHTIG: Du schreibst NUR einen Abschnitt, NICHT die ganze E-Mail!
-- KEINE Anrede ("Hallo", "Liebe...")
-- KEINE Einleitung ("Ich freue mich...", "Hier ist...")
-- KEIN Abschluss ("Viele Grüße", "Ich hoffe...")
+WICHTIG:
+- NUR ein Abschnitt, NICHT die ganze E-Mail!
+- KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
 - Starte direkt mit dem Inhalt!
+- Alle DUZEN sich! ("ihr", "euch", "du" - NIEMALS "Sie")
 
-DEINE ROLLE: Vermittler, der von außen beschreibt.
 STIL: "Ihr beide...", "Gemeinsam könntet ihr...", "Euch verbindet..."
-
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -90,11 +89,9 @@ Abschnitt (2-3 Sätze, direkt starten):`,
 
   freizeit: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Freizeit-Gemeinsamkeiten.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
-STIL: "Ihr beide...", "Gemeinsam könntet ihr...", "In eurer Freizeit..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
+STIL: "Ihr beide...", "In eurer Freizeit..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -103,11 +100,9 @@ Abschnitt (2-3 Sätze):`,
 
   interessen: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über gemeinsame Interessen.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
-STIL: "Ihr interessiert euch beide für...", "Ein gemeinsames Interesse..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
+STIL: "Ihr interessiert euch beide für..."
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -116,11 +111,9 @@ Abschnitt (2-3 Sätze):`,
 
   sprachen: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Sprachkenntnisse.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Ihr sprecht beide...", "Deutsch könnt ihr gemeinsam üben."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -129,11 +122,9 @@ Abschnitt (1-2 Sätze):`,
 
   beruf: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über berufliche Verbindungen.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Beruflich verbindet euch...", "Eure unterschiedlichen Branchen..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -142,11 +133,9 @@ Abschnitt (2-3 Sätze):`,
 
   vorher: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über bisherige Erfahrungen.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Ihr habt beide...", "Eure unterschiedlichen Wege..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -155,11 +144,9 @@ Abschnitt (2-3 Sätze):`,
 
   zukunft: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Zukunftspläne.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Ihr habt beide Pläne für...", "Dabei könntet ihr euch unterstützen."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -168,11 +155,9 @@ Abschnitt (2-3 Sätze):`,
 
   tandem_motivation: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über die Tandem-Motivation.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Eure Motivationen ergänzen sich...", "Ihr wollt beide..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -181,11 +166,9 @@ Abschnitt (2-3 Sätze):`,
 
   freundschaft_werte: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Freundschafts-Werte.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Euch beiden ist wichtig...", "Ihr teilt ähnliche Werte..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -194,11 +177,9 @@ Abschnitt (2-3 Sätze):`,
 
   events: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über gemeinsame Aktivitäten.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Ihr könntet zusammen...", "Events wie ... interessieren euch beide."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -207,11 +188,9 @@ Abschnitt (2-3 Sätze):`,
 
   verfuegbarkeit: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über die zeitliche Verfügbarkeit.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Ihr seid beide abends verfügbar.", "Ein Treffen am Wochenende würde passen."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
@@ -220,11 +199,9 @@ Abschnitt (1-2 Sätze):`,
 
   default: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail zur Frage "{Frage}".
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-Starte direkt mit dem Inhalt.
-
+WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
 STIL: "Ihr beide...", "Euch verbindet...", "Gemeinsam könntet ihr..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis
+VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
 Falls keine Gemeinsamkeit: antworte nur "---"
 
 Angabe A: "{Antwort1}"
