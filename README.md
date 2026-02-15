@@ -2,7 +2,7 @@
 
 Matching-Tool für [Start with a Friend](https://www.startwithafriend.de/) - Paart Locals mit Newcomern für Tandem-Partnerschaften.
 
-**Live-Demo:** [GitHub Pages](https://otisbenning.github.io/Tandem-Matcher/)
+**Live-Demo:** [https://otisbenning.github.io/tandem-matcher/](https://otisbenning.github.io/tandem-matcher/)
 
 ## Struktur
 
