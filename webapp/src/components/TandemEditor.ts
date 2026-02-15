@@ -1510,6 +1510,7 @@ function showToast(message: string): void {
 }
 
 // Live AI Preview Modal - shows responses as they're generated in real-time
+// Now with individual field updates (no full re-render) and regeneration support
 function showLiveAIPreviewModal(
   fields: Array<{ question: string; answer1: string; answer2: string; rowId: string }>,
   container: HTMLElement,
@@ -1533,77 +1534,41 @@ function showLiveAIPreviewModal(
 
   let isGenerating = true;
   let abortRequested = false;
+  let activeRegenerations = new Set<number>();
 
   // Create modal
   const modal = document.createElement('div');
   modal.className = 'ai-modal-overlay';
 
-  function renderModalContent(): string {
-    const doneCount = fieldStates.filter(f => f.status === 'done').length;
-    const generatingIndex = fieldStates.findIndex(f => f.status === 'generating');
-    const selectedCount = fieldStates.filter(f => f.selected && f.status === 'done').length;
-
+  function renderInitialModal(): string {
     return `
       <div class="ai-modal ai-preview-modal ai-live-modal">
         <div class="ai-modal-header">
           <h3>KI-Generierung</h3>
-          <div class="ai-progress-info">
-            ${isGenerating
-              ? `<span class="ai-progress-spinner"></span> ${doneCount}/${fields.length} generiert`
-              : `${doneCount} Vorschläge generiert`
-            }
+          <div class="ai-progress-info" id="progressInfo">
+            <span class="ai-progress-spinner"></span> <span id="progressText">0/${fields.length} generiert</span>
           </div>
           <button class="close-modal">&times;</button>
         </div>
         <div class="ai-modal-body">
-          <p class="ai-preview-intro">
-            ${isGenerating
-              ? '<strong>Generiere Vorschläge...</strong> Du kannst bereits fertige Texte bearbeiten und auswählen.'
-              : `<strong>${doneCount} Vorschläge generiert.</strong> Wähle aus, welche du übernehmen möchtest:`
-            }
+          <p class="ai-preview-intro" id="introText">
+            <strong>Generiere Vorschläge...</strong> Du kannst bereits fertige Texte bearbeiten und auswählen.
           </p>
 
           <div class="ai-preview-actions-top">
             <button class="btn btn-sm" id="selectAllBtn">Alle auswählen</button>
             <button class="btn btn-sm btn-outline" id="selectNoneBtn">Keine auswählen</button>
-            ${isGenerating ? '<button class="btn btn-sm btn-danger" id="stopGenerationBtn">Generation stoppen</button>' : ''}
+            <button class="btn btn-sm btn-danger" id="stopGenerationBtn">Generation stoppen</button>
           </div>
 
-          <div class="ai-preview-list ai-live-list">
-            ${fieldStates.map((item, index) => `
-              <div class="ai-preview-item ${item.status}" data-index="${index}">
-                <label class="ai-preview-checkbox">
-                  <input type="checkbox" ${item.selected ? 'checked' : ''} ${item.status !== 'done' ? 'disabled' : ''} data-index="${index}">
-                  <span class="checkmark"></span>
-                </label>
-                <div class="ai-preview-content">
-                  <div class="ai-preview-question">${escapeHtml(item.question)}</div>
-                  <div class="ai-preview-answers">
-                    <span class="answer-snippet" title="${escapeHtml(item.answer1)}">${escapeHtml(truncateText(item.answer1, 30))}</span>
-                    <span class="answer-vs">+</span>
-                    <span class="answer-snippet" title="${escapeHtml(item.answer2)}">${escapeHtml(truncateText(item.answer2, 30))}</span>
-                  </div>
-                  ${item.status === 'pending'
-                    ? '<div class="ai-preview-pending">Wartet...</div>'
-                    : item.status === 'generating'
-                    ? '<div class="ai-preview-generating"><span class="ai-mini-spinner"></span> Generiere...</div>'
-                    : item.status === 'error'
-                    ? '<div class="ai-preview-error">Fehler bei der Generierung</div>'
-                    : `<textarea class="ai-preview-textarea" data-index="${index}" rows="3">${escapeHtml(item.generated)}</textarea>`
-                  }
-                  <details class="ai-item-prompt">
-                    <summary>Prompt anzeigen</summary>
-                    <pre class="ai-prompt-mini">${escapeHtml(buildPrompt(item.question, item.answer1, item.answer2))}</pre>
-                  </details>
-                </div>
-              </div>
-            `).join('')}
+          <div class="ai-preview-list ai-live-list" id="previewList">
+            ${fieldStates.map((item, index) => renderItemHTML(item, index)).join('')}
           </div>
 
           <div class="ai-preview-actions">
             <button class="btn btn-secondary" id="cancelPreviewBtn">Abbrechen</button>
-            <button class="btn btn-primary" id="applyPreviewBtn" ${selectedCount === 0 ? 'disabled' : ''}>
-              Ausgewählte übernehmen (<span id="selectedCount">${selectedCount}</span>)
+            <button class="btn btn-primary" id="applyPreviewBtn" disabled>
+              Ausgewählte übernehmen (<span id="selectedCount">0</span>)
             </button>
           </div>
         </div>
@@ -1611,9 +1576,125 @@ function showLiveAIPreviewModal(
     `;
   }
 
-  function updateModal(): void {
-    modal.innerHTML = renderModalContent();
-    attachModalListeners();
+  function renderItemHTML(item: typeof fieldStates[0], index: number): string {
+    return `
+      <div class="ai-preview-item ${item.status}" data-index="${index}" id="preview-item-${index}">
+        <label class="ai-preview-checkbox">
+          <input type="checkbox" ${item.selected ? 'checked' : ''} ${item.status !== 'done' ? 'disabled' : ''} data-index="${index}">
+          <span class="checkmark"></span>
+        </label>
+        <div class="ai-preview-content">
+          <div class="ai-preview-question-row">
+            <span class="ai-preview-question">${escapeHtml(item.question)}</span>
+            <button class="btn-icon ai-regenerate-btn" data-index="${index}" title="Neu generieren" ${item.status === 'generating' ? 'disabled' : ''}>🔄</button>
+          </div>
+          <div class="ai-preview-answers">
+            <span class="answer-snippet" title="${escapeHtml(item.answer1)}">${escapeHtml(truncateText(item.answer1, 30))}</span>
+            <span class="answer-vs">+</span>
+            <span class="answer-snippet" title="${escapeHtml(item.answer2)}">${escapeHtml(truncateText(item.answer2, 30))}</span>
+          </div>
+          <div class="ai-preview-result" id="result-${index}">
+            ${renderResultContent(item, index)}
+          </div>
+          <details class="ai-item-prompt">
+            <summary>Prompt anzeigen</summary>
+            <pre class="ai-prompt-mini">${escapeHtml(buildPrompt(item.question, item.answer1, item.answer2))}</pre>
+          </details>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderResultContent(item: typeof fieldStates[0], index: number): string {
+    if (item.status === 'pending') {
+      return '<div class="ai-preview-pending">Wartet...</div>';
+    } else if (item.status === 'generating') {
+      return '<div class="ai-preview-generating"><span class="ai-mini-spinner"></span> Generiere...</div>';
+    } else if (item.status === 'error') {
+      return '<div class="ai-preview-error">Fehler - klicke 🔄 zum erneuten Versuch</div>';
+    } else {
+      return `<textarea class="ai-preview-textarea" data-index="${index}" rows="4">${escapeHtml(item.generated)}</textarea>`;
+    }
+  }
+
+  // Update only a single item without touching others
+  function updateSingleItem(index: number): void {
+    const item = fieldStates[index];
+    const itemEl = modal.querySelector(`#preview-item-${index}`);
+    if (!itemEl) return;
+
+    // Update status class
+    itemEl.className = `ai-preview-item ${item.status}`;
+
+    // Update result content only
+    const resultEl = itemEl.querySelector(`#result-${index}`);
+    if (resultEl) {
+      resultEl.innerHTML = renderResultContent(item, index);
+      // Re-attach textarea listener if needed
+      const textarea = resultEl.querySelector('.ai-preview-textarea');
+      if (textarea) {
+        textarea.addEventListener('input', (e) => {
+          const target = e.target as HTMLTextAreaElement;
+          fieldStates[index].generated = target.value;
+        });
+      }
+    }
+
+    // Update checkbox state
+    const checkbox = itemEl.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    if (checkbox) {
+      checkbox.disabled = item.status !== 'done';
+      checkbox.checked = item.selected;
+    }
+
+    // Update regenerate button
+    const regenBtn = itemEl.querySelector('.ai-regenerate-btn') as HTMLButtonElement;
+    if (regenBtn) {
+      regenBtn.disabled = item.status === 'generating';
+    }
+
+    updateCounts();
+  }
+
+  function updateCounts(): void {
+    const doneCount = fieldStates.filter(f => f.status === 'done').length;
+    const selectedCount = fieldStates.filter(f => f.selected && f.status === 'done').length;
+
+    // Update progress text
+    const progressText = modal.querySelector('#progressText');
+    if (progressText) {
+      progressText.textContent = `${doneCount}/${fields.length} generiert`;
+    }
+
+    // Update selected count
+    const countEl = modal.querySelector('#selectedCount');
+    if (countEl) countEl.textContent = String(selectedCount);
+
+    // Update apply button
+    const applyBtn = modal.querySelector('#applyPreviewBtn') as HTMLButtonElement;
+    if (applyBtn) applyBtn.disabled = selectedCount === 0;
+  }
+
+  function updateGenerationComplete(): void {
+    isGenerating = false;
+
+    // Update progress info
+    const progressInfo = modal.querySelector('#progressInfo');
+    if (progressInfo) {
+      const doneCount = fieldStates.filter(f => f.status === 'done').length;
+      progressInfo.innerHTML = `<span id="progressText">${doneCount} Vorschläge generiert</span>`;
+    }
+
+    // Update intro text
+    const introText = modal.querySelector('#introText');
+    if (introText) {
+      const doneCount = fieldStates.filter(f => f.status === 'done').length;
+      introText.innerHTML = `<strong>${doneCount} Vorschläge generiert.</strong> Wähle aus, welche du übernehmen möchtest:`;
+    }
+
+    // Hide stop button
+    const stopBtn = modal.querySelector('#stopGenerationBtn');
+    if (stopBtn) (stopBtn as HTMLElement).style.display = 'none';
   }
 
   function attachModalListeners(): void {
@@ -1641,37 +1722,55 @@ function showLiveAIPreviewModal(
     // Stop generation button
     modal.querySelector('#stopGenerationBtn')?.addEventListener('click', () => {
       abortRequested = true;
-      isGenerating = false;
-      updateModal();
+      updateGenerationComplete();
     });
 
-    // Select all/none
+    // Select all/none - update checkboxes directly without re-render
     modal.querySelector('#selectAllBtn')?.addEventListener('click', () => {
-      fieldStates.forEach(f => { if (f.status === 'done') f.selected = true; });
-      updateModal();
+      fieldStates.forEach((f, i) => {
+        if (f.status === 'done') {
+          f.selected = true;
+          const checkbox = modal.querySelector(`#preview-item-${i} input[type="checkbox"]`) as HTMLInputElement;
+          if (checkbox) checkbox.checked = true;
+        }
+      });
+      updateCounts();
     });
     modal.querySelector('#selectNoneBtn')?.addEventListener('click', () => {
-      fieldStates.forEach(f => f.selected = false);
-      updateModal();
+      fieldStates.forEach((f, i) => {
+        f.selected = false;
+        const checkbox = modal.querySelector(`#preview-item-${i} input[type="checkbox"]`) as HTMLInputElement;
+        if (checkbox) checkbox.checked = false;
+      });
+      updateCounts();
     });
 
-    // Individual checkboxes
-    modal.querySelectorAll('.ai-preview-item input[type="checkbox"]').forEach(cb => {
-      cb.addEventListener('change', (e) => {
-        const target = e.target as HTMLInputElement;
-        const index = parseInt(target.dataset.index || '0', 10);
+    // Individual checkboxes (use event delegation)
+    modal.querySelector('#previewList')?.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      if (target.type === 'checkbox' && target.dataset.index) {
+        const index = parseInt(target.dataset.index, 10);
         fieldStates[index].selected = target.checked;
-        updateSelectedCount();
-      });
+        updateCounts();
+      }
     });
 
-    // Editable textareas
-    modal.querySelectorAll('.ai-preview-textarea').forEach(textarea => {
-      textarea.addEventListener('input', (e) => {
-        const target = e.target as HTMLTextAreaElement;
-        const index = parseInt(target.dataset.index || '0', 10);
+    // Textareas (use event delegation)
+    modal.querySelector('#previewList')?.addEventListener('input', (e) => {
+      const target = e.target as HTMLTextAreaElement;
+      if (target.classList.contains('ai-preview-textarea') && target.dataset.index) {
+        const index = parseInt(target.dataset.index, 10);
         fieldStates[index].generated = target.value;
-      });
+      }
+    });
+
+    // Regenerate buttons (use event delegation)
+    modal.querySelector('#previewList')?.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('ai-regenerate-btn') && target.dataset.index) {
+        const index = parseInt(target.dataset.index, 10);
+        await regenerateSingle(index);
+      }
     });
 
     // Apply button
@@ -1683,12 +1782,30 @@ function showLiveAIPreviewModal(
     });
   }
 
-  function updateSelectedCount(): void {
-    const selectedCount = fieldStates.filter(f => f.selected && f.status === 'done').length;
-    const countEl = modal.querySelector('#selectedCount');
-    if (countEl) countEl.textContent = String(selectedCount);
-    const applyBtn = modal.querySelector('#applyPreviewBtn') as HTMLButtonElement;
-    if (applyBtn) applyBtn.disabled = selectedCount === 0;
+  async function regenerateSingle(index: number): Promise<void> {
+    if (activeRegenerations.has(index)) return;
+
+    const item = fieldStates[index];
+    activeRegenerations.add(index);
+    item.status = 'generating';
+    updateSingleItem(index);
+
+    try {
+      const result = await generateCommonality(item.question, item.answer1, item.answer2);
+      if (result) {
+        item.generated = result;
+        item.status = 'done';
+        item.selected = true;
+      } else {
+        item.status = 'error';
+      }
+    } catch (error) {
+      console.warn('Regeneration error:', error);
+      item.status = 'error';
+    }
+
+    activeRegenerations.delete(index);
+    updateSingleItem(index);
   }
 
   function applySelectedItems(): void {
@@ -1710,7 +1827,7 @@ function showLiveAIPreviewModal(
   }
 
   // Show modal immediately
-  modal.innerHTML = renderModalContent();
+  modal.innerHTML = renderInitialModal();
   document.body.appendChild(modal);
   attachModalListeners();
 
@@ -1721,7 +1838,7 @@ function showLiveAIPreviewModal(
 
       const item = fieldStates[i];
       item.status = 'generating';
-      updateModal();
+      updateSingleItem(i);
 
       try {
         const result = await generateCommonality(item.question, item.answer1, item.answer2);
@@ -1740,11 +1857,10 @@ function showLiveAIPreviewModal(
         item.selected = false;
       }
 
-      updateModal();
+      updateSingleItem(i);
     }
 
-    isGenerating = false;
-    updateModal();
+    updateGenerationComplete();
   }
 
   generateAll();

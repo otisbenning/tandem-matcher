@@ -2575,6 +2575,43 @@ body {
   font-size: 0.875rem;
 }
 
+.ai-preview-question-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+}
+
+.ai-preview-question-row .ai-preview-question {
+  flex: 1;
+}
+
+.ai-regenerate-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  opacity: 0.7;
+  transition: all var(--transition);
+}
+
+.ai-regenerate-btn:hover:not(:disabled) {
+  opacity: 1;
+  background: var(--bg);
+  border-color: var(--primary);
+}
+
+.ai-regenerate-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.ai-preview-result {
+  margin-top: var(--spacing-xs);
+}
+
 .ai-preview-textarea {
   width: 100%;
   padding: var(--spacing-sm);
@@ -2583,7 +2620,7 @@ body {
   font-family: inherit;
   font-size: 0.9rem;
   resize: vertical;
-  min-height: 60px;
+  min-height: 80px;
   transition: border-color var(--transition);
 }
 

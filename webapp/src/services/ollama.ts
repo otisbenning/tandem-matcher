@@ -67,169 +67,174 @@ export async function findBestModel(): Promise<string | null> {
 }
 
 // Category-specific prompts for better AI responses
-// WICHTIG: Niemals "Person 1" oder "Person 2" schreiben! Immer direkt "Ihr" verwenden.
+// WICHTIG: Aus Sicht des VERMITTLERS schreiben, der die Gemeinsamkeiten beschreibt!
 const CATEGORY_PROMPTS: Record<string, string> = {
-  hobbys: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Hobby-Angaben und schreibe, was beide gemeinsam haben oder wie sie die Hobbies verbinden können.
+  hobbys: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Du schreibst eine E-Mail an zwei Personen, die du als Tandem zusammenbringen möchtest. Beschreibe ihre Hobby-Gemeinsamkeiten.
 
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euch", "gemeinsam"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- NIEMALS "Die erste Person" oder "Die zweite Person"!
-- Keine Emojis
-- Locker und freundlich, nicht förmlich
+DEINE ROLLE: Du bist der Vermittler, der die beiden vorstellt.
+SCHREIBSTIL: Beschreibe von außen, was beide gemeinsam haben.
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+BEISPIELE für guten Stil:
+- "Ihr beide interessiert euch für Sport und Fitness."
+- "Kochen ist eine Leidenschaft, die ihr teilt."
+- "Ihr könntet zusammen wandern gehen."
 
-Text:`,
-
-  freizeit: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Freizeit-Angaben und schreibe, was beide gemeinsam machen können.
-
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euch", "gemeinsam"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
-- Locker und freundlich
-
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
-
-Text:`,
-
-  interessen: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Interessen und schreibe, was beide verbindet.
-
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euch", "gemeinsam"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
-- Locker und freundlich
-
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
-
-Text:`,
-
-  sprachen: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Sprachkenntnisse und schreibe, wie beide miteinander kommunizieren können.
-
-REGELN:
-- Schreibe 2-3 Sätze (100-200 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euch"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
+VERMEIDE:
+- Schreibe NICHT aus Sicht der Tandem-Partner selbst
+- Keine Ich-Form, keine Wir-Form aus Sicht der Partner
+- NIEMALS "Person 1" oder "Person 2"
 - Keine Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Text:`,
+Gemeinsamkeit (2-3 Sätze):`,
 
-  beruf: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Berufs-Angaben und schreibe, was beide beruflich verbindet oder warum die Unterschiede spannend sind.
+  freizeit: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die Freizeit-Gemeinsamkeiten zweier Personen, die du zusammenbringen möchtest.
 
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euch"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
-- Locker und freundlich
+DEINE ROLLE: Du beschreibst von außen, was beide verbindet.
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+BEISPIELE für guten Stil:
+- "In eurer Freizeit macht ihr beide gerne..."
+- "Ihr könntet gemeinsam..."
+- "Das verbindet euch: ..."
 
-Text:`,
-
-  vorher: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Angaben zu früheren Tätigkeiten und schreibe, was beide verbindet oder warum die unterschiedlichen Wege interessant sind.
-
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euer Weg", "eure Erfahrungen"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
+VERMEIDE: Ich-Form, Wir-Form aus Partnersicht, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Text:`,
+Gemeinsamkeit (2-3 Sätze):`,
 
-  zukunft: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Zukunftspläne und schreibe, wie beide voneinander profitieren können.
+  interessen: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die gemeinsamen Interessen zweier Personen.
 
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr", "eure Pläne", "gemeinsam"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
+DEINE ROLLE: Du beschreibst von außen, was beide interessiert.
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+BEISPIELE: "Ihr interessiert euch beide für...", "Ein gemeinsames Interesse ist..."
 
-Text:`,
-
-  tandem_motivation: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Motivationen fürs Tandem-Programm und schreibe, warum sich die Motivationen gut ergänzen.
-
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euch", "eure Motivation"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
+VERMEIDE: Ich-Form, Wir-Form aus Partnersicht, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Text:`,
+Gemeinsamkeit (2-3 Sätze):`,
 
-  freundschaft_werte: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Werte-Angaben und schreibe, warum sich die Vorstellungen gut ergänzen.
+  sprachen: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe, welche Sprachen beide sprechen und wie sie kommunizieren können.
 
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euch", "euch beiden"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
+DEINE ROLLE: Du beschreibst die sprachliche Basis für das Tandem.
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+BEISPIELE: "Ihr sprecht beide Deutsch und Englisch.", "Deutsch könnt ihr gemeinsam üben."
 
-Text:`,
-
-  events: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Event-/Aktivitäten-Angaben und schreibe, was beide gemeinsam unternehmen können.
-
-REGELN:
-- Schreibe 2-3 Sätze (150-250 Zeichen)
-- Sprich beide direkt an mit "Ihr könnt", "gemeinsam", "zusammen"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
+VERMEIDE: Ich-Form aus Partnersicht (wie "Ich spreche..."), "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Text:`,
+Sprachliche Basis (1-2 Sätze):`,
 
-  verfuegbarkeit: `Du schreibst einen freundlichen Text für zwei Tandem-Partner. Analysiere die Verfügbarkeits-Angaben und mache einen konkreten Vorschlag für ein erstes Treffen.
+  beruf: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe berufliche Gemeinsamkeiten oder interessante Unterschiede.
 
-REGELN:
-- Schreibe 2-3 Sätze mit einem konkreten Zeitvorschlag (Wochentag/Tageszeit)
-- Sprich beide direkt an mit "Ihr könntet", "euer erstes Treffen"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
+DEINE ROLLE: Du beschreibst von außen die beruflichen Hintergründe.
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+BEISPIELE: "Beruflich seid ihr beide im sozialen Bereich.", "Eure unterschiedlichen Branchen könnten für spannende Gespräche sorgen."
 
-Text:`,
-
-  default: `Du schreibst einen freundlichen Text für zwei Tandem-Partner bei "Start with a Friend". Analysiere die Antworten zur Frage "{Frage}" und schreibe, was beide verbindet.
-
-REGELN:
-- Schreibe 1-2 Sätze (100-200 Zeichen)
-- Sprich beide direkt an mit "Ihr", "euch", "gemeinsam"
-- NIEMALS "Person 1" oder "Person 2" schreiben!
-- Keine Emojis
-- Wenn keine Gemeinsamkeit erkennbar: antworte nur "---"
+VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
 
 Angabe A: "{Antwort1}"
 Angabe B: "{Antwort2}"
 
-Text:`
+Berufliche Verbindung (2-3 Sätze):`,
+
+  vorher: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die bisherigen Erfahrungen und Wege beider Personen.
+
+DEINE ROLLE: Du beschreibst von außen die Lebensgeschichten.
+
+BEISPIELE: "Ihr habt beide schon viel erlebt.", "Eure unterschiedlichen Wege machen das Tandem interessant."
+
+VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Verbindung (2-3 Sätze):`,
+
+  zukunft: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die Zukunftspläne und wie beide voneinander profitieren könnten.
+
+DEINE ROLLE: Du beschreibst von außen die Ziele und Synergien.
+
+BEISPIELE: "Ihr habt beide Pläne für...", "Dabei könntet ihr euch gegenseitig unterstützen."
+
+VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Zukunftsperspektive (2-3 Sätze):`,
+
+  tandem_motivation: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe, warum die Motivationen beider gut zusammenpassen.
+
+DEINE ROLLE: Du erklärst, warum dieses Match gut ist.
+
+BEISPIELE: "Eure Motivationen ergänzen sich gut:", "Ihr wollt beide..."
+
+VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Motivation (2-3 Sätze):`,
+
+  freundschaft_werte: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die gemeinsamen Werte in Bezug auf Freundschaft.
+
+DEINE ROLLE: Du beschreibst von außen, was beiden wichtig ist.
+
+BEISPIELE: "Euch beiden ist wichtig:", "Ihr teilt ähnliche Werte wie..."
+
+VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Gemeinsame Werte (2-3 Sätze):`,
+
+  events: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe, welche Events oder Aktivitäten beide gemeinsam machen könnten.
+
+DEINE ROLLE: Du machst Vorschläge für gemeinsame Unternehmungen.
+
+BEISPIELE: "Ihr könntet zusammen...", "Events wie ... interessieren euch beide."
+
+VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Aktivitäts-Vorschläge (2-3 Sätze):`,
+
+  verfuegbarkeit: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Analysiere die Verfügbarkeit und schlage einen passenden Zeitpunkt fürs erste Treffen vor.
+
+DEINE ROLLE: Du findest eine gemeinsame Zeit.
+
+BEISPIELE: "Ihr seid beide abends verfügbar.", "Ein Treffen am Wochenende würde gut passen."
+
+VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Zeitvorschlag (1-2 Sätze):`,
+
+  default: `Du bist ein Tandem-Vermittler bei "Start with a Friend". Beschreibe die Gemeinsamkeit zur Frage "{Frage}".
+
+DEINE ROLLE: Du beschreibst von außen, was beide verbindet.
+SCHREIBSTIL: "Ihr beide...", "Euch verbindet...", "Gemeinsam könntet ihr..."
+
+VERMEIDE: Ich-Form aus Partnersicht, "Person 1/2", Emojis
+Falls keine Gemeinsamkeit: antworte nur "---"
+
+Angabe A: "{Antwort1}"
+Angabe B: "{Antwort2}"
+
+Gemeinsamkeit (1-2 Sätze):`
 };
 
 // Detect category from question text
@@ -284,7 +289,7 @@ export async function generateCommonality(
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 150, // Max tokens (increased for longer responses)
+          num_predict: 400, // Max tokens for full responses
         },
       }),
     });
