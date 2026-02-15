@@ -9,7 +9,7 @@ const src = join(root, 'extension');
 const dest = join(root, 'dist', 'extension');
 
 // Ensure dest directories exist
-mkdirSync(join(dest, 'assets', 'icons'), { recursive: true });
+mkdirSync(join(dest, 'icons'), { recursive: true });
 
 // Copy manifest.json
 copyFileSync(join(src, 'manifest.json'), join(dest, 'manifest.json'));
@@ -25,7 +25,7 @@ const iconsDir = join(src, 'assets', 'icons');
 if (existsSync(iconsDir)) {
   const icons = readdirSync(iconsDir).filter(f => f.endsWith('.png'));
   for (const icon of icons) {
-    copyFileSync(join(iconsDir, icon), join(dest, 'assets', 'icons', icon));
+    copyFileSync(join(iconsDir, icon), join(dest, 'icons', icon));
   }
   console.log(`Copied: ${icons.length} icons`);
 }
