@@ -775,8 +775,8 @@ function mergeSelectedRows(): void {
       targetRow.comment = targetRow.comment ? targetRow.comment + '; ' + mergeRow.comment : mergeRow.comment;
     }
 
-    // Mark as hidden
-    mergeRow.hidden = true;
+    // Exclude merged rows from email but keep visible (user can toggle back)
+    mergeRow.included = false;
 
     if (!targetRow.mergedWith) targetRow.mergedWith = [];
     targetRow.mergedWith.push(mergeRow.question.substring(0, 30));

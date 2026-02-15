@@ -69,6 +69,39 @@ function renderTandemList(): void {
       }
     });
   });
+
+  // Add edit handlers
+  container.querySelectorAll('.edit-tandem').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tandemId = btn.getAttribute('data-tandem-id');
+      if (tandemId) {
+        const tandems = getTandems();
+        const tandem = tandems.find(t => t.id === tandemId);
+        if (tandem) {
+          showEditTandemModal(tandem);
+        }
+      }
+    });
+  });
+
+  // Make tandem cards clickable for editing
+  container.querySelectorAll('.tandem-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      // Don't trigger if clicking on buttons
+      const target = e.target as HTMLElement;
+      if (target.closest('button')) return;
+
+      const tandemId = card.getAttribute('data-tandem-id');
+      if (tandemId) {
+        const tandems = getTandems();
+        const tandem = tandems.find(t => t.id === tandemId);
+        if (tandem) {
+          showEditTandemModal(tandem);
+        }
+      }
+    });
+  });
 }
 
 function copyTandemText(tandemId: string): void {
@@ -203,6 +236,7 @@ function renderTandemCard(tandem: Tandem): string {
         <div class="meta">
           <span class="stars">${stars}</span>
           <span class="date">${date}</span>
+          <button class="edit-tandem btn-icon" data-tandem-id="${tandem.id}" title="Bearbeiten">✏️</button>
           <button class="copy-tandem btn-icon" data-tandem-id="${tandem.id}" title="Text kopieren">📋</button>
           <button class="delete-tandem close-btn" data-tandem-id="${tandem.id}">&times;</button>
         </div>
@@ -363,9 +397,12 @@ function showEditTandemModal(tandem: Tandem): void {
         <div class="modal-body" id="editTandemContent">
         </div>
         <div class="modal-footer">
-          <button class="btn btn-danger" id="dissolveTandem">🗑️ Tandem auflösen</button>
-          <button class="btn btn-outline" id="cancelEditTandem">Abbrechen</button>
-          <button class="btn btn-primary" id="saveEditTandem">💾 Speichern</button>
+          <button class="btn btn-outline" id="backToOverviewBtn">← Zurück zur Übersicht</button>
+          <div class="modal-footer-right">
+            <button class="btn btn-danger" id="dissolveTandem">🗑️ Tandem auflösen</button>
+            <button class="btn btn-outline" id="cancelEditTandem">Abbrechen</button>
+            <button class="btn btn-primary" id="saveEditTandem">💾 Speichern</button>
+          </div>
         </div>
       </div>
     `;
@@ -376,6 +413,7 @@ function showEditTandemModal(tandem: Tandem): void {
     modal.querySelector('#cancelEditTandem')?.addEventListener('click', hideEditTandemModal);
     modal.querySelector('#dissolveTandem')?.addEventListener('click', dissolveTandem);
     modal.querySelector('#saveEditTandem')?.addEventListener('click', saveEditTandem);
+    modal.querySelector('#backToOverviewBtn')?.addEventListener('click', goBackToOverview);
   }
 
   // Populate content
@@ -417,6 +455,22 @@ function hideEditTandemModal(): void {
   const modal = document.getElementById('editTandemModal');
   modal?.classList.remove('visible');
   editingTandem = null;
+}
+
+function goBackToOverview(): void {
+  hideEditTandemModal();
+
+  // Switch to matching tab
+  const tabs = document.querySelectorAll<HTMLButtonElement>('.tab');
+  const contents = document.querySelectorAll<HTMLElement>('.tab-content');
+
+  tabs.forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === 'matching');
+  });
+
+  contents.forEach(content => {
+    content.classList.toggle('active', content.id === 'matching-tab');
+  });
 }
 
 function dissolveTandem(): void {
