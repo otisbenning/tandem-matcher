@@ -1411,6 +1411,15 @@ function showAIPreviewModal(
                   <span class="answer-snippet" title="${escapeHtml(item.answer2)}">${escapeHtml(truncateText(item.answer2, 30))}</span>
                 </div>
                 <div class="ai-preview-generated">"${escapeHtml(item.generated)}"</div>
+                <details class="ai-item-prompt">
+                  <summary>Prompt anzeigen</summary>
+                  <pre class="ai-prompt-mini">Du bist ein freundlicher Tandem-Vermittler bei "Start with a Friend". Analysiere die folgenden zwei Antworten auf die Frage "${escapeHtml(item.question)}" und schreibe EINEN kurzen Satz (max. 20 Wörter) der die Gemeinsamkeit oder Verbindung beschreibt. Schreibe natürlich und persönlich, ohne Emojis, so als würdest du zwei Freunde einander vorstellen. Wenn es keine erkennbare Gemeinsamkeit gibt, antworte nur mit "---".
+
+Person 1: "${escapeHtml(item.answer1)}"
+Person 2: "${escapeHtml(item.answer2)}"
+
+Gemeinsamkeit:</pre>
+                </details>
               </div>
             </div>
           `).join('')}

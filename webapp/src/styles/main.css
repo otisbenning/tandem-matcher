@@ -2452,6 +2452,33 @@ body {
   border: 1px solid var(--border);
 }
 
+.ai-item-prompt {
+  margin-top: var(--spacing-xs);
+}
+
+.ai-item-prompt summary {
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.ai-item-prompt summary:hover {
+  color: var(--primary);
+}
+
+.ai-prompt-mini {
+  background: var(--bg);
+  padding: var(--spacing-sm);
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: var(--spacing-xs);
+  border: 1px solid var(--border);
+  max-height: 150px;
+  overflow-y: auto;
+}
+
 .ai-preview-actions {
   display: flex;
   justify-content: flex-end;
