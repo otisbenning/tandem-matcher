@@ -128,7 +128,29 @@ function extractProfileData(): Profile | null {
       }
 
       // Extract Odoo form fields
-      const processedFields = new Set<string>();
+      // Track by both label text AND field name to prevent duplicates
+      const processedLabels = new Set<string>();
+      const processedFieldNames = new Set<string>();
+      const processedAnswers = new Set<string>(); // Also track answers to catch duplicates
+
+      // Helper to add field without duplicates
+      function addField(question: string, answer: string, fieldName?: string): void {
+        const normalizedQ = question.toLowerCase().trim();
+        const normalizedA = answer.trim();
+
+        // Skip if we already have this exact question or answer
+        if (processedLabels.has(normalizedQ)) return;
+        if (fieldName && processedFieldNames.has(fieldName)) return;
+
+        // Skip if answer is very similar to one we already have (same first 50 chars)
+        const answerKey = normalizedA.substring(0, 50);
+        if (processedAnswers.has(answerKey)) return;
+
+        fields.push({ question, answer: normalizedA });
+        processedLabels.add(normalizedQ);
+        if (fieldName) processedFieldNames.add(fieldName);
+        processedAnswers.add(answerKey);
+      }
 
       // Method 1: Label + Field pairs
       document.querySelectorAll('label.o_form_label').forEach(label => {
@@ -155,16 +177,14 @@ function extractProfileData(): Profile | null {
           }
         }
 
-        if (labelText && fieldValue && labelText !== fieldValue && !processedFields.has(labelText)) {
-          fields.push({ question: labelText, answer: fieldValue });
-          processedFields.add(labelText);
+        if (labelText && fieldValue && labelText !== fieldValue) {
+          addField(labelText, fieldValue, forId || undefined);
         }
       });
 
       // Method 2: Field widgets with name attribute
       document.querySelectorAll('.o_field_widget[name]').forEach(widget => {
         const fieldName = widget.getAttribute('name') || '';
-        if (processedFields.has(fieldName)) return;
 
         // Find associated label
         const label = document.querySelector(`label[for="${fieldName}"], label.o_form_label[for="${fieldName}"]`);
@@ -173,8 +193,7 @@ function extractProfileData(): Profile | null {
         const value = (widget as HTMLInputElement).value || widget.textContent?.trim() || '';
 
         if (labelText && value && value.length < 1000) {
-          fields.push({ question: labelText, answer: value });
-          processedFields.add(fieldName);
+          addField(labelText, value, fieldName);
         }
       });
     }
