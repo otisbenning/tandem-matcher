@@ -78,7 +78,8 @@ async function loadProfileMarkers(): Promise<void> {
   // Create markers for each PLZ group
   for (const [plz, groupProfiles] of plzGroups) {
     const coords = await getCoordinatesForPLZ(plz);
-    if (!coords) continue;
+    // Skip if no coords or invalid coords (NaN)
+    if (!coords || !isFinite(coords.lat) || !isFinite(coords.lng)) continue;
 
     // Add offset for multiple profiles at same PLZ
     for (let i = 0; i < groupProfiles.length; i++) {

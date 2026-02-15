@@ -9,11 +9,13 @@ const PLZ_REGIONS: Record<string, { lat: number; lng: number; city: string }> = 
   '02': { lat: 51.15, lng: 14.97, city: 'Görlitz' },
   '03': { lat: 51.76, lng: 14.33, city: 'Cottbus' },
   '04': { lat: 51.34, lng: 12.38, city: 'Leipzig' },
+  '05': { lat: 51.22, lng: 6.78, city: 'Düsseldorf' },  // Missing region
   '06': { lat: 51.48, lng: 11.97, city: 'Halle' },
   '07': { lat: 50.93, lng: 11.59, city: 'Jena' },
   '08': { lat: 50.72, lng: 12.49, city: 'Zwickau' },
   '09': { lat: 50.83, lng: 12.92, city: 'Chemnitz' },
   '10': { lat: 52.52, lng: 13.41, city: 'Berlin Mitte' },
+  '11': { lat: 52.52, lng: 13.41, city: 'Berlin' },  // Missing region
   '12': { lat: 52.45, lng: 13.43, city: 'Berlin Süd' },
   '13': { lat: 52.57, lng: 13.35, city: 'Berlin Nord' },
   '14': { lat: 52.39, lng: 13.07, city: 'Potsdam' },
@@ -45,6 +47,7 @@ const PLZ_REGIONS: Record<string, { lat: number; lng: number; city: string }> = 
   '40': { lat: 51.23, lng: 6.78, city: 'Düsseldorf' },
   '41': { lat: 51.19, lng: 6.44, city: 'Mönchengladbach' },
   '42': { lat: 51.26, lng: 7.15, city: 'Wuppertal' },
+  '43': { lat: 51.36, lng: 7.35, city: 'Hagen' },  // Missing region
   '44': { lat: 51.51, lng: 7.47, city: 'Dortmund' },
   '45': { lat: 51.45, lng: 7.01, city: 'Essen' },
   '46': { lat: 51.54, lng: 6.77, city: 'Oberhausen' },
@@ -63,6 +66,7 @@ const PLZ_REGIONS: Record<string, { lat: number; lng: number; city: string }> = 
   '59': { lat: 51.66, lng: 8.38, city: 'Hamm' },
   '60': { lat: 50.11, lng: 8.68, city: 'Frankfurt' },
   '61': { lat: 50.22, lng: 8.62, city: 'Frankfurt Nord' },
+  '62': { lat: 50.10, lng: 8.77, city: 'Bad Homburg' },  // Missing region
   '63': { lat: 50.00, lng: 8.96, city: 'Offenbach' },
   '64': { lat: 49.87, lng: 8.65, city: 'Darmstadt' },
   '65': { lat: 50.08, lng: 8.24, city: 'Wiesbaden' },
@@ -131,7 +135,7 @@ let lastApiCall = 0;
 const API_DELAY = 1000; // 1 second between calls
 
 // Get coordinates for a German PLZ
-// Uses Nominatim API for accurate coordinates, falls back to static region data
+// Uses static region data for fast initial load, caches for subsequent calls
 export async function getCoordinatesForPLZ(plz: string): Promise<PLZCacheEntry | null> {
   if (!plz || plz.length < 2) return null;
 
@@ -146,7 +150,16 @@ export async function getCoordinatesForPLZ(plz: string): Promise<PLZCacheEntry |
   const cached = getPLZCache(normalizedPLZ);
   if (cached) return cached;
 
-  // Try Nominatim API (like original app)
+  // Use static fallback immediately for fast display
+  // This ensures markers show up instantly without waiting for API
+  const fallback = getRegionFallback(normalizedPLZ);
+  if (fallback) {
+    // Cache the fallback so we don't keep recalculating
+    setPLZCache(normalizedPLZ, fallback);
+    return fallback;
+  }
+
+  // Only try API if no fallback available (shouldn't happen for German PLZ)
   try {
     // Rate limiting
     const now = Date.now();
@@ -188,8 +201,7 @@ export async function getCoordinatesForPLZ(plz: string): Promise<PLZCacheEntry |
     console.warn(`⚠️ Nominatim API Fehler für PLZ ${normalizedPLZ}:`, error);
   }
 
-  // Fall back to static region data
-  return getRegionFallback(normalizedPLZ);
+  return null;
 }
 
 // Fallback using static region data
