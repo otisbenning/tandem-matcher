@@ -83,7 +83,7 @@ VERMEIDE: Wortwörtliche Wiederholungen, Emojis, "Person 1/2"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   freizeit: `Schreibe einen Kommentar zu Freizeit-Gemeinsamkeiten.
 
@@ -94,7 +94,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   interessen: `Schreibe einen Kommentar zu gemeinsamen Interessen.
 
@@ -105,7 +105,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   sprachen: `Schreibe einen Kommentar zu Sprachkenntnissen.
 
@@ -116,7 +116,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   beruf: `Schreibe einen Kommentar zu beruflichen Verbindungen.
 
@@ -127,7 +127,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   vorher: `Schreibe einen Kommentar zu bisherigen Erfahrungen.
 
@@ -138,7 +138,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   zukunft: `Schreibe einen Kommentar zu Zukunftsplänen.
 
@@ -149,7 +149,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   tandem_motivation: `Schreibe einen Kommentar zur Tandem-Motivation.
 
@@ -160,7 +160,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   freundschaft_werte: `Schreibe einen Kommentar zu Freundschafts-Werten.
 
@@ -171,7 +171,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   events: `Schreibe einen Kommentar zu gemeinsamen Aktivitäten/Events.
 
@@ -182,7 +182,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze):`,
+Kommentar:`,
 
   verfuegbarkeit: `Schreibe einen Kommentar zur zeitlichen Verfügbarkeit.
 
@@ -193,7 +193,7 @@ DUZEN: "ihr/euch" - nie "Sie"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1 Satz):`,
+Kommentar:`,
 
   default: `Schreibe einen Kommentar zur Frage "{Frage}".
 
@@ -205,7 +205,7 @@ Falls keine Gemeinsamkeit erkennbar: antworte nur "---"
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar (1-2 Sätze oder "---"):`
+Kommentar (oder "---" falls keine Gemeinsamkeit):`
 };
 
 // Detect category from question text
@@ -260,7 +260,7 @@ export async function generateCommonality(
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 200, // 1-2 Sätze
+          num_predict: 400,
         },
       }),
     });
