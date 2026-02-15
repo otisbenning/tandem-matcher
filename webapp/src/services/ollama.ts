@@ -67,147 +67,147 @@ export async function findBestModel(): Promise<string | null> {
 }
 
 // Category-specific prompts for better AI responses
-// WICHTIG: Aus Sicht des VERMITTLERS schreiben, der die Gemeinsamkeiten beschreibt!
-// Nur ein Abschnitt einer größeren E-Mail - keine Anrede/Abschluss nötig!
-// Alle duzen sich!
+// WICHTIG:
+// - Aus Sicht des VERMITTLERS schreiben
+// - Die Lesenden sehen die Original-Antworten in einer Tabelle daneben!
+// - Der KI-Text soll NUR die Verbindung/Gemeinsamkeit beschreiben, NICHT die Inhalte wiederholen
+// - Kurz und knapp halten!
 const CATEGORY_PROMPTS: Record<string, string> = {
-  hobbys: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail. Dieser Abschnitt beschreibt die Hobby-Gemeinsamkeiten zweier Tandem-Partner.
+  hobbys: `Schreibe einen KURZEN Kommentar zur Gemeinsamkeit bei Hobbys.
 
-WICHTIG:
-- NUR ein Abschnitt, NICHT die ganze E-Mail!
-- KEINE Anrede, KEINE Einleitung, KEIN Abschluss!
-- Starte direkt mit dem Inhalt!
-- Alle DUZEN sich! ("ihr", "euch", "du" - NIEMALS "Sie")
+KONTEXT: Die Lesenden sehen die Original-Antworten bereits in einer Tabelle. Dein Text steht daneben als Kommentar.
 
-STIL: "Ihr beide...", "Gemeinsam könntet ihr...", "Euch verbindet..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+AUFGABE: Beschreibe NUR die Verbindung/Gemeinsamkeit - NICHT die Inhalte wiederholen!
+STIL: "Hier gibt es Anknüpfungspunkte!", "Das passt gut zusammen.", "Gemeinsam könntet ihr..."
+DUZEN: Immer "ihr/euch" - niemals "Sie"
+VERMEIDE: Inhalte der Antworten wiederholen, Emojis, "Person 1/2"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze, direkt starten):`,
+Kommentar (1 kurzer Satz):`,
 
-  freizeit: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Freizeit-Gemeinsamkeiten.
+  freizeit: `Schreibe einen KURZEN Kommentar zur Gemeinsamkeit bei Freizeitaktivitäten.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Ihr beide...", "In eurer Freizeit..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR die Verbindung beschreiben, KEINE Inhalte wiederholen!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  interessen: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über gemeinsame Interessen.
+  interessen: `Schreibe einen KURZEN Kommentar zu gemeinsamen Interessen.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Ihr interessiert euch beide für..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR die Verbindung beschreiben, KEINE Inhalte wiederholen!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  sprachen: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Sprachkenntnisse.
+  sprachen: `Schreibe einen KURZEN Kommentar zu Sprachkenntnissen.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Ihr sprecht beide...", "Deutsch könnt ihr gemeinsam üben."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR beschreiben wie die Sprachen zusammenpassen - KEINE Liste wiederholen!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (1-2 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  beruf: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über berufliche Verbindungen.
+  beruf: `Schreibe einen KURZEN Kommentar zu beruflichen Verbindungen.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Beruflich verbindet euch...", "Eure unterschiedlichen Branchen..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR die Verbindung/Synergie beschreiben, KEINE Berufe wiederholen!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  vorher: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über bisherige Erfahrungen.
+  vorher: `Schreibe einen KURZEN Kommentar zu bisherigen Erfahrungen.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Ihr habt beide...", "Eure unterschiedlichen Wege..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR die Verbindung beschreiben, KEINE Inhalte wiederholen!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  zukunft: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Zukunftspläne.
+  zukunft: `Schreibe einen KURZEN Kommentar zu Zukunftsplänen.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Ihr habt beide Pläne für...", "Dabei könntet ihr euch unterstützen."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR beschreiben wie ihr euch unterstützen könnt, KEINE Pläne wiederholen!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  tandem_motivation: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über die Tandem-Motivation.
+  tandem_motivation: `Schreibe einen KURZEN Kommentar zur Tandem-Motivation.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Eure Motivationen ergänzen sich...", "Ihr wollt beide..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR beschreiben wie die Motivationen zusammenpassen!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  freundschaft_werte: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über Freundschafts-Werte.
+  freundschaft_werte: `Schreibe einen KURZEN Kommentar zu Freundschafts-Werten.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Euch beiden ist wichtig...", "Ihr teilt ähnliche Werte..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR die gemeinsame Basis beschreiben, KEINE Werte auflisten!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  events: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über gemeinsame Aktivitäten.
+  events: `Schreibe einen KURZEN Kommentar zu gemeinsamen Aktivitäten/Events.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Ihr könntet zusammen...", "Events wie ... interessieren euch beide."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR einen Vorschlag oder die Passung beschreiben!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (2-3 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  verfuegbarkeit: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail über die zeitliche Verfügbarkeit.
+  verfuegbarkeit: `Schreibe einen KURZEN Kommentar zur zeitlichen Verfügbarkeit.
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Ihr seid beide abends verfügbar.", "Ein Treffen am Wochenende würde passen."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR beschreiben ob/wie die Zeiten passen - KEINE Zeiten wiederholen!
+DUZEN: "ihr/euch" - nie "Sie"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (1-2 Sätze):`,
+Kommentar (1 kurzer Satz):`,
 
-  default: `Du schreibst EINEN ABSCHNITT einer Vermittlungs-E-Mail zur Frage "{Frage}".
+  default: `Schreibe einen KURZEN Kommentar zur Frage "{Frage}".
 
-WICHTIG: NUR ein Abschnitt - KEINE Anrede/Einleitung/Abschluss! Alle DUZEN sich!
-STIL: "Ihr beide...", "Euch verbindet...", "Gemeinsam könntet ihr..."
-VERMEIDE: Ich-Form der Partner, "Person 1/2", Emojis, Siezen
-Falls keine Gemeinsamkeit: antworte nur "---"
+KONTEXT: Die Original-Antworten stehen bereits in der Tabelle daneben.
+AUFGABE: NUR die Gemeinsamkeit/Verbindung beschreiben, KEINE Inhalte wiederholen!
+DUZEN: "ihr/euch" - nie "Sie"
+Falls keine Gemeinsamkeit erkennbar: antworte nur "---"
 
-Angabe A: "{Antwort1}"
-Angabe B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Abschnitt (1-2 Sätze):`
+Kommentar (1 kurzer Satz oder "---"):`
 };
 
 // Detect category from question text
@@ -262,7 +262,7 @@ export async function generateCommonality(
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 400, // Max tokens for full responses
+          num_predict: 100, // Kurze Kommentare - nur 1 Satz
         },
       }),
     });
