@@ -1,7 +1,7 @@
 // TandemEditor Component - Interactive table editor for tandem matching
 import type { Profile, Commonality, ProfileField } from '@shared/types';
 import { getCoordinatesForPLZ, calculateTravelTimes, formatTravelTimes, generateMapsLinks } from '../services/geocoding';
-import { isOllamaAvailable, generateCommonality, generateAllCommonalities, getOllamaStatus } from '../services/ollama';
+import { isOllamaAvailable, generateCommonality, generateAllCommonalities, getOllamaStatus, buildPrompt } from '../services/ollama';
 
 interface EditableRow {
   id: string;
@@ -1413,12 +1413,7 @@ function showAIPreviewModal(
                 <div class="ai-preview-generated">"${escapeHtml(item.generated)}"</div>
                 <details class="ai-item-prompt">
                   <summary>Prompt anzeigen</summary>
-                  <pre class="ai-prompt-mini">Du bist ein freundlicher Tandem-Vermittler bei "Start with a Friend". Analysiere die folgenden zwei Antworten auf die Frage "${escapeHtml(item.question)}" und schreibe EINEN kurzen Satz (max. 20 Wörter) der die Gemeinsamkeit oder Verbindung beschreibt. Schreibe natürlich und persönlich, ohne Emojis, so als würdest du zwei Freunde einander vorstellen. Wenn es keine erkennbare Gemeinsamkeit gibt, antworte nur mit "---".
-
-Person 1: "${escapeHtml(item.answer1)}"
-Person 2: "${escapeHtml(item.answer2)}"
-
-Gemeinsamkeit:</pre>
+                  <pre class="ai-prompt-mini">${escapeHtml(buildPrompt(item.question, item.answer1, item.answer2))}</pre>
                 </details>
               </div>
             </div>

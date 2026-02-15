@@ -66,6 +66,123 @@ export async function findBestModel(): Promise<string | null> {
   return available[0] || DEFAULT_MODEL;
 }
 
+// Category-specific prompts for better AI responses
+const CATEGORY_PROMPTS: Record<string, string> = {
+  hobbys: `Analysiere diese Hobby-Angaben und schreibe auf, was beide Personen gemeinsam haben – oder wie man die Hobbies verbinden kann. Möglichst ausführlich (200-300 Zeichen). Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  freizeit: `Analysiere diese Freizeit-Angaben und schreibe auf, was beide Personen gemeinsam haben – oder wie man die Freizeit gemeinsam gestalten kann. Möglichst ausführlich (200-300 Zeichen). Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  interessen: `Analysiere diese Interessen und schreibe auf, was beide Personen gemeinsam haben – oder wie man die Interessen gemeinsam gestalten kann. Möglichst ausführlich (200-300 Zeichen). Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  sprachen: `Analysiere diese Sprachkenntnisse und schreibe auf, wie die beiden miteinander kommunizieren können. Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  beruf: `Analysiere diese Berufs-/Arbeitsangaben und schreibe auf, was die Berufe/Arbeit der Personen gemeinsam haben. Oder warum Unterschiede spannend sein können. Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  vorher: `Analysiere diese Angaben zu früheren Tätigkeiten. Gehe kurz auf beide Geschichten ein. Sage, dass das spannend ist / interessant ist / der unterschiedliche oder gleiche Weg interessant ist. Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  zukunft: `Analysiere diese Zukunftspläne und schreibe, wie beide Personen voneinander profitieren könnten – basierend auf ihren Erfahrungen und Plänen. Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  tandem_motivation: `Analysiere diese Motivationen für das Tandem-Programm und schreibe, warum sich die Motivationen gut ergänzen. Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  freundschaft_werte: `Analysiere diese Angaben zu wichtigen Werten in einer Freundschaft und schreibe, warum sich die Vorstellungen gut ergänzen. Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  events: `Analysiere diese Event-/Aktivitäten-Angaben und schreibe auf, was beide Personen gemeinsam haben – oder wie man Events/Aktivitäten gemeinsam gestalten kann. Möglichst ausführlich (200-300 Zeichen). Schreibe aktiv: "Ihr könnt…" Vermeide "Person 1 sagt das, Person 2 sagt das." Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  verfuegbarkeit: `Analysiere diese Verfügbarkeits-Angaben und mache einen konkreten Vorschlag für ein erstes Treffen – einen ersten Termin (kein Datum, aber Wochentag/Tageszeit basierend auf den Überschneidungen). Keine Emojis.
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`,
+
+  default: `Du bist ein freundlicher Tandem-Vermittler bei "Start with a Friend". Analysiere die folgenden zwei Antworten auf die Frage "{Frage}" und schreibe einen kurzen Text (100-200 Zeichen) der die Gemeinsamkeit oder Verbindung beschreibt. Schreibe natürlich und persönlich, ohne Emojis. Wenn es keine erkennbare Gemeinsamkeit gibt, antworte nur mit "---".
+
+Person 1: "{Antwort1}"
+Person 2: "{Antwort2}"
+
+Antwort:`
+};
+
+// Detect category from question text
+function detectCategory(question: string): string {
+  const q = question.toLowerCase();
+
+  if (q.includes('hobby') || q.includes('hobbies') || q.includes('hobbys')) return 'hobbys';
+  if (q.includes('freizeit') || q.includes('was machst du gerne')) return 'freizeit';
+  if (q.includes('interesse') || q.includes('themen')) return 'interessen';
+  if (q.includes('sprache') || q.includes('sprichst')) return 'sprachen';
+  if (q.includes('beruf') || q.includes('arbeit') || q.includes('job') || q.includes('was machst du gerade')) return 'beruf';
+  if (q.includes('vorher') || q.includes('früher') || q.includes('gelernt') || q.includes('was hast du')) return 'vorher';
+  if (q.includes('zukunft') || q.includes('plan') || q.includes('ziel') || q.includes('vorhaben')) return 'zukunft';
+  if (q.includes('warum') && (q.includes('swaf') || q.includes('tandem') || q.includes('mitmachen'))) return 'tandem_motivation';
+  if (q.includes('wichtig') && (q.includes('freund') || q.includes('wert'))) return 'freundschaft_werte';
+  if (q.includes('event') || q.includes('veranstaltung') || q.includes('unternehmen') || q.includes('aktivität')) return 'events';
+  if (q.includes('zeit') || q.includes('wann') || q.includes('verfügbar') || q.includes('treffen') || q.includes('erreichbar')) return 'verfuegbarkeit';
+
+  return 'default';
+}
+
+// Build prompt for a specific question
+export function buildPrompt(question: string, answer1: string, answer2: string): string {
+  const category = detectCategory(question);
+  const template = CATEGORY_PROMPTS[category] || CATEGORY_PROMPTS.default;
+
+  return template
+    .replace('{Frage}', question)
+    .replace('{Antwort1}', answer1)
+    .replace('{Antwort2}', answer2);
+}
+
 // Generate commonality text from two answers
 export async function generateCommonality(
   question: string,
@@ -76,12 +193,7 @@ export async function generateCommonality(
   const model = modelName || await findBestModel();
   if (!model) return null;
 
-  const prompt = `Du bist ein freundlicher Tandem-Vermittler bei "Start with a Friend". Analysiere die folgenden zwei Antworten auf die Frage "${question}" und schreibe EINEN kurzen Satz (max. 20 Wörter) der die Gemeinsamkeit oder Verbindung beschreibt. Schreibe natürlich und persönlich, ohne Emojis, so als würdest du zwei Freunde einander vorstellen. Wenn es keine erkennbare Gemeinsamkeit gibt, antworte nur mit "---".
-
-Person 1: "${answer1}"
-Person 2: "${answer2}"
-
-Gemeinsamkeit:`;
+  const prompt = buildPrompt(question, answer1, answer2);
 
   try {
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
@@ -93,7 +205,7 @@ Gemeinsamkeit:`;
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 60, // Max tokens
+          num_predict: 150, // Max tokens (increased for longer responses)
         },
       }),
     });
