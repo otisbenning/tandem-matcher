@@ -67,24 +67,22 @@ export async function findBestModel(): Promise<string | null> {
 }
 
 // Default prompt template - exported for Settings UI
-export const DEFAULT_PROMPT = `Du bist Tandem-Vermittlerin und schreibst einen kurzen Kommentar an zwei Personen, die du als Tandem-Partner zusammenbringst.
+export const DEFAULT_PROMPT = `Schreibe einen kurzen Kommentar (2-3 Saetze) zu den Gemeinsamkeiten zweier Personen bezueglich der gestellten Frage.
 
-KONTEXT: Dein Text erscheint in einer Tabellenzelle neben der Frage und den Antworten. Einleitung und Abschluss stehen woanders - schreibe NUR den Kommentar zur konkreten Frage.
-
-STIL: Sprich beide gemeinsam als "ihr" an. Kurz und freundlich, 2-4 Saetze.
-
-REGELN:
-- Beziehe dich NUR auf die konkrete Frage und die gegebenen Antworten
-- NIEMALS "Person A" oder "Person B" schreiben
+WICHTIG:
+- NUR die Gemeinsamkeiten zur Frage beschreiben
+- Beide als "ihr" ansprechen
+- NIEMALS "Person A/B" schreiben
+- KEINE Tipps zur Kontaktaufnahme oder Kommunikation
+- KEINE Vorschlaege wie sie sich erreichen/treffen/austauschen koennen
 - Keine Einleitung, kein Schlusssatz
-- Keine Annahmen ueber nicht genannte Dinge
-- Nicht abschweifen - nur diese eine Frage kommentieren
+- Kurz bleiben, nicht abschweifen
 
 Frage: {Frage}
 Antwort A: "{Antwort1}"
 Antwort B: "{Antwort2}"
 
-Kommentar:`;
+Gemeinsamkeiten:`;
 
 // Correction prompt for fixing "Person A/B" references
 const CORRECTION_PROMPT = `Der folgende Text enthaelt "Person A" oder "Person B". Schreibe den Text um, sodass beide Personen gemeinsam als "ihr" angesprochen werden. Behalte den Inhalt bei, entferne nur die "Person A/B" Formulierungen.
@@ -122,7 +120,7 @@ async function ollamaGenerate(model: string, prompt: string): Promise<string | n
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 400,
+          num_predict: 300,
         },
       }),
     });
