@@ -20,16 +20,16 @@ function getHeaders(): HeadersInit {
 // Check if Ollama is running
 export async function isOllamaAvailable(): Promise<boolean> {
   try {
-    console.log('🤖 Prüfe Ollama-Verfügbarkeit...');
+    console.log('Pruefe Ollama-Verfuegbarkeit...');
     const response = await fetch(`${OLLAMA_URL}/api/tags`, {
       method: 'GET',
       headers: getHeaders(),
       signal: AbortSignal.timeout(5000),
     });
-    console.log(`🤖 Ollama Response: ${response.status} ${response.statusText}`);
+    console.log(`Ollama Response: ${response.status} ${response.statusText}`);
     return response.ok;
   } catch (error) {
-    console.warn('🤖 Ollama nicht erreichbar:', error);
+    console.warn('Ollama nicht erreichbar:', error);
     return false;
   }
 }
@@ -67,26 +67,29 @@ export async function findBestModel(): Promise<string | null> {
 }
 
 // Default prompt template - exported for Settings UI
-export const DEFAULT_PROMPT = `Du bist Tandem-Vermittlerin und schreibst einen Kommentar (5-7 Sätze) an zwei Personen, die du als Tandem-Partner zusammenbringst.
+export const DEFAULT_PROMPT = `Du bist Tandem-Vermittlerin und schreibst einen Kommentar an zwei Personen, die du als Tandem-Partner zusammenbringst.
 
-PERSPEKTIVE: Du sprichst die beiden direkt an ("ihr", "euch"). Du schreibst ÜBER die beiden, nicht AUS ihrer Sicht.
+KONTEXT: Dein Text erscheint in einer Tabellenzelle. Darueber und darunter stehen bereits Einleitung und Abschluss - schreibe daher NUR den inhaltlichen Kommentar ohne Einleitung oder Schlusssatz.
+
+PERSPEKTIVE: Du sprichst die beiden direkt an ("ihr", "euch"). Du schreibst UEBER die beiden, nicht AUS ihrer Sicht.
 
 WICHTIG:
+- Kein Einleitungssatz, kein Schlusssatz - direkt zum Inhalt
 - Achte darauf, dass deine Antwort zur Frage passt
 - Benenne Gemeinsamkeiten, keine Analyse
-- Keine Annahmen über nicht genannte Dinge
-- Bei Kontaktfragen: Erkläre wie die beiden SICH GEGENSEITIG erreichen können
-- Vermeide "Person 1/2" - schreibe natürlich
+- Keine Annahmen ueber nicht genannte Dinge
+- Bei Kontaktfragen: Erklaere wie die beiden SICH GEGENSEITIG erreichen koennen
+- Vermeide "Person 1/2" - schreibe natuerlich
+- 3-5 Saetze
 
 Frage: {Frage}
 Antwort Person A: "{Antwort1}"
 Antwort Person B: "{Antwort2}"
 
-Dein Kommentar an die beiden:`;
+Dein Kommentar:`;
 
 // Build prompt for a specific question
 export function buildPrompt(question: string, answer1: string, answer2: string): string {
-  // Use custom prompt if available, otherwise default
   const template = getCustomPrompt() || DEFAULT_PROMPT;
 
   return template
@@ -117,7 +120,7 @@ export async function generateCommonality(
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 600,
+          num_predict: 500,
         },
       }),
     });
@@ -130,12 +133,10 @@ export async function generateCommonality(
     const data = await response.json();
     const result = data.response?.trim() || null;
 
-    // Skip if no commonality found
     if (!result || result === '---' || result.includes('keine Gemeinsamkeit') || result.includes('keine erkennbare')) {
       return null;
     }
 
-    // Clean up the result - remove quotes if present
     return result.replace(/^["']|["']$/g, '').trim();
   } catch (error) {
     console.warn('Ollama generation failed:', error);
@@ -160,7 +161,6 @@ export async function generateAllCommonalities(
     const field = fields[i];
     onProgress?.(i + 1, fields.length);
 
-    // Skip if either answer is empty
     if (!field.answer1 || !field.answer2) continue;
 
     const result = await generateCommonality(
@@ -174,7 +174,6 @@ export async function generateAllCommonalities(
       results.set(field.question, result);
     }
 
-    // Small delay to not overwhelm the model
     await new Promise(resolve => setTimeout(resolve, 100));
   }
 
