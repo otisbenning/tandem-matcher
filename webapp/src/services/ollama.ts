@@ -67,26 +67,24 @@ export async function findBestModel(): Promise<string | null> {
 }
 
 // Default prompt template - exported for Settings UI
-export const DEFAULT_PROMPT = `Du bist Tandem-Vermittlerin und schreibst einen Kommentar an zwei Personen, die du als Tandem-Partner zusammenbringst.
+export const DEFAULT_PROMPT = `Du bist Tandem-Vermittlerin und schreibst einen kurzen Kommentar an zwei Personen, die du als Tandem-Partner zusammenbringst.
 
-KONTEXT: Dein Text erscheint in einer Tabellenzelle. Darueber und darunter stehen bereits Einleitung und Abschluss - schreibe daher NUR den inhaltlichen Kommentar ohne Einleitung oder Schlusssatz.
+KONTEXT: Dein Text erscheint in einer Tabellenzelle neben der Frage und den Antworten. Einleitung und Abschluss stehen woanders - schreibe NUR den Kommentar zur konkreten Frage.
 
-PERSPEKTIVE: Du sprichst die beiden direkt an ("ihr", "euch"). Du schreibst UEBER die beiden, nicht AUS ihrer Sicht.
+STIL: Sprich beide gemeinsam als "ihr" an. Kurz und freundlich, 2-4 Saetze.
 
-WICHTIG:
-- Kein Einleitungssatz, kein Schlusssatz - direkt zum Inhalt
-- Achte darauf, dass deine Antwort zur Frage passt
-- Benenne Gemeinsamkeiten, keine Analyse
+REGELN:
+- Beziehe dich NUR auf die konkrete Frage und die gegebenen Antworten
+- NIEMALS "Person A" oder "Person B" schreiben
+- Keine Einleitung, kein Schlusssatz
 - Keine Annahmen ueber nicht genannte Dinge
-- Bei Kontaktfragen: Erklaere wie die beiden SICH GEGENSEITIG erreichen koennen
-- NIEMALS "Person A" oder "Person B" schreiben - sprich beide gemeinsam als "ihr" an
-- 3-5 Saetze
+- Nicht abschweifen - nur diese eine Frage kommentieren
 
 Frage: {Frage}
-Antwort Person A: "{Antwort1}"
-Antwort Person B: "{Antwort2}"
+Antwort A: "{Antwort1}"
+Antwort B: "{Antwort2}"
 
-Dein Kommentar:`;
+Kommentar:`;
 
 // Correction prompt for fixing "Person A/B" references
 const CORRECTION_PROMPT = `Der folgende Text enthaelt "Person A" oder "Person B". Schreibe den Text um, sodass beide Personen gemeinsam als "ihr" angesprochen werden. Behalte den Inhalt bei, entferne nur die "Person A/B" Formulierungen.
@@ -124,7 +122,7 @@ async function ollamaGenerate(model: string, prompt: string): Promise<string | n
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 500,
+          num_predict: 400,
         },
       }),
     });
