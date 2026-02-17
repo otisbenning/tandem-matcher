@@ -1,6 +1,8 @@
 // Ollama Service - LLM Integration for text generation
 // Hosted at api.swaf.koeln - DSGVO-compliant (eigener Server)
 
+import { getCustomPrompt } from './storage';
+
 const OLLAMA_URL = 'https://api.swaf.koeln/ollama';
 
 // Basic Auth credentials for Ollama API
@@ -22,7 +24,7 @@ export async function isOllamaAvailable(): Promise<boolean> {
     const response = await fetch(`${OLLAMA_URL}/api/tags`, {
       method: 'GET',
       headers: getHeaders(),
-      signal: AbortSignal.timeout(5000), // 5 second timeout for remote
+      signal: AbortSignal.timeout(5000),
     });
     console.log(`🤖 Ollama Response: ${response.status} ${response.statusText}`);
     return response.ok;
@@ -54,11 +56,9 @@ const DEFAULT_MODEL = 'qwen2.5:14b';
 export async function findBestModel(): Promise<string | null> {
   const available = await getAvailableModels();
   if (available.length === 0) {
-    // Server might still work with default model even if tags fails
     return DEFAULT_MODEL;
   }
 
-  // Use mistral if available, otherwise first model
   if (available.some(m => m.includes('qwen'))) {
     return available.find(m => m.includes('qwen')) || DEFAULT_MODEL;
   }
@@ -66,171 +66,28 @@ export async function findBestModel(): Promise<string | null> {
   return available[0] || DEFAULT_MODEL;
 }
 
-// Category-specific prompts for better AI responses
-// WICHTIG:
-// - Aus Sicht des VERMITTLERS schreiben
-// - Die Lesenden sehen die Original-Antworten in einer Tabelle daneben!
-// - Gemeinsamkeiten herausstellen, aber NICHT wortwörtlich wiederholen
-// - Alle duzen sich!
-const CATEGORY_PROMPTS: Record<string, string> = {
-  hobbys: `Schreibe einen Kommentar zu Hobby-Gemeinsamkeiten.
+// Default prompt template - exported for Settings UI
+export const DEFAULT_PROMPT = `Du bist Tandem-Vermittlerin und schreibst einen Kommentar (5-7 Sätze) an zwei Personen, die du als Tandem-Partner zusammenbringst.
 
-KONTEXT: Die Original-Antworten stehen bereits in einer Tabelle daneben - du musst sie nicht wortwörtlich wiederholen.
-AUFGABE: Hebe die Gemeinsamkeiten hervor und gib ggf. Vorschläge was man zusammen machen könnte.
-DUZEN: Immer "ihr/euch" - niemals "Sie"
-VERMEIDE: Wortwörtliche Wiederholungen, Emojis, "Person 1/2"
+PERSPEKTIVE: Du sprichst die beiden direkt an ("ihr", "euch"). Du schreibst ÜBER die beiden, nicht AUS ihrer Sicht.
 
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
+WICHTIG:
+- Achte darauf, dass deine Antwort zur Frage passt
+- Benenne Gemeinsamkeiten, keine Analyse
+- Keine Annahmen über nicht genannte Dinge
+- Bei Kontaktfragen: Erkläre wie die beiden SICH GEGENSEITIG erreichen können
+- Vermeide "Person 1/2" - schreibe natürlich
 
-Kommentar:`,
+Frage: {Frage}
+Antwort Person A: "{Antwort1}"
+Antwort Person B: "{Antwort2}"
 
-  freizeit: `Schreibe einen Kommentar zu Freizeit-Gemeinsamkeiten.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Gemeinsamkeiten hervorheben, ggf. Vorschläge machen.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  interessen: `Schreibe einen Kommentar zu gemeinsamen Interessen.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Gemeinsamkeiten hervorheben, verbindende Elemente betonen.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  sprachen: `Schreibe einen Kommentar zu Sprachkenntnissen.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben.
-AUFGABE: Beschreibe wie die Sprachen zusammenpassen und was das fürs Tandem bedeutet.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  beruf: `Schreibe einen Kommentar zu beruflichen Verbindungen.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Synergien und Verbindungspunkte hervorheben.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  vorher: `Schreibe einen Kommentar zu bisherigen Erfahrungen.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Verbindende Elemente und gemeinsame Erfahrungen hervorheben.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  zukunft: `Schreibe einen Kommentar zu Zukunftsplänen.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Beschreibe wie sich die Pläne ergänzen oder wie man sich unterstützen könnte.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  tandem_motivation: `Schreibe einen Kommentar zur Tandem-Motivation.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Beschreibe wie die Motivationen zusammenpassen.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  freundschaft_werte: `Schreibe einen Kommentar zu Freundschafts-Werten.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Die gemeinsame Wertebasis hervorheben.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  events: `Schreibe einen Kommentar zu gemeinsamen Aktivitäten/Events.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Gemeinsame Interessen hervorheben, konkrete Vorschläge machen.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  verfuegbarkeit: `Schreibe einen Kommentar zur zeitlichen Verfügbarkeit.
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben.
-AUFGABE: Beschreibe ob und wie die Zeiten zusammenpassen.
-DUZEN: "ihr/euch" - nie "Sie"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar:`,
-
-  default: `Schreibe einen Kommentar zur Frage "{Frage}".
-
-KONTEXT: Die Original-Antworten stehen in der Tabelle daneben - nicht wortwörtlich wiederholen.
-AUFGABE: Gemeinsamkeiten und Verbindungspunkte hervorheben.
-DUZEN: "ihr/euch" - nie "Sie"
-Falls keine Gemeinsamkeit erkennbar: antworte nur "---"
-
-Antwort A: "{Antwort1}"
-Antwort B: "{Antwort2}"
-
-Kommentar (oder "---" falls keine Gemeinsamkeit):`
-};
-
-// Detect category from question text
-function detectCategory(question: string): string {
-  const q = question.toLowerCase();
-
-  if (q.includes('hobby') || q.includes('hobbies') || q.includes('hobbys')) return 'hobbys';
-  if (q.includes('freizeit') || q.includes('was machst du gerne')) return 'freizeit';
-  if (q.includes('interesse') || q.includes('themen')) return 'interessen';
-  if (q.includes('sprache') || q.includes('sprichst')) return 'sprachen';
-  if (q.includes('beruf') || q.includes('arbeit') || q.includes('job') || q.includes('was machst du gerade')) return 'beruf';
-  if (q.includes('vorher') || q.includes('früher') || q.includes('gelernt') || q.includes('was hast du')) return 'vorher';
-  if (q.includes('zukunft') || q.includes('plan') || q.includes('ziel') || q.includes('vorhaben')) return 'zukunft';
-  if (q.includes('warum') && (q.includes('swaf') || q.includes('tandem') || q.includes('mitmachen'))) return 'tandem_motivation';
-  if (q.includes('wichtig') && (q.includes('freund') || q.includes('wert'))) return 'freundschaft_werte';
-  if (q.includes('event') || q.includes('veranstaltung') || q.includes('unternehmen') || q.includes('aktivität')) return 'events';
-  if (q.includes('zeit') || q.includes('wann') || q.includes('verfügbar') || q.includes('treffen') || q.includes('erreichbar')) return 'verfuegbarkeit';
-
-  return 'default';
-}
+Dein Kommentar an die beiden:`;
 
 // Build prompt for a specific question
 export function buildPrompt(question: string, answer1: string, answer2: string): string {
-  const category = detectCategory(question);
-  const template = CATEGORY_PROMPTS[category] || CATEGORY_PROMPTS.default;
+  // Use custom prompt if available, otherwise default
+  const template = getCustomPrompt() || DEFAULT_PROMPT;
 
   return template
     .replace('{Frage}', question)
@@ -260,7 +117,7 @@ export async function generateCommonality(
         stream: false,
         options: {
           temperature: 0.7,
-          num_predict: 400,
+          num_predict: 600,
         },
       }),
     });

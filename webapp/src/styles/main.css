@@ -2930,3 +2930,62 @@ body {
     min-height: 44px;
   }
 }
+
+/* Prompt Editor Styles */
+.prompt-card {
+  grid-column: 1 / -1;
+}
+
+.prompt-textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  resize: vertical;
+  margin: 12px 0;
+}
+
+.prompt-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color, #4a90d9);
+  box-shadow: 0 0 0 2px rgba(74, 144, 217, 0.2);
+}
+
+.prompt-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.prompt-status {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.prompt-status.default {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.prompt-status.custom {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.prompt-status.success {
+  background: #c8e6c9;
+  color: #2e7d32;
+}
+
+.prompt-status.info {
+  background: #fff3e0;
+  color: #f57c00;
+}

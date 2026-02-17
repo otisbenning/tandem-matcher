@@ -139,6 +139,18 @@
               <p class="tip"><strong>Im Editor:</strong> Klicke auf "KI generieren" um alle Felder automatisch auszufüllen, oder nutze den 💡-Button für einzelne Felder.</p>
             </details>
           </div>
+          <!-- Prompt Editor Card -->
+          <div class="settings-card prompt-card">
+            <h3>KI-Prompt anpassen</h3>
+            <p class="settings-info">Passe den Prompt an, der an die KI gesendet wird. Platzhalter: {Frage}, {Antwort1}, {Antwort2}</p>
+            <div id="promptStatus" class="prompt-status default">Standard-Prompt aktiv</div>
+            <textarea id="promptTextarea" class="prompt-textarea" rows="12" placeholder="Prompt eingeben..."></textarea>
+            <div class="prompt-buttons">
+              <button class="btn btn-primary" id="savePromptBtn">Speichern</button>
+              <button class="btn btn-secondary" id="resetPromptBtn">Auf Standard zurücksetzen</button>
+            </div>
+          </div>
+
 
           <div class="settings-card">
             <h3>Export</h3>

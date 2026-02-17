@@ -247,3 +247,18 @@ export function restoreBackup(backupJson: string): void {
   saveGamificationStats();
   localStorage.setItem(STORAGE_KEYS.PLZ_CACHE, JSON.stringify(Object.fromEntries(plzCache)));
 }
+
+// Custom Prompt functions
+const CUSTOM_PROMPT_KEY = 'swaf_custom_prompt';
+
+export function getCustomPrompt(): string | null {
+  return localStorage.getItem(CUSTOM_PROMPT_KEY);
+}
+
+export function saveCustomPrompt(prompt: string): void {
+  localStorage.setItem(CUSTOM_PROMPT_KEY, prompt);
+}
+
+export function clearCustomPrompt(): void {
+  localStorage.removeItem(CUSTOM_PROMPT_KEY);
+}

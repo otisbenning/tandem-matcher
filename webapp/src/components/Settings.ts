@@ -1,5 +1,6 @@
 // Settings Component - Export & Settings Tab
-import { getTandems, getProfiles, createBackup, restoreBackup, getGamificationStats, deleteProfile, clearProfiles, getMatchedProfileIds } from '../services/storage';
+import { getTandems, getProfiles, createBackup, restoreBackup, getGamificationStats, deleteProfile, clearProfiles, getMatchedProfileIds, getCustomPrompt, saveCustomPrompt, clearCustomPrompt } from '../services/storage';
+import { DEFAULT_PROMPT } from '../services/ollama';
 import type { Tandem, Profile } from '@shared/types';
 
 export function initSettings(): void {
@@ -17,6 +18,7 @@ export function initSettings(): void {
   manageProfilesBtn?.addEventListener('click', showProfileManageModal);
   deleteAllProfilesBtn?.addEventListener('click', deleteAllProfiles);
 
+  initPromptEditor();
   renderStats();
   window.addEventListener('tandems-updated', renderStats);
   window.addEventListener('profiles-updated', renderStats);
@@ -310,4 +312,64 @@ function escapeHtml(text: string): string {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Prompt Editor
+function initPromptEditor(): void {
+  const promptTextarea = document.getElementById('promptTextarea') as HTMLTextAreaElement;
+  const savePromptBtn = document.getElementById('savePromptBtn');
+  const resetPromptBtn = document.getElementById('resetPromptBtn');
+  const promptStatus = document.getElementById('promptStatus');
+
+  if (!promptTextarea || !savePromptBtn || !resetPromptBtn) return;
+
+  // Load current prompt
+  const customPrompt = getCustomPrompt();
+  promptTextarea.value = customPrompt || DEFAULT_PROMPT;
+
+  // Update status indicator
+  updatePromptStatus(promptStatus, !!customPrompt);
+
+  // Save button
+  savePromptBtn.addEventListener('click', () => {
+    const newPrompt = promptTextarea.value.trim();
+    if (newPrompt) {
+      saveCustomPrompt(newPrompt);
+      updatePromptStatus(promptStatus, true);
+      showTemporaryMessage(promptStatus, 'Gespeichert!', 'success');
+    }
+  });
+
+  // Reset button
+  resetPromptBtn.addEventListener('click', () => {
+    if (confirm('Prompt auf Standard zurücksetzen?')) {
+      clearCustomPrompt();
+      promptTextarea.value = DEFAULT_PROMPT;
+      updatePromptStatus(promptStatus, false);
+      showTemporaryMessage(promptStatus, 'Zurückgesetzt!', 'info');
+    }
+  });
+}
+
+function updatePromptStatus(statusEl: HTMLElement | null, isCustom: boolean): void {
+  if (!statusEl) return;
+  if (isCustom) {
+    statusEl.textContent = 'Eigener Prompt aktiv';
+    statusEl.className = 'prompt-status custom';
+  } else {
+    statusEl.textContent = 'Standard-Prompt aktiv';
+    statusEl.className = 'prompt-status default';
+  }
+}
+
+function showTemporaryMessage(statusEl: HTMLElement | null, message: string, type: string): void {
+  if (!statusEl) return;
+  const originalText = statusEl.textContent;
+  const originalClass = statusEl.className;
+  statusEl.textContent = message;
+  statusEl.className = 'prompt-status ' + type;
+  setTimeout(() => {
+    statusEl.textContent = originalText;
+    statusEl.className = originalClass;
+  }, 2000);
 }

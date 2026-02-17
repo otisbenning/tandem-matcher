@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tandem-Matcher | Start with a Friend</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script type="module" crossorigin src="./assets/main-Dhv1UVik.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/main-BojjVRv8.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script type="module" crossorigin src="./assets/main-ahTlllZO.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/main-BwPDihY9.css">
 </head>
 <body>
   <div id="app">
@@ -130,7 +130,7 @@
             <div class="ollama-info">
               <div class="ollama-icon">🤖</div>
               <div class="ollama-text">
-                <p>Nutze KI (Mistral) für bessere Textvorschläge - DSGVO-konform auf eigenem Server.</p>
+                <p>Nutze KI (Qwen 2.5) für bessere Textvorschläge - DSGVO-konform auf eigenem Server.</p>
                 <div id="ollamaStatus" class="ollama-status">Prüfe Verfügbarkeit...</div>
               </div>
             </div>
@@ -140,6 +140,18 @@
               <p class="tip"><strong>Im Editor:</strong> Klicke auf "KI generieren" um alle Felder automatisch auszufüllen, oder nutze den 💡-Button für einzelne Felder.</p>
             </details>
           </div>
+          <!-- Prompt Editor Card -->
+          <div class="settings-card prompt-card">
+            <h3>KI-Prompt anpassen</h3>
+            <p class="settings-info">Passe den Prompt an, der an die KI gesendet wird. Platzhalter: {Frage}, {Antwort1}, {Antwort2}</p>
+            <div id="promptStatus" class="prompt-status default">Standard-Prompt aktiv</div>
+            <textarea id="promptTextarea" class="prompt-textarea" rows="12" placeholder="Prompt eingeben..."></textarea>
+            <div class="prompt-buttons">
+              <button class="btn btn-primary" id="savePromptBtn">Speichern</button>
+              <button class="btn btn-secondary" id="resetPromptBtn">Auf Standard zurücksetzen</button>
+            </div>
+          </div>
+
 
           <div class="settings-card">
             <h3>Export</h3>
@@ -373,6 +385,6 @@
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
