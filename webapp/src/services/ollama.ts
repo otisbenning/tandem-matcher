@@ -79,7 +79,7 @@ WICHTIG:
 - Benenne Gemeinsamkeiten, keine Analyse
 - Keine Annahmen ueber nicht genannte Dinge
 - Bei Kontaktfragen: Erklaere wie die beiden SICH GEGENSEITIG erreichen koennen
-- Vermeide "Person 1/2" - schreibe natuerlich
+- NIEMALS "Person A" oder "Person B" schreiben - sprich beide gemeinsam als "ihr" an
 - 3-5 Saetze
 
 Frage: {Frage}
@@ -87,6 +87,14 @@ Antwort Person A: "{Antwort1}"
 Antwort Person B: "{Antwort2}"
 
 Dein Kommentar:`;
+
+// Correction prompt for fixing "Person A/B" references
+const CORRECTION_PROMPT = `Der folgende Text enthaelt "Person A" oder "Person B". Schreibe den Text um, sodass beide Personen gemeinsam als "ihr" angesprochen werden. Behalte den Inhalt bei, entferne nur die "Person A/B" Formulierungen.
+
+Original:
+"{text}"
+
+Umgeschriebener Text (ohne "Person A" oder "Person B"):`;
 
 // Build prompt for a specific question
 export function buildPrompt(question: string, answer1: string, answer2: string): string {
@@ -98,18 +106,14 @@ export function buildPrompt(question: string, answer1: string, answer2: string):
     .replace('{Antwort2}', answer2);
 }
 
-// Generate commonality text from two answers
-export async function generateCommonality(
-  question: string,
-  answer1: string,
-  answer2: string,
-  modelName?: string
-): Promise<string | null> {
-  const model = modelName || await findBestModel();
-  if (!model) return null;
+// Check if text contains "Person A" or "Person B"
+function needsCorrection(text: string): boolean {
+  const pattern = /Person\s*[AB]/i;
+  return pattern.test(text);
+}
 
-  const prompt = buildPrompt(question, answer1, answer2);
-
+// Send a request to Ollama
+async function ollamaGenerate(model: string, prompt: string): Promise<string | null> {
   try {
     const response = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: 'POST',
@@ -131,17 +135,45 @@ export async function generateCommonality(
     }
 
     const data = await response.json();
-    const result = data.response?.trim() || null;
-
-    if (!result || result === '---' || result.includes('keine Gemeinsamkeit') || result.includes('keine erkennbare')) {
-      return null;
-    }
-
-    return result.replace(/^["']|["']$/g, '').trim();
+    return data.response?.trim() || null;
   } catch (error) {
-    console.warn('Ollama generation failed:', error);
+    console.warn('Ollama request failed:', error);
     return null;
   }
+}
+
+// Generate commonality text from two answers
+export async function generateCommonality(
+  question: string,
+  answer1: string,
+  answer2: string,
+  modelName?: string
+): Promise<string | null> {
+  const model = modelName || await findBestModel();
+  if (!model) return null;
+
+  const prompt = buildPrompt(question, answer1, answer2);
+  let result = await ollamaGenerate(model, prompt);
+
+  if (!result || result === '---' || result.includes('keine Gemeinsamkeit') || result.includes('keine erkennbare')) {
+    return null;
+  }
+
+  // Auto-correction: If "Person A" or "Person B" appears, ask for correction
+  if (needsCorrection(result)) {
+    console.log('Korrektur noetig: "Person A/B" gefunden, sende Korrektur-Request...');
+    const correctionPrompt = CORRECTION_PROMPT.replace('{text}', result);
+    const corrected = await ollamaGenerate(model, correctionPrompt);
+    
+    if (corrected && !needsCorrection(corrected)) {
+      console.log('Korrektur erfolgreich');
+      result = corrected;
+    } else {
+      console.log('Korrektur fehlgeschlagen, verwende Original');
+    }
+  }
+
+  return result.replace(/^["']|["']$/g, '').trim();
 }
 
 // Batch generate commonalities for multiple fields
