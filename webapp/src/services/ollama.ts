@@ -48,7 +48,7 @@ export async function getAvailableModels(): Promise<string[]> {
 }
 
 // Default model on the server
-const DEFAULT_MODEL = 'mistral:7b';
+const DEFAULT_MODEL = 'qwen2.5:14b';
 
 // Find the best available model
 export async function findBestModel(): Promise<string | null> {
@@ -59,8 +59,8 @@ export async function findBestModel(): Promise<string | null> {
   }
 
   // Use mistral if available, otherwise first model
-  if (available.some(m => m.includes('mistral'))) {
-    return available.find(m => m.includes('mistral')) || DEFAULT_MODEL;
+  if (available.some(m => m.includes('qwen'))) {
+    return available.find(m => m.includes('qwen')) || DEFAULT_MODEL;
   }
 
   return available[0] || DEFAULT_MODEL;
